@@ -2,7 +2,7 @@ name: Build and Release Latest
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ master ]
   pull_request:
     branches: [ master, develop ]    
   workflow_dispatch:
@@ -59,8 +59,8 @@ jobs:
         run: |
           ./.github/workflows/build-docker-image.sh \
           --imagename ods-api-service \
-          --dockerdir ods-api-service \
-          --dockerfile docker/Dockerfile
+          --dockerdir docker \
+          --dockerfile Dockerfile
       - name: Push docker image
         if: success() && github.repository == 'opendevstack/ods-api-service' && github.event_name == 'push'
         shell: bash
