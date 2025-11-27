@@ -35,7 +35,6 @@ jobs:
         name: build-artifacts
         path: |
           docker/*.jar
-          docker/
         retention-days: 1
 
     - name: Create or move latest tag
@@ -70,7 +69,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
-          path: .
+          path: ./docker
       
       - name: Build docker image
         run: |
