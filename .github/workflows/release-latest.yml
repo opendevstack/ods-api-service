@@ -19,7 +19,7 @@ jobs:
       with:
         fetch-depth: 0 # Needed full history for tags
  
-    - name: Set up JDK 21
+    - name: Set up JDK 21 with maven cache
       uses: actions/setup-java@v4
       with:
         java-version: '21'
