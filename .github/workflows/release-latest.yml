@@ -49,7 +49,7 @@ jobs:
       with:
         tag_name: latest
         name: Latest build
-        body: Automated latest release, don't use this for production usage.
+        body_path: CHANGELOG.md
         prerelease: true
         draft: false
         files: docker/*.jar
