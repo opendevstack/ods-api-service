@@ -49,6 +49,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
 
   ods-api-service:
+    needs: build
     name: Build and Push ods-api-service Docker Image
     runs-on: ubuntu-22.04
     steps:
