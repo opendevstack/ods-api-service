@@ -29,6 +29,15 @@ jobs:
     - name: Package application
       run: ./mvnw package -DskipTests -B
 
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          docker/*.jar
+          docker/
+        retention-days: 1
+
     - name: Create or move latest tag
       run: |
         git config user.name "github-actions[bot]"
@@ -56,6 +65,13 @@ jobs:
       -
         name: Checkout repository
         uses: actions/checkout@v4.2.2
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
+      
       - name: Build docker image
         run: |
           ./.github/workflows/build-docker-image.sh \
