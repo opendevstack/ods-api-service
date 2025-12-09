@@ -14,6 +14,13 @@
     <description>Core module for API Service</description>
 
     <dependencies>
+        <!-- External Service Commons for abstractions -->
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>external-service-commons</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
