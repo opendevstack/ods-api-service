@@ -43,6 +43,7 @@
     </properties>
 
     <modules>
+        <module>external-service-commons</module>
         <module>core</module>
         <module>external-service-aap</module>
         <module>external-service-projects-info-service</module>
