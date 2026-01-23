@@ -47,4 +47,20 @@ public interface BitbucketService {
      * @return true if configured, false otherwise
      */
     boolean hasInstance(String instanceName);
+    
+    /**
+     * Validate connection to a specific Bitbucket instance
+     * 
+     * @param instanceName Name of the instance to validate
+     * @return true if connection is valid, false otherwise
+     */
+    boolean validateConnection(String instanceName);
+    
+    /**
+     * Check if a specific Bitbucket instance is healthy
+     * 
+     * @param instanceName Name of the instance to check
+     * @return true if the instance is healthy, false otherwise
+     */
+    boolean isHealthy(String instanceName);
 }

@@ -138,4 +138,33 @@ public class BitbucketServiceImpl implements BitbucketService {
     public boolean hasInstance(String instanceName) {
         return clientFactory.hasInstance(instanceName);
     }
+    
+    @Override
+    public boolean validateConnection(String instanceName) {
+        log.debug("Validating connection to Bitbucket instance '{}'", instanceName);
+        try {
+            // Attempt to get client - this will fail if instance not configured
+            if (!hasInstance(instanceName)) {
+                log.warn("Bitbucket instance '{}' is not configured", instanceName);
+                return false;
+            }
+            
+            // Verify we can create a client (validates configuration and factory)
+            clientFactory.getClient(instanceName);
+            
+            // If we got here, configuration is valid
+            log.debug("Connection to Bitbucket instance '{}' is valid (configuration check passed)", instanceName);
+            return true;
+        } catch (Exception e) {
+            log.warn("Connection validation failed for Bitbucket instance '{}': {}", 
+                    instanceName, e.getMessage());
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean isHealthy(String instanceName) {
+        // For Bitbucket, healthy means configured and connection is valid
+        return validateConnection(instanceName);
+    }
 }

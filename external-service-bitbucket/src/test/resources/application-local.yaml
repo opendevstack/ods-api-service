@@ -1,32 +1,81 @@
 # Test configuration for Bitbucket Integration Tests
 # This configuration is used when running integration tests with -Dspring.profiles.active=local
+#
+# SETUP INSTRUCTIONS:
+# ====================
+# 1. Copy this file or update the values below with your actual Bitbucket configuration
+# 2. Set environment variables OR replace default values directly in this file
+# 3. For integration tests, set: BITBUCKET_INTEGRATION_TEST_ENABLED=true
+# 4. Configure test repository details:
+#    export BITBUCKET_TEST_INSTANCE=dev
+#    export BITBUCKET_TEST_PROJECT_KEY=YOUR-PROJECT
+#    export BITBUCKET_TEST_REPOSITORY_SLUG=your-repo
+#    export BITBUCKET_TEST_EXISTING_BRANCH=develop
+#
+# AUTHENTICATION OPTIONS:
+# =======================
+# Option 1 (Preferred): Use Bearer Token (Personal Access Token)
+#   - Go to Bitbucket → User Settings → Personal Access Tokens
+#   - Create a token with READ permissions for Projects and Repositories
+#   - Set bearer-token property
+#
+# Option 2: Use Basic Authentication
+#   - Set username and password properties
+#   - Leave bearer-token empty
+#
+# SECURITY WARNING:
+# =================
+# DO NOT commit real credentials to version control!
+# Use environment variables or external configuration files.
 
 logging:
   level:
     org.opendevstack.apiservice.externalservice.bitbucket: DEBUG
+    org.springframework.web.client.RestTemplate: DEBUG
 
 # External Service Configuration for Bitbucket
-externalservice:
+externalservices:
   bitbucket:
     instances:
       # Development Bitbucket instance
       dev:
+        # Base URL of your Bitbucket server (no trailing slash)
+        # Example: https://bitbucket.mycompany.com or http://localhost:7990
         base-url: ${BITBUCKET_DEV_BASE_REST_URL:https://bitbucket.dev.example.com}
+        
+        # OPTION 1: Bearer Token (Personal Access Token) - RECOMMENDED
         bearer-token: ${BITBUCKET_DEV_BEARER_TOKEN:}
-        # OR use basic auth if bearer token is not available:
-        username: ${BITBUCKET_DEV_USERNAME:}
-        password: ${BITBUCKET_DEV_PASSWORD:}
-        connection-timeout: 30000
-        read-timeout: 30000
+        
+        # OPTION 2: Basic Authentication (only if bearer-token is not set)
+        # Uncomment and configure if not using bearer token:
+        # username: ${BITBUCKET_DEV_USERNAME:your-username}
+        # password: ${BITBUCKET_DEV_PASSWORD:your-password-or-token}
+        
+        # Connection settings
+        connection-timeout: 30000  # 30 seconds
+        read-timeout: 30000        # 30 seconds
+        
+        # SSL/TLS certificate verification
+        # WARNING: Only set to true in development environments!
         trust-all-certificates: ${BITBUCKET_DEV_TRUST_ALL:true}
       
-      # Production Bitbucket instance
+      # Production Bitbucket instance (example)
       prod:
         base-url: ${BITBUCKET_PROD_BASE_REST_URL:https://bitbucket.prod.example.com}
         bearer-token: ${BITBUCKET_PROD_BEARER_TOKEN:}
-        # OR use basic auth:
-        username: ${BITBUCKET_PROD_USERNAME:}
-        password: ${BITBUCKET_PROD_PASSWORD:}
+        # username: ${BITBUCKET_PROD_USERNAME:your-username}
+        # password: ${BITBUCKET_PROD_PASSWORD:your-password-or-token}
         connection-timeout: 30000
         read-timeout: 30000
         trust-all-certificates: ${BITBUCKET_PROD_TRUST_ALL:false}
+
+# Example environment variables to set before running integration tests:
+# export BITBUCKET_DEV_BASE_REST_URL=https://bitbucket.mycompany.com
+# export BITBUCKET_DEV_BEARER_TOKEN=your-personal-access-token
+# export BITBUCKET_INTEGRATION_TEST_ENABLED=true
+# export BITBUCKET_TEST_INSTANCE=dev
+# export BITBUCKET_TEST_PROJECT_KEY=MYPROJECT
+# export BITBUCKET_TEST_REPOSITORY_SLUG=my-repo
+# export BITBUCKET_TEST_EXISTING_BRANCH=develop
+#
+# Then run: mvn test -pl external-service-bitbucket -Dtest=BitbucketServiceIntegrationTest

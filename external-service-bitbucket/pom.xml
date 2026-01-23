@@ -14,13 +14,14 @@
     <description>Service module for integrating with Bitbucket</description>
 
     <dependencies>
-        <!-- Spring Boot Starter -->
+        <!-- External Service Commons for common abstractions -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>external-service-commons</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
-        <!-- Spring Boot Web for HTTP clients -->
+        <!-- Spring Boot Starter Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
