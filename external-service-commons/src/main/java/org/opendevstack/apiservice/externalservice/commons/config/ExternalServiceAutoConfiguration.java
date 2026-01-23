@@ -23,15 +23,15 @@ import java.util.Map;
 public class ExternalServiceAutoConfiguration implements ApplicationListener<ApplicationReadyEvent> {
     
     private final ApplicationContext applicationContext;
-    private final ExternalServiceRegistry registry;
     
     /**
-     * Create the ExternalServiceRegistry bean if not already defined.
+     * Create the ExternalServiceRegistry bean.
      */
     @Bean
     public ExternalServiceRegistry externalServiceRegistry() {
         return new ExternalServiceRegistry();
     }
+    
     
     /**
      * Called when the application is fully started.
@@ -41,6 +41,9 @@ public class ExternalServiceAutoConfiguration implements ApplicationListener<App
     public void onApplicationEvent(ApplicationReadyEvent event) {
         log.info("Auto-discovering external services and commands...");
         
+        // Get the registry from the context
+        ExternalServiceRegistry registry = applicationContext.getBean(ExternalServiceRegistry.class);
+        
         // Discover and register all ExternalService beans
         Map<String, ExternalService> services = applicationContext.getBeansOfType(ExternalService.class);
         services.forEach((beanName, service) -> {
@@ -49,6 +52,7 @@ public class ExternalServiceAutoConfiguration implements ApplicationListener<App
         });
         
         // Discover and register all ExternalServiceCommand beans
+        @SuppressWarnings("rawtypes")
         Map<String, ExternalServiceCommand> commands = applicationContext.getBeansOfType(ExternalServiceCommand.class);
         commands.forEach((beanName, command) -> {
             registry.registerCommand(command);

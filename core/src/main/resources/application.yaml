@@ -35,7 +35,7 @@ springdoc:
 
 openapi:
   servers:
-    - url: "https://localhost:8080"
+    - url: "http://localhost:8080"
       description: "Development environment"
 
 otel:
@@ -44,7 +44,7 @@ otel:
         version: 0.0.1-SNAPSHOT
     exporter:
         otlp:
-            endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+            endpoint: http://opentelemetry.example.com
     traces:
         exporter: logging,otlp
         sampler: parentbased_traceidratio

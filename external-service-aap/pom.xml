@@ -14,6 +14,13 @@
     <description>Service module for integrating with external automation platforms like Ansible</description>
 
     <dependencies>
+        <!-- External Service Commons for common abstractions -->
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>external-service-commons</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Boot Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

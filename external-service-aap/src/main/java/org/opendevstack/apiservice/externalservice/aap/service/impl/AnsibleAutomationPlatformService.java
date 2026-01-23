@@ -51,6 +51,11 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
     }
 
     @Override
+    public String getServiceName() {
+        return "aap";
+    }
+
+    @Override
     public AutomationExecutionResult executeWorkflow(String workflowName, Map<String, Object> parameters) throws AutomationPlatformException {
         logger.info("Executing workflow '{}' with parameters: {}", workflowName, parameters);
         

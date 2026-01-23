@@ -1,7 +1,9 @@
 package org.opendevstack.apiservice.projectusers.service.impl;
 
+import org.opendevstack.apiservice.externalservice.aap.command.ExecuteWorkflowRequest;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationExecutionResult;
-import org.opendevstack.apiservice.externalservice.aap.service.AutomationPlatformService;
+import org.opendevstack.apiservice.externalservice.commons.command.ExternalServiceCommand;
+import org.opendevstack.apiservice.externalservice.commons.registry.ExternalServiceRegistry;
 import org.opendevstack.apiservice.projectusers.exception.AutomationPlatformException;
 import org.opendevstack.apiservice.projectusers.exception.ProjectNotFoundException;
 import org.opendevstack.apiservice.projectusers.model.AddUserToProjectRequest;
@@ -17,7 +19,7 @@ import java.util.*;
 
 /**
  * Implementation of ProjectUserService that manages project users and integrates with automation platform.
- * This is a stateless implementation that uses the automation platform for persistence.
+ * This is a stateless implementation that uses the automation platform for persistence via command pattern.
  */
 @Service("projectUserService")
 public class ProjectUserServiceImpl implements ProjectUserService {
@@ -27,12 +29,12 @@ public class ProjectUserServiceImpl implements ProjectUserService {
     @Value("${apis.project-users.ansible-workflow-name}")
     private String addUserWorkflow;
 
-    private final AutomationPlatformService automationPlatformService;
+    private final ExternalServiceRegistry registry;
     private final MembershipRequestTokenService tokenService;
 
-    public ProjectUserServiceImpl(AutomationPlatformService automationPlatformService,
+    public ProjectUserServiceImpl(ExternalServiceRegistry registry,
                                  MembershipRequestTokenService membershipRequestTokenService) {
-        this.automationPlatformService = automationPlatformService;
+        this.registry = registry;
         this.tokenService = membershipRequestTokenService;
     }
 
@@ -59,8 +61,23 @@ public class ProjectUserServiceImpl implements ProjectUserService {
             parameters.put("comments", request.getComments());
             parameters.put("reference", uipathReference);
 
-            // Execute workflow on automation platform
-            AutomationExecutionResult result = automationPlatformService.executeWorkflow(addUserWorkflow, parameters);
+            // Execute workflow via command pattern
+            ExternalServiceCommand<ExecuteWorkflowRequest, AutomationExecutionResult> command = 
+                registry.getCommand("aap", "execute-workflow");
+            
+            if (command == null) {
+                throw new AutomationPlatformException(
+                    "Execute workflow command not found for automation platform service", null);
+            }
+            
+            // Create the proper request object
+            ExecuteWorkflowRequest workflowRequest = ExecuteWorkflowRequest.builder()
+                .workflowName(addUserWorkflow)
+                .parameters(parameters)
+                .async(false)
+                .build();
+            
+            AutomationExecutionResult result = command.execute(workflowRequest);
 
             if (result.isSuccessful()) {               
                 // Create request token for status tracking
@@ -95,7 +112,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
                     "Failed to add user through automation platform: " + result.getMessage(), null);
             }
 
-        } catch (org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException e) {
+        } catch (Exception e) {
             logger.error("Failed to add user '{}' to project '{}': {}", request.getUser(), projectKey, e.getMessage(), e);
             throw new AutomationPlatformException(
                 "Automation platform execution failed", e);
