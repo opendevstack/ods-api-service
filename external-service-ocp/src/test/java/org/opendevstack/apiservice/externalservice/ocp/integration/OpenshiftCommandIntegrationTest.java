@@ -8,6 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.opendevstack.apiservice.externalservice.commons.ExternalServiceException;
+import org.opendevstack.apiservice.externalservice.ocp.command.instance.GetAvailableInstancesCommand;
+import org.opendevstack.apiservice.externalservice.ocp.command.instance.GetAvailableInstancesRequest;
+import org.opendevstack.apiservice.externalservice.ocp.command.instance.HasInstanceCommand;
+import org.opendevstack.apiservice.externalservice.ocp.command.instance.HasInstanceRequest;
+import org.opendevstack.apiservice.externalservice.ocp.command.instance.IsHealthyCommand;
+import org.opendevstack.apiservice.externalservice.ocp.command.instance.IsHealthyRequest;
+import org.opendevstack.apiservice.externalservice.ocp.command.instance.ValidateConnectionCommand;
+import org.opendevstack.apiservice.externalservice.ocp.command.instance.ValidateConnectionRequest;
 import org.opendevstack.apiservice.externalservice.ocp.command.secret.GetSecretCommand;
 import org.opendevstack.apiservice.externalservice.ocp.command.secret.GetSecretRequest;
 import org.opendevstack.apiservice.externalservice.ocp.command.secret.GetSecretValueCommand;
@@ -62,6 +70,18 @@ class OpenshiftCommandIntegrationTest {
 
     @Autowired
     private SecretExistsCommand secretExistsCommand;
+
+    @Autowired
+    private GetAvailableInstancesCommand getAvailableInstancesCommand;
+
+    @Autowired
+    private HasInstanceCommand hasInstanceCommand;
+
+    @Autowired
+    private ValidateConnectionCommand validateConnectionCommand;
+
+    @Autowired
+    private IsHealthyCommand isHealthyCommand;
 
     private String testInstance;
     private String testSecretName;
@@ -133,6 +153,131 @@ class OpenshiftCommandIntegrationTest {
         assertTrue(isHealthy, "Test instance should be healthy");
         log.info("Instance health check passed: {}", testInstance);
     }
+
+    // ========================================================================
+    // Instance Command Integration Tests
+    // ========================================================================
+
+    @Test
+    void testGetAvailableInstancesCommand() throws ExternalServiceException {
+        // Arrange
+        GetAvailableInstancesRequest request = GetAvailableInstancesRequest.builder().build();
+
+        // Act
+        Set<String> instances = getAvailableInstancesCommand.execute(request);
+
+        // Assert
+        assertNotNull(instances, "Available instances should not be null");
+        assertFalse(instances.isEmpty(), "Available instances should not be empty");
+        assertTrue(instances.contains(testInstance), "Test instance should be available");
+        log.info("GetAvailableInstancesCommand returned {} instances: {}", instances.size(), instances);
+    }
+
+    @Test
+    void testHasInstanceCommand_ExistentInstance() throws ExternalServiceException {
+        // Arrange
+        HasInstanceRequest request = HasInstanceRequest.builder()
+                .instanceName(testInstance)
+                .build();
+
+        // Act
+        Boolean hasInstance = hasInstanceCommand.execute(request);
+
+        // Assert
+        assertNotNull(hasInstance, "Result should not be null");
+        assertTrue(hasInstance, "Test instance '" + testInstance + "' should exist");
+        log.info("HasInstanceCommand: instance '{}' exists: {}", testInstance, hasInstance);
+    }
+
+    @Test
+    void testHasInstanceCommand_NonExistentInstance() throws ExternalServiceException {
+        // Arrange
+        HasInstanceRequest request = HasInstanceRequest.builder()
+                .instanceName("nonexistent-instance-xyz-12345")
+                .build();
+
+        // Act
+        Boolean hasInstance = hasInstanceCommand.execute(request);
+
+        // Assert
+        assertNotNull(hasInstance, "Result should not be null");
+        assertFalse(hasInstance, "Non-existent instance should return false");
+        log.info("HasInstanceCommand: non-existent instance check returned: {}", hasInstance);
+    }
+
+    @Test
+    void testValidateConnectionCommand() throws ExternalServiceException {
+        // Arrange
+        ValidateConnectionRequest request = ValidateConnectionRequest.builder()
+                .instanceName(testInstance)
+                .build();
+
+        // Act
+        Boolean isValid = validateConnectionCommand.execute(request);
+
+        // Assert
+        assertNotNull(isValid, "Result should not be null");
+        assertTrue(isValid, "Connection to test instance should be valid");
+        log.info("ValidateConnectionCommand: connection to '{}' is valid: {}", testInstance, isValid);
+    }
+
+    @Test
+    void testValidateConnectionCommand_InvalidInstance() {
+        // Arrange
+        ValidateConnectionRequest request = ValidateConnectionRequest.builder()
+                .instanceName("invalid-instance-xyz-12345")
+                .build();
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                validateConnectionCommand.execute(request)
+        );
+
+        assertTrue(
+                exception.getMessage().contains("does not exist"),
+                "Exception should indicate instance does not exist"
+        );
+        log.info("Expected exception for invalid instance: {}", exception.getMessage());
+    }
+
+    @Test
+    void testIsHealthyCommand() throws ExternalServiceException {
+        // Arrange
+        IsHealthyRequest request = IsHealthyRequest.builder()
+                .instanceName(testInstance)
+                .build();
+
+        // Act
+        Boolean isHealthy = isHealthyCommand.execute(request);
+
+        // Assert
+        assertNotNull(isHealthy, "Result should not be null");
+        assertTrue(isHealthy, "Test instance should be healthy");
+        log.info("IsHealthyCommand: instance '{}' is healthy: {}", testInstance, isHealthy);
+    }
+
+    @Test
+    void testIsHealthyCommand_InvalidInstance() {
+        // Arrange
+        IsHealthyRequest request = IsHealthyRequest.builder()
+                .instanceName("invalid-instance-xyz-12345")
+                .build();
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                isHealthyCommand.execute(request)
+        );
+
+        assertTrue(
+                exception.getMessage().contains("does not exist"),
+                "Exception should indicate instance does not exist"
+        );
+        log.info("Expected exception for invalid instance: {}", exception.getMessage());
+    }
+
+    // ========================================================================
+    // Secret Command Integration Tests
+    // ========================================================================
 
     @Test
     void testSecretExistsCommand_WithDefaultNamespace() throws ExternalServiceException {
