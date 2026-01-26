@@ -3,7 +3,7 @@ logging:
     org.opendevstack.apiservice.externalservice.webhookproxy: DEBUG
 
 # Webhook Proxy Configuration for Integration Tests
-externalservice:
+externalservices:
   webhook-proxy:
     clusters:
       # Cluster A

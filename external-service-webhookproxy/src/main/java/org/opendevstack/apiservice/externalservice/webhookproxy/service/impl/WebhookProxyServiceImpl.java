@@ -107,4 +107,36 @@ public class WebhookProxyServiceImpl implements WebhookProxyService {
         
         return clusterConfig.buildWebhookProxyUrl(projectKey);
     }
+    
+    @Override
+    public boolean validateConnection(String clusterName, String projectKey) {
+        log.debug("Validating connection to WebhookProxy cluster '{}'", clusterName);
+        try {
+            // Check if cluster is configured
+            if (!hasCluster(clusterName)) {
+                log.warn("WebhookProxy cluster '{}' is not configured", clusterName);
+                return false;
+            }
+            
+            // Verify we can get the webhook proxy URL (validates configuration)
+            getWebhookProxyUrl(clusterName, projectKey);
+            
+            // Verify we can create a client (validates factory)
+            clientFactory.getClient(clusterName, projectKey);
+            
+            // If we got here, configuration is valid
+            log.debug("Connection to WebhookProxy cluster '{}' is valid (configuration check passed)", clusterName);
+            return true;
+        } catch (Exception e) {
+            log.warn("Connection validation failed for WebhookProxy cluster '{}': {}", 
+                    clusterName, e.getMessage());
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean isHealthy(String clusterName, String projectKey) {
+        // For WebhookProxy, healthy means configured and connection is valid
+        return validateConnection(clusterName, projectKey);
+    }
 }

@@ -67,4 +67,22 @@ public interface WebhookProxyService {
      * @throws WebhookProxyException.ConfigurationException if the cluster is not configured
      */
     String getWebhookProxyUrl(String clusterName, String projectKey) throws WebhookProxyException.ConfigurationException;
+    
+    /**
+     * Validate connection to a specific cluster
+     * 
+     * @param clusterName Name of the cluster to validate
+     * @param projectKey Project key (required to construct URL)
+     * @return true if connection is valid, false otherwise
+     */
+    boolean validateConnection(String clusterName, String projectKey);
+    
+    /**
+     * Check if a specific cluster is healthy
+     * 
+     * @param clusterName Name of the cluster to check
+     * @param projectKey Project key (required to construct URL)
+     * @return true if the cluster is healthy, false otherwise
+     */
+    boolean isHealthy(String clusterName, String projectKey);
 }

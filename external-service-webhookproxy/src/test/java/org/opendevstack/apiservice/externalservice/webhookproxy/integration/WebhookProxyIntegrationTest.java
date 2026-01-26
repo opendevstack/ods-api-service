@@ -6,8 +6,8 @@ import org.opendevstack.apiservice.externalservice.webhookproxy.exception.Webhoo
 import org.opendevstack.apiservice.externalservice.webhookproxy.service.WebhookProxyService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,8 +43,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(classes = WebhookProxyIntegrationTest.TestConfiguration.class)
 @ActiveProfiles("local")
+@EnabledIfEnvironmentVariable(named = "WEBHOOK_PROXY_INTEGRATION_TEST_ENABLED", matches = "true")
 @Slf4j
-@Disabled("Integration tests require actual webhook proxy access - enable manually when needed")
 class WebhookProxyIntegrationTest {
 
     @Configuration
@@ -85,7 +85,6 @@ class WebhookProxyIntegrationTest {
      * Test 1: Verify service configuration and available clusters
      */
     @Test
-    @Disabled("Remove this annotation to check service configuration")
     void testServiceConfiguration() {
         log.info("TEST: Verify service configuration");
 
@@ -107,7 +106,6 @@ class WebhookProxyIntegrationTest {
      * Test 2: Get webhook proxy URL for the project
      */
     @Test
-    @Disabled("Remove this annotation to test URL construction")
     void testGetWebhookProxyUrl() throws WebhookProxyException {
         log.info("TEST: Get webhook proxy URL");
 
@@ -132,7 +130,6 @@ class WebhookProxyIntegrationTest {
      * This test requires a valid trigger secret
      */
     @Test
-    @Disabled("Remove this annotation to trigger an actual build - CAUTION: This will trigger a real build!")
     void testTriggerBuildBasic() throws WebhookProxyException {
         log.info("TEST: Trigger build with basic configuration");
 
@@ -171,17 +168,11 @@ class WebhookProxyIntegrationTest {
         log.info("  Success: {}", response.isSuccess());
         log.info("  Body: {}", response.getBody());
         
-        if (!response.isSuccess()) {
-            log.warn("  Error Message: {}", response.getErrorMessage());
-        }
-
         // Verify successful response
         assertTrue(response.isSuccess(), 
                   "Build trigger should be successful. Error: " + response.getErrorMessage());
         assertTrue(response.getStatusCode() >= 200 && response.getStatusCode() < 300,
-                  "Status code should be 2xx");
-        
-        log.info("✓ Build triggered successfully!");
+                  "Status code should be 2xx");        
     }
 
     /**
@@ -189,7 +180,6 @@ class WebhookProxyIntegrationTest {
      * This test requires a valid trigger secret
      */
     @Test
-    //Disabled("Remove this annotation to trigger a build with env vars - CAUTION: This will trigger a real build!")
     void testTriggerBuildWithEnvironmentVariables() throws WebhookProxyException {
         log.info("TEST: Trigger build with environment variables");
 
@@ -232,7 +222,6 @@ class WebhookProxyIntegrationTest {
      * Test 5: Trigger build with custom Jenkinsfile path
      */
     @Test
-    @Disabled("Remove this annotation to test custom Jenkinsfile - CAUTION: This will trigger a real build!")
     void testTriggerBuildWithCustomJenkinsfile() throws WebhookProxyException {
         log.info("TEST: Trigger build with custom Jenkinsfile");
 
@@ -272,7 +261,6 @@ class WebhookProxyIntegrationTest {
      * Test 6: Test authentication failure with invalid trigger secret
      */
     @Test
-    @Disabled("Remove this annotation to test authentication failure")
     void testAuthenticationFailure() {
         log.info("TEST: Test authentication failure with invalid trigger secret");
 
@@ -295,8 +283,6 @@ class WebhookProxyIntegrationTest {
                 invalidSecret
             );
         }, "Should throw AuthenticationException for invalid trigger secret");
-
-        log.info("✓ Authentication correctly failed with invalid trigger secret");
     }
 
     /**
@@ -318,7 +304,6 @@ class WebhookProxyIntegrationTest {
         assertThrows(WebhookProxyException.ValidationException.class, () -> {
             webhookProxyService.triggerBuild(clusterName, projectKey, requestNoBranch, triggerSecret);
         }, "Should throw ValidationException for missing branch");
-        log.info("✓ Validation correctly failed for missing branch");
 
         // Test missing repository
         WebhookProxyBuildRequest requestNoRepo = WebhookProxyBuildRequest.builder()
@@ -329,7 +314,6 @@ class WebhookProxyIntegrationTest {
         assertThrows(WebhookProxyException.ValidationException.class, () -> {
             webhookProxyService.triggerBuild(clusterName, projectKey, requestNoRepo, triggerSecret);
         }, "Should throw ValidationException for missing repository");
-        log.info("✓ Validation correctly failed for missing repository");
 
         // Test missing project
         WebhookProxyBuildRequest requestNoProject = WebhookProxyBuildRequest.builder()
@@ -340,7 +324,6 @@ class WebhookProxyIntegrationTest {
         assertThrows(WebhookProxyException.ValidationException.class, () -> {
             webhookProxyService.triggerBuild(clusterName, projectKey, requestNoProject, triggerSecret);
         }, "Should throw ValidationException for missing project");
-        log.info("✓ Validation correctly failed for missing project");
 
         // Test empty trigger secret
         WebhookProxyBuildRequest validRequest = WebhookProxyBuildRequest.builder()
@@ -352,9 +335,6 @@ class WebhookProxyIntegrationTest {
         assertThrows(WebhookProxyException.ValidationException.class, () -> {
             webhookProxyService.triggerBuild(clusterName, projectKey, validRequest, "");
         }, "Should throw ValidationException for empty trigger secret");
-        log.info("✓ Validation correctly failed for empty trigger secret");
-
-        log.info("✓ All validation tests passed");
     }
 
     /**
@@ -396,7 +376,6 @@ class WebhookProxyIntegrationTest {
      * Test 9: Trigger build with full parameter set (environment map, dynamic branch)
      */
     @Test
-    @Disabled("Remove this annotation to trigger a real build with all parameters!")
     void testTriggerBuildWithAllParameters() throws WebhookProxyException {
         log.info("TEST: Trigger build with all parameters");
 
@@ -456,12 +435,9 @@ class WebhookProxyIntegrationTest {
         log.info("  Status Code: {}", response.getStatusCode());
         log.info("  Success: {}", response.isSuccess());
         log.info("  Body: {}", response.getBody());
-        if (!response.isSuccess()) {
-            log.warn("  Error Message: {}", response.getErrorMessage());
-        }
+
         assertTrue(response.isSuccess(), "Build trigger should be successful. Error: " + response.getErrorMessage());
         assertTrue(response.getStatusCode() >= 200 && response.getStatusCode() < 300, "Status code should be 2xx");
-        log.info("✓ Build triggered successfully with all parameters!");
     }
 
 
@@ -469,7 +445,6 @@ class WebhookProxyIntegrationTest {
      * Test: Trigger build of a specific component with custom Jenkinsfile
      */
     @Test
-    @Disabled("Remove this annotation to trigger a real build for a component!")
     void testTriggerBuildComponent() throws WebhookProxyException {
         log.info("TEST: Trigger build of a component");
 
@@ -512,7 +487,6 @@ class WebhookProxyIntegrationTest {
         }
         assertTrue(response.isSuccess(), "Build trigger should be successful. Error: " + response.getErrorMessage());
         assertTrue(response.getStatusCode() >= 200 && response.getStatusCode() < 300, "Status code should be 2xx");
-        log.info("✓ Build for component triggered successfully!");
     }    
 
     /**
@@ -520,7 +494,6 @@ class WebhookProxyIntegrationTest {
      * Useful for debugging
      */
     @Test
-    @Disabled("Remove this annotation to print current configuration")
     void printCurrentConfiguration() {
         log.info("=".repeat(80));
         log.info("CURRENT WEBHOOK PROXY CONFIGURATION");
