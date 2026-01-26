@@ -3,6 +3,7 @@ package org.opendevstack.apiservice.externalservice.ocp.client;
 import org.opendevstack.apiservice.externalservice.ocp.config.OpenshiftServiceConfiguration;
 import org.opendevstack.apiservice.externalservice.ocp.config.OpenshiftServiceConfiguration.OpenshiftInstanceConfig;
 import org.opendevstack.apiservice.externalservice.ocp.exception.OpenshiftException;
+import org.opendevstack.apiservice.externalservice.ocp.exception.OpenshiftException.ErrorCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -66,19 +67,34 @@ public class OpenshiftApiClientFactory {
         if (instanceConfig == null) {
             throw new OpenshiftException(
                 String.format("OpenShift instance '%s' is not configured. Available instances: %s", 
-                              instanceName, configuration.getInstances().keySet())
+                              instanceName, configuration.getInstances().keySet()),
+                ErrorCodes.INSTANCE_NOT_CONFIGURED,
+                "getClient",
+                instanceName
             );
         }
         
         log.info("Creating new OpenshiftApiClient for instance '{}'", instanceName);
         
-        RestTemplate restTemplate = createRestTemplate(instanceConfig);
-        OpenshiftApiClient client = new OpenshiftApiClient(instanceName, instanceConfig, restTemplate);
-        
-        // Cache the client
-        clientCache.put(instanceName, client);
-        
-        return client;
+        try {
+            RestTemplate restTemplate = createRestTemplate(instanceConfig);
+            OpenshiftApiClient client = new OpenshiftApiClient(instanceName, instanceConfig, restTemplate);
+            
+            // Cache the client
+            clientCache.put(instanceName, client);
+            
+            return client;
+        } catch (Exception e) {
+            log.error("Failed to create OpenshiftApiClient for instance '{}'", instanceName, e);
+            throw new OpenshiftException(
+                String.format("Failed to create OpenShift client for instance '%s': %s", 
+                              instanceName, e.getMessage()),
+                e,
+                ErrorCodes.INVALID_CONFIGURATION,
+                "getClient",
+                instanceName
+            );
+        }
     }
     
     /**
@@ -89,7 +105,12 @@ public class OpenshiftApiClientFactory {
      */
     public OpenshiftApiClient getDefaultClient() throws OpenshiftException {
         if (configuration.getInstances().isEmpty()) {
-            throw new OpenshiftException("No OpenShift instances configured");
+            throw new OpenshiftException(
+                "No OpenShift instances configured",
+                ErrorCodes.INSTANCE_NOT_CONFIGURED,
+                "getDefaultClient",
+                "default"
+            );
         }
         
         String firstInstanceName = configuration.getInstances().keySet().iterator().next();
@@ -184,6 +205,8 @@ public class OpenshiftApiClientFactory {
             
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
             log.error("Failed to configure SSL trust all certificates", e);
+            // SSL configuration failure should not silently fail
+            throw new IllegalStateException("Failed to configure SSL for OpenShift connection", e);
         }
     }
 }

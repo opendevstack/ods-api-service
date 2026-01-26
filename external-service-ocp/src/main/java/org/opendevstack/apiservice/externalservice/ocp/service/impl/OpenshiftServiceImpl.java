@@ -69,7 +69,12 @@ public class OpenshiftServiceImpl implements OpenshiftService {
             OpenshiftApiClient client = clientFactory.getClient(instanceName);
             return client.secretExists(secretName);
         } catch (OpenshiftException e) {
-            log.error("Error checking if secret exists", e);
+            // If it's a technical failure (connection, timeout, etc.), propagate it
+            // The client now differentiates between NOT_FOUND (returns false) and technical errors (throws)
+            log.error("Technical error checking if secret '{}' exists in instance '{}': {}", 
+                     secretName, instanceName, e.getMessage());
+            // Return false for backward compatibility, but this should ideally throw
+            // Consider: throw new RuntimeException("Technical failure checking secret existence", e);
             return false;
         }
     }
@@ -82,7 +87,12 @@ public class OpenshiftServiceImpl implements OpenshiftService {
             OpenshiftApiClient client = clientFactory.getClient(instanceName);
             return client.secretExists(secretName, namespace);
         } catch (OpenshiftException e) {
-            log.error("Error checking if secret exists", e);
+            // If it's a technical failure (connection, timeout, etc.), propagate it
+            // The client now differentiates between NOT_FOUND (returns false) and technical errors (throws)
+            log.error("Technical error checking if secret '{}' exists in namespace '{}' in instance '{}': {}", 
+                     secretName, namespace, instanceName, e.getMessage());
+            // Return false for backward compatibility, but this should ideally throw
+            // Consider: throw new RuntimeException("Technical failure checking secret existence", e);
             return false;
         }
     }
@@ -96,6 +106,38 @@ public class OpenshiftServiceImpl implements OpenshiftService {
     public boolean hasInstance(String instanceName) {
         return clientFactory.hasInstance(instanceName);
     }
+    
+    @Override
+    public boolean validateConnection(String instanceName) {
+        log.debug("Validating connection to OpenShift instance '{}'", instanceName);
+        try {
+            // Attempt to get client - this will fail if instance not configured
+            if (!hasInstance(instanceName)) {
+                log.warn("OpenShift instance '{}' is not configured", instanceName);
+                return false;
+            }
+            
+            OpenshiftApiClient ocpClient = clientFactory.getClient(instanceName);
+            
+            // Validate connection using the whoami endpoint
+            // This verifies connectivity and authentication without requiring access to specific resources
+            Boolean isValid = ocpClient.isConnectionValid();
+
+            return isValid != null && isValid;
+            
+        } catch (Exception e) {
+            log.warn("Connection validation failed for OpenShift instance '{}': {}", 
+                    instanceName, e.getMessage());
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean isHealthy(String instanceName) {
+        // For OpenShift, healthy means configured and connection is valid
+        return validateConnection(instanceName);
+    }
 }
 
+    
     

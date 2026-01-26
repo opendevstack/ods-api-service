@@ -14,13 +14,20 @@
     <description>Service module for integrating with OpenShift Container Platform</description>
 
     <dependencies>
-        <!-- Spring Boot Starter -->
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Spring Boot Web for HTTP clients -->
+        <!-- External Service Commons for common abstractions -->
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>external-service-commons</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Spring Boot Starter Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
