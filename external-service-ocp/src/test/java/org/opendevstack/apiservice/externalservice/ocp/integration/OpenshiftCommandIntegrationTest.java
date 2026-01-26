@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(classes = OpenshiftIntegrationTestConfig.class)
 @ActiveProfiles("local")
-//@EnabledIfEnvironmentVariable(named = "OPENSHIFT_INTEGRATION_TEST_ENABLED", matches = "true")
+@EnabledIfEnvironmentVariable(named = "OPENSHIFT_INTEGRATION_TEST_ENABLED", matches = "true")
 @Slf4j
 class OpenshiftCommandIntegrationTest {
 
