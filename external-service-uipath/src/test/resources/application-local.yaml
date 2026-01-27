@@ -1,0 +1,36 @@
+logging:
+  level:
+    org.opendevstack.apiservice.externalservice.uipath: DEBUG
+
+# UiPath Configuration for Integration Tests
+automation:
+  platform:
+    uipath:
+      # Base URL of the UIPath Orchestrator instance
+      host: ${UIPATH_HOST:https://orchestrator.example.com}
+      
+      # Authentication credentials
+      clientId: ${UIPATH_CLIENT_ID:your-client-id}
+      clientSecret: ${UIPATH_CLIENT_SECRET:your-client-secret}
+      
+      # Tenancy name (default: "default")
+      tenancy-name: ${UIPATH_TENANCY_NAME:default}
+
+      # Organization Unit ID for multi-tenant setups
+      organization-unit-id: ${UIPATH_ORGANIZATION_UNIT_ID:123456}
+
+      # API endpoints (defaults shown, can be overridden)
+      login-endpoint: /api/Account/Authenticate
+      queue-items-endpoint: /odata/QueueItems
+      
+      # Request timeout in milliseconds
+      timeout: ${UIPATH_TIMEOUT:30000}
+      
+      # SSL Configuration
+      ssl:
+        # Set to false to disable certificate verification (DEV ONLY!)
+        verify-certificates: ${UIPATH_SSL_VERIFY:false}
+        # Optional: path to custom trust store
+        trust-store-path: ${UIPATH_SSL_TRUST_STORE_PATH:}
+        trust-store-password: ${TRUSTSTORE_PASSWORD:changeit}
+        trust-store-type: ${UIPATH_SSL_TRUST_STORE_TYPE:JKS}

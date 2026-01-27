@@ -51,6 +51,11 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     }
 
     @Override
+    public String getServiceName() {
+        return "uipath";
+    }
+
+    @Override
     public String authenticate() throws UiPathException.AuthenticationException {
         logger.debug("Authenticating to UIPath Orchestrator at {}", properties.getHost());
 
