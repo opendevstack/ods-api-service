@@ -62,7 +62,10 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
         try {
             // Create headers with authentication
             HttpHeaders headers = createAuthHeaders();
-            
+        
+            if (parameters == null) {
+                parameters = new HashMap<>();
+            }
             // Prepare request body
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("extra_vars", parameters);

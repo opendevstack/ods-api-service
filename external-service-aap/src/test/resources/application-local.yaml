@@ -1,0 +1,30 @@
+logging:
+  level:
+    org.opendevstack.apiservice.externalservice.aap: DEBUG
+    org.springframework.web.client: DEBUG
+
+# AAP (Ansible Automation Platform) Configuration for Integration Tests
+automation:
+  platform:
+    ansible:
+      # Enable AAP service
+      enabled: true
+      
+      # Base URL of the AAP instance (API v2)
+      base-url: ${ANSIBLE_BASE_URL:http://localhost:8080/api/v2}
+      
+      # Authentication credentials
+      username: ${ANSIBLE_USERNAME:admin}
+      password: ${ANSIBLE_PASSWORD:password}
+      
+      # Request timeout in milliseconds
+      timeout: ${ANSIBLE_TIMEOUT:30000}
+      
+      # SSL Configuration
+      ssl:
+        # Set to false to disable certificate verification (DEV ONLY!)
+        verify-certificates: ${ANSIBLE_SSL_VERIFY:false}
+        # Optional: path to custom trust store
+        trust-store-path: ${ANSIBLE_SSL_TRUSTSTORE_PATH:}
+        trust-store-password: ${ANSIBLE_SSL_TRUSTSTORE_PASSWORD:}
+        trust-store-type: ${ANSIBLE_SSL_TRUSTSTORE_TYPE:JKS}

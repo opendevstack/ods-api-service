@@ -11,23 +11,40 @@ This module provides a service for interacting with multiple OpenShift Container
 - **Spring Configuration**: Load all configuration from Spring application properties
 - **SSL/TLS Configuration**: Flexible SSL certificate handling for different environments
 
-## Architecture
+## Architecture & Design Patterns
 
-### Components
+The module follows the architecture guidelines using multiple design patterns:
 
-1. **OpenshiftServiceConfiguration**: Loads OpenShift instance configurations from Spring properties
-2. **OpenshiftApiClientFactory**: Creates and caches API clients for different instances
-3. **OpenshiftApiClient**: HTTP client for interacting with OpenShift API
-4. **OpenshiftService**: High-level service interface
-5. **OpenshiftServiceImpl**: Service implementation that delegates to the appropriate client
+### Factory Pattern
+- `OpenshiftApiClientFactory` creates and caches API clients for different instances
+- Ensures efficient resource management and connection pooling
 
-### Design Pattern
+### Adapter Pattern
+- `OpenshiftServiceAdapter` adapts `OpenshiftService` to implement the `ExternalService` interface
+- Enables multi-instance support with unified health checking
 
-The module uses the **Factory Pattern** where:
-- `OpenshiftApiClientFactory` is the factory that creates `OpenshiftApiClient` instances
-- Each client is configured for a specific OpenShift instance
-- Clients are cached for efficiency
-- The service layer uses the factory to obtain the appropriate client
+### Command Pattern
+- All secret operations are wrapped in command classes:
+  - `GetSecretCommand`: Retrieve complete secrets
+  - `GetSecretValueCommand`: Retrieve specific secret values
+  - `SecretExistsCommand`: Check secret existence
+- Commands are automatically registered with `ExternalServiceRegistry`
+- Provides type-safety, decoupling, and extensibility
+
+### Registry Pattern
+- `ExternalServiceRegistry` manages all available commands and services
+- Commands are auto-discovered via Spring's component scanning
+
+## Command Pattern Benefits
+
+1. **Type Safety**: Request/Response objects provide compile-time type checking
+2. **Decoupling**: Business logic doesn't depend on specific service implementations
+3. **Extensibility**: New commands can be added without modifying existing code
+4. **Testability**: Commands can be mocked and tested independently
+5. **Async Support**: Commands can be executed asynchronously via the executor
+6. **Consistency**: All external service operations follow the same pattern
+
+
 
 ## Configuration
 
@@ -85,7 +102,83 @@ openshift:
 
 ## Usage
 
-### Basic Usage
+### Using Commands (Recommended - Command Pattern)
+
+The module uses the **Command Pattern** for all external service operations, providing type-safe, decoupled operations. Commands are automatically registered with the ExternalServiceRegistry.
+
+#### Get Secret Command
+
+```java
+@Service
+public class ConfigurationService {
+    
+    private final ExternalServiceFacade externalServiceFacade;
+    
+    public void loadSecret() throws ExternalServiceException {
+        GetSecretRequest request = GetSecretRequest.builder()
+                .instanceName("dev")
+                .secretName("my-secret")
+                .build();
+        
+        CommandResult<Map<String, String>> result = externalServiceFacade.executeCommand(request);
+        Map<String, String> secretData = result.getResult();
+    }
+}
+```
+
+#### Get Secret Value Command
+
+```java
+@Service
+public class DatabaseService {
+    
+    private final ExternalServiceFacade externalServiceFacade;
+    
+    public String getDatabasePassword() throws ExternalServiceException {
+        GetSecretValueRequest request = GetSecretValueRequest.builder()
+                .instanceName("prod")
+                .secretName("database-credentials")
+                .key("password")
+                .namespace("production")
+                .build();
+        
+        CommandResult<String> result = externalServiceFacade.executeCommand(request);
+        return result.getResult();
+    }
+}
+```
+
+#### Check Secret Exists Command
+
+```java
+@Service
+public class SecretValidationService {
+    
+    private final ExternalServiceFacade externalServiceFacade;
+    
+    public boolean validateSecretExists() throws ExternalServiceException {
+        SecretExistsRequest request = SecretExistsRequest.builder()
+                .instanceName("dev")
+                .secretName("my-secret")
+                .build();
+        
+        CommandResult<Boolean> result = externalServiceFacade.executeCommand(request);
+        return result.getResult();
+    }
+}
+```
+
+### Available Commands
+
+| Command | Request Class | Response Type | Description |
+|---------|--------------|---------------|-------------|
+| `get-secret` | `GetSecretRequest` | `Map<String, String>` | Retrieve entire secret from OpenShift |
+| `get-secret-value` | `GetSecretValueRequest` | `String` | Retrieve specific value from secret |
+| `secret-exists` | `SecretExistsRequest` | `Boolean` | Check if secret exists in OpenShift |
+
+### Direct Service Usage (Legacy)
+
+While the Command Pattern is recommended, you can still use the service directly:
 
 ```java
 @Service
@@ -230,7 +323,113 @@ Common error scenarios:
 
 ## Testing
 
-Example test using the service:
+### Unit Tests
+
+Unit tests are provided for all commands using Mockito for dependency mocking:
+
+```java
+@ExtendWith(MockitoExtension.class)
+class GetSecretCommandTest {
+    
+    @Mock
+    private OpenshiftService openshiftService;
+    
+    @InjectMocks
+    private GetSecretCommand command;
+    
+    @Test
+    void execute_shouldReturnSecretData_whenSuccessful() throws Exception {
+        // Given
+        when(openshiftService.hasInstance("dev")).thenReturn(true);
+        when(openshiftService.getSecret("dev", "my-secret")).thenReturn(sampleSecretData);
+        
+        // When
+        Map<String, String> result = command.execute(request);
+        
+        // Then
+        assertThat(result).isEqualTo(sampleSecretData);
+    }
+}
+```
+
+**Available Unit Tests:**
+- `GetSecretCommandTest` - Tests for retrieving complete secrets
+- `GetSecretValueCommandTest` - Tests for retrieving specific secret values
+- `SecretExistsCommandTest` - Tests for checking secret existence
+
+Each test covers:
+- Successful execution with and without namespace
+- Exception handling
+- Request validation
+- Edge cases and error scenarios
+
+### Integration Tests
+
+Integration tests are provided to test against a real OpenShift cluster:
+
+```bash
+# Set up environment variables
+export OPENSHIFT_INTEGRATION_TEST_ENABLED=true
+export OPENSHIFT_TEST_INSTANCE=dev
+export OPENSHIFT_TEST_SECRET_NAME=test-credentials
+export OPENSHIFT_TEST_NAMESPACE=default
+export OPENSHIFT_TEST_SECRET_KEY=password
+
+# Run integration tests
+mvn test -Dtest=OpenshiftCommandIntegrationTest
+```
+
+**Integration Test Coverage:**
+- Connection validation to OpenShift instances
+- Health checks for configured instances
+- Actual secret retrieval from OpenShift
+- Namespace-specific secret operations
+- Error handling for missing secrets/keys
+- Invalid instance handling
+
+**Requirements for Integration Tests:**
+1. Valid `application-local.yaml` with OpenShift configuration
+2. Real OpenShift cluster connectivity
+3. Valid authentication tokens
+4. Pre-existing test secrets in the cluster
+
+**Important: Tests Will Fail on Connection/Auth Errors**
+- Integration tests are designed to **fail** (not skip) when there are actual connectivity or authentication problems
+- Tests validate the connection before executing operations
+- If you see test failures with `401 Unauthorized` or connection errors, check your OpenShift credentials and connectivity
+- Tests only skip when optional environment variables (like `OPENSHIFT_TEST_NAMESPACE`) are not set
+
+**Sample Test Configuration:**
+```yaml
+# application-local.yaml
+openshift:
+  instances:
+    dev:
+      api-url: https://api.dev.example.com:6443
+      token: ${OPENSHIFT_DEV_TOKEN}
+      namespace: default
+      connection-timeout: 30000
+      read-timeout: 30000
+      trust-all-certificates: false
+```
+
+### Running Tests
+
+```bash
+# Run all tests (unit tests only, no integration tests by default)
+mvn test
+
+# Run unit tests for a specific class
+mvn test -Dtest=GetSecretCommandTest
+
+# Run integration tests (when OPENSHIFT_INTEGRATION_TEST_ENABLED=true)
+mvn test -Dtest=OpenshiftCommandIntegrationTest
+
+# Run all tests including integration
+mvn test -Dtest=**/*Test.java
+```
+
+### Example Test using the service
 
 ```java
 @SpringBootTest
@@ -249,6 +448,7 @@ class OpenshiftServiceTest {
         assertNotNull(secret);
     }
 }
+```
 ```
 
 ## Dependencies
@@ -362,11 +562,43 @@ public class ConfigurationService {
 
 When contributing to this module:
 
-1. Maintain the factory pattern architecture
-2. Add appropriate logging
-3. Write unit tests for new features
-4. Update documentation
-5. Follow existing code style
+1. **Maintain Design Patterns**:
+   - Use Command Pattern for new operations
+   - Keep Factory Pattern for API client creation
+   - Use Adapter Pattern for multi-instance support
+
+2. **Create Command Implementation**:
+   - Create request DTO in `org.opendevstack.apiservice.externalservice.ocp.command.secret` package
+   - Create command class implementing `ExternalServiceCommand<Request, Response>`
+   - Mark command with `@Component` for auto-registration
+   - Implement proper validation in `validateRequest()`
+   - Add appropriate logging
+
+3. **Add Comprehensive Tests**:
+   - Create unit tests with mocks in `src/test/java/.../command/secret/*CommandTest.java`
+   - Test successful execution
+   - Test error scenarios
+   - Test request validation
+   - Test with and without optional fields (namespace)
+
+4. **Add Integration Tests**:
+   - Add integration test cases in `OpenshiftCommandIntegrationTest`
+   - Test against real OpenShift cluster
+   - Test with actual secrets and namespaces
+   - Verify error handling with real infrastructure
+
+5. **Update Documentation**:
+   - Add command documentation to README.md
+   - Include usage examples with command pattern
+   - Document required configuration changes
+   - Update test instructions if needed
+
+6. **Code Quality**:
+   - Follow existing code style
+   - Use Lombok for boilerplate (getters, setters, builders)
+   - Add comprehensive Javadoc
+   - Keep logging consistent with existing patterns
+   - Handle exceptions properly with ExternalServiceException
 
 ## License
 
