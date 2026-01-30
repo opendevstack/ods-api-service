@@ -11,14 +11,18 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
 
 import java.util.ArrayList;
@@ -165,6 +169,82 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles unsupported media type exceptions (wrong Content-Type header).
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<BaseApiResponse> handleHttpMediaTypeNotSupportedException(
+            HttpMediaTypeNotSupportedException ex) {
+
+        logger.warn("Unsupported media type: {}", ex.getMessage());
+
+        String supportedTypes = ex.getSupportedMediaTypes().stream()
+                .map(MediaType::toString)
+                .collect(Collectors.joining(", "));
+
+        String errorMessage = String.format(
+                "Content type '%s' is not supported. Supported media types are: %s",
+                ex.getContentType() != null ? ex.getContentType() : "unknown",
+                supportedTypes);
+
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(errorMessage);
+        errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(errorResponse);
+    }
+
+    /**
+     * Handles unsupported HTTP method exceptions (wrong HTTP method used).
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<BaseApiResponse> handleHttpRequestMethodNotSupportedException(
+            HttpRequestMethodNotSupportedException ex) {
+
+        logger.warn("Unsupported HTTP method: {}", ex.getMessage());
+
+        String supportedMethods = ex.getSupportedHttpMethods() != null
+                ? ex.getSupportedHttpMethods().stream()
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "))
+                : "unknown";
+
+        String errorMessage = String.format(
+                "HTTP method '%s' is not supported for this endpoint. Supported methods are: %s",
+                ex.getMethod(),
+                supportedMethods);
+
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(errorMessage);
+        errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(errorResponse);
+    }
+
+    /**
+     * Handles no handler found exceptions (endpoint does not exist).
+     */
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<BaseApiResponse> handleNoHandlerFoundException(
+            NoHandlerFoundException ex) {
+
+        logger.warn("No endpoint found: {}", ex.getMessage());
+
+        String errorMessage = String.format(
+                "No endpoint '%s %s' found",
+                ex.getHttpMethod(),
+                ex.getRequestURL());
+
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(errorMessage);
+        errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    /**
      * Handles missing path variable exceptions.
      */
     @ExceptionHandler(MissingPathVariableException.class)
@@ -303,6 +383,22 @@ public class GlobalExceptionHandler {
     errorResponse.setMessage(ex.getMessage());
     errorResponse.setError(ex.getErrorCode());
     errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    /**
+     * Handles invalid token exceptions.
+     */
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<BaseApiResponse> handleInvalidTokenException(
+            InvalidTokenException ex) {
+
+        logger.warn("Invalid token: {}", ex.getMessage());
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setError(ex.getErrorCode());
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
