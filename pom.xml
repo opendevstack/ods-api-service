@@ -13,8 +13,8 @@
 
     <groupId>org.opendevstack.apiservice</groupId>
     <artifactId>devstack-api-service</artifactId>
-    <name>Devstack API Service</name>
-    <version>0.0.1-SNAPSHOT</version>
+    <name>Opendevstack API Service</name>
+    <version>0.0.2-SNAPSHOT</version>
 
     <properties>
         <java.version>21</java.version>
