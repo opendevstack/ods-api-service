@@ -20,8 +20,8 @@ target/
 
 # NetBeans files
 nbproject/private/
-build/
-nbbuild/
+/build**
+/nbbuild/**
 dist/
 nbdist/
 .nb-gradle/
