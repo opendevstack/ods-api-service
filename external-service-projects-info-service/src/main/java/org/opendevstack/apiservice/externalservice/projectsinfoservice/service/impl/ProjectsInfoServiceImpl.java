@@ -1,6 +1,6 @@
 package org.opendevstack.apiservice.externalservice.projectsinfoservice.service.impl;
 
-import lombok.AllArgsConstructor;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.ApiClient;
 import org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.api.ProjectsApi;
@@ -9,18 +9,32 @@ import org.opendevstack.apiservice.externalservice.projectsinfoservice.exception
 import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.Platforms;
 import org.opendevstack.apiservice.externalservice.projectsinfoservice.service.ProjectsInfoService;
 import org.opendevstack.apiservice.externalservice.projectsinfoservice.service.mapper.PlatformsMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
 @Slf4j
 public class ProjectsInfoServiceImpl implements ProjectsInfoService {
 
-    private ApiClient apiClient;
+    private final ApiClient apiClient;
 
-    private ProjectsApi projectsApi;
+    private final ProjectsApi projectsApi;
 
-    private PlatformsMapper platformsMapper;
+    private final PlatformsMapper platformsMapper;
+
+    @Value("${externalservices.projects-info-service.base-url:http://localhost:8080}")
+    private String baseUrl;
+
+    public ProjectsInfoServiceImpl(ApiClient apiClient, ProjectsApi projectsApi, PlatformsMapper platformsMapper) {
+        this.apiClient = apiClient;
+        this.projectsApi = projectsApi;
+        this.platformsMapper = platformsMapper;
+    }
+
+    @PostConstruct
+    public void configureApiClient() {
+        this.apiClient.setBasePath(baseUrl);
+    }
 
     @Override
     public Platforms getProjectPlatforms(String projectKey, String idToken) throws ProjectsInfoServiceException {
