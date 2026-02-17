@@ -31,9 +31,9 @@ public class ProjectPlatformsMapper {
         ProjectPlatforms apiPlatforms = new ProjectPlatforms();
 
         // Map sections
-        if (externalPlatforms.getSections() != null) {
+        if (externalPlatforms.sections() != null) {
             apiPlatforms.setSections(
-                    externalPlatforms.getSections().stream()
+                    externalPlatforms.sections().stream()
                             .map(this::toApiSection)
                             .collect(Collectors.toList())
             );
@@ -55,13 +55,13 @@ public class ProjectPlatformsMapper {
         }
 
         Section apiSection = new Section();
-        apiSection.setSection(externalSection.getSection());
-        apiSection.setTooltip(externalSection.getTooltip());
+        apiSection.setSection(externalSection.section());
+        apiSection.setTooltip(externalSection.tooltip());
 
         // Map links
-        if (externalSection.getLinks() != null) {
+        if (externalSection.links() != null) {
             apiSection.setLinks(
-                    externalSection.getLinks().stream()
+                    externalSection.links().stream()
                             .map(this::toApiLink)
                             .collect(Collectors.toList())
             );

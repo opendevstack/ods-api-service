@@ -12,11 +12,12 @@ public interface ProjectsInfoService {
     /**
      * Retrieves the platforms associated with a given project.
      *
-     * @param projectKey the key of the project you want to check
+     * @param projectKey the key of the project you want to check.
+     * @param idToken the azure id token, used to log user into the app.
      * @return the platforms details associated with the project
      * @throws ProjectsInfoServiceException if workflow execution fails
      */
-    Platforms getProjectPlatforms(String projectKey) throws ProjectsInfoServiceException;
+    Platforms getProjectPlatforms(String projectKey, String idToken) throws ProjectsInfoServiceException;
 
     /**
      * Validates connection to the projects info service.
