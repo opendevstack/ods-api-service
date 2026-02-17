@@ -1,21 +1,16 @@
 package org.opendevstack.apiservice.projectplatform.facade.impl;
 
+import org.opendevstack.apiservice.externalservice.projectsinfoservice.exception.ProjectsInfoServiceException;
+import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.Platforms;
+import org.opendevstack.apiservice.externalservice.projectsinfoservice.service.ProjectsInfoService;
 import org.opendevstack.apiservice.projectplatform.exception.ProjectPlatformsException;
 import org.opendevstack.apiservice.projectplatform.facade.ProjectsFacade;
+import org.opendevstack.apiservice.projectplatform.mapper.ProjectPlatformsMapper;
 import org.opendevstack.apiservice.projectplatform.model.ProjectPlatforms;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ProjectsFacadeImpl implements ProjectsFacade {
-    @Override
-    public ProjectPlatforms getProjectPlatforms(String projectKey) throws ProjectPlatformsException {
-        return null;
-    }
-
-
-
-    /*
-    FIXME: Add real code
 
     private final ProjectsInfoService projectsInfoService;
     private final ProjectPlatformsMapper mapper;
@@ -36,5 +31,4 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
         }
     }
 
-     */
 }
