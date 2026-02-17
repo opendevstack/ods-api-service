@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Data;
-import org.opendevstack.apiservice.projects_info_service.model.Section;
+import org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.model.Section;
 
 /**
  * Represents a section of links from a specific platform associated to a project.

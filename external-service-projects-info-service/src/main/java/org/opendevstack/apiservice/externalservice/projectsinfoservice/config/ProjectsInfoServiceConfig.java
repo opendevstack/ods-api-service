@@ -1,6 +1,10 @@
 package org.opendevstack.apiservice.externalservice.projectsinfoservice.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.ApiClient;
+import org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.api.ProjectsApi;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +33,9 @@ import java.security.cert.X509Certificate;
 @Slf4j
 public class ProjectsInfoServiceConfig {
 
+    @Value("${externalservices.projects-info-service.base-url:http://localhost:8080}")
+    private String baseUrl;
+
     private final ProjectsInfoServiceSslProperties sslProperties;
 
     public ProjectsInfoServiceConfig(ProjectsInfoServiceSslProperties sslProperties) {
@@ -49,6 +56,17 @@ public class ProjectsInfoServiceConfig {
             log.info("SSL certificate verification is ENABLED");
             return createSecureRestTemplate();
         }
+    }
+
+    @Bean
+    public ApiClient apiClient(RestTemplate restTemplate) {
+        return new ApiClient(restTemplate);
+    }
+
+    @Qualifier("ProjectsInfoServiceApiClient")
+    @Bean
+    public ProjectsApi projectsApi(ApiClient apiClient) {
+        return new ProjectsApi(apiClient);
     }
 
     private RestTemplate createInsecureRestTemplate() {

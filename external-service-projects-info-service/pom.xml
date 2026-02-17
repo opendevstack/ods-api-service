@@ -78,6 +78,22 @@
             <version>3.18.0</version>
         </dependency>
 
+        <!-- For javax.annotation.Generated -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- For javax.annotation.Nullable / Nonnull -->
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>3.0.2</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -112,31 +128,59 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <generatorName>spring</generatorName>
-                            <output>${project.basedir}</output>
-                            <library>spring-boot</library>
+                            <generatorName>java</generatorName>
+                            <output>${project.basedir}/target/generated-sources/openapi</output>
+                            <library>resttemplate</library>
                             <inputSpec>${project.basedir}/openapi/openapi-projects-info-service-v1.0.0.yaml</inputSpec>
-                            <apiPackage>org.opendevstack.apiservice.projects_info_service.api</apiPackage>
-                            <modelPackage>org.opendevstack.apiservice.projects_info_service.model</modelPackage>
-                            <invokerPackage>org.opendevstack.apiservice.projects_info_service</invokerPackage>
-                            <skipOverwrite>false</skipOverwrite>
+                            <apiPackage>org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.api</apiPackage>
+                            <modelPackage>org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.model</modelPackage>
+                            <invokerPackage>org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client</invokerPackage>
+                            <generateApis>true</generateApis>
+                            <generateModels>true</generateModels>
+                            <generateSupportingFiles>true</generateSupportingFiles>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
                             <generateApiDocumentation>false</generateApiDocumentation>
                             <generateModelDocumentation>false</generateModelDocumentation>
-                            <generateSupportingFiles>false</generateSupportingFiles>
+                            <reservedWordsMappings>default=defaultValue</reservedWordsMappings>
                             <configOptions>
-                                <interfaceOnly>true</interfaceOnly>
+                                <interfaceOnly>false</interfaceOnly>
                                 <useSpringBoot3>true</useSpringBoot3>
-                                <documentationProvider>springdoc</documentationProvider>
+                                <useJakartaEe>true</useJakartaEe>
                                 <skipDefaultInterface>true</skipDefaultInterface>
                                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
                                 <useTags>true</useTags>
                             </configOptions>
+                            <additionalProperties>
+                                <dateLibrary>java8</dateLibrary>
+                                <serializationLibrary>jackson</serializationLibrary>
+                                <useOptional>true</useOptional>
+                            </additionalProperties>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Add generated sources to build path -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/target/generated-sources/openapi/src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
