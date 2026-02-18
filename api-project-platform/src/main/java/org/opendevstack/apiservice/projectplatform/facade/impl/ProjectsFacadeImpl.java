@@ -9,9 +9,6 @@ import org.opendevstack.apiservice.projectplatform.facade.ProjectsFacade;
 import org.opendevstack.apiservice.projectplatform.mapper.ProjectPlatformsMapper;
 import org.opendevstack.apiservice.projectplatform.model.ProjectPlatforms;
 import org.springframework.stereotype.Component;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 
 @Component
 @Slf4j
@@ -28,30 +25,12 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
     @Override
     public ProjectPlatforms getProjectPlatforms(String projectKey) throws ProjectPlatformsException {
         try {
-            var idToken = getIdToken();
-
             Platforms externalPlatforms =
-                    projectsInfoService.getProjectPlatforms(projectKey, idToken);
+                    projectsInfoService.getProjectPlatforms(projectKey);
             return mapper.toApiModel(externalPlatforms);
         } catch (ProjectsInfoServiceException e) {
             throw new ProjectPlatformsException("Failed to retrieve project platforms", e);
         }
-    }
-
-    protected String getIdToken() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        log.debug("Authenticated user '{}'", auth.getName());
-
-        var token = "INVALID token";
-
-        if (auth instanceof BearerTokenAuthentication bearer) {
-            token = bearer.getToken().getTokenValue();
-        }
-
-        log.debug("Token extracted: {}", token);
-
-        return token;
     }
 
 }

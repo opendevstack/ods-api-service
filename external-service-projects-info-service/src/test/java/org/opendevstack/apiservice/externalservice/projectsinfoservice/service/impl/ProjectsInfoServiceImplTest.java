@@ -49,10 +49,9 @@ class ProjectsInfoServiceImplTest {
     }
 
     @Test
-    void getProjectPlatforms_whenCalled_thenTokenSetAndPlatformsMapped() throws Exception {
+    void getProjectPlatforms_whenCalled_thenPlatformsMapped() throws Exception {
         //given
         String projectKey = "PROJ";
-        String idToken = "token-123";
 
         var auth = mock(HttpBearerAuth.class);
         when(apiClient.getAuthentication("bearerAuth")).thenReturn(auth);
@@ -65,10 +64,9 @@ class ProjectsInfoServiceImplTest {
         when(platformsMapper.asPlatforms(apiResponse)).thenReturn(mapped);
 
         //when
-        Platforms result = projectsInfoService.getProjectPlatforms(projectKey, idToken);
+        Platforms result = projectsInfoService.getProjectPlatforms(projectKey);
 
         //then
-        verify(auth).setBearerToken(idToken);
         verify(projectsApi).getProjectPlatforms(projectKey);
         verify(platformsMapper).asPlatforms(apiResponse);
 
