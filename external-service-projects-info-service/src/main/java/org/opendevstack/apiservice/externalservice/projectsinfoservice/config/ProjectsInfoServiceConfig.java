@@ -1,6 +1,10 @@
 package org.opendevstack.apiservice.externalservice.projectsinfoservice.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.ApiClient;
+import org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.api.ProjectsApi;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +33,9 @@ import java.security.cert.X509Certificate;
 @Slf4j
 public class ProjectsInfoServiceConfig {
 
+    @Value("${externalservices.projects-info-service.base-url:http://localhost:8080}")
+    private String baseUrl;
+
     private final ProjectsInfoServiceSslProperties sslProperties;
 
     public ProjectsInfoServiceConfig(ProjectsInfoServiceSslProperties sslProperties) {
@@ -51,28 +58,39 @@ public class ProjectsInfoServiceConfig {
         }
     }
 
+    @Bean
+    public ApiClient apiClient(RestTemplate restTemplate) {
+        return new ApiClient(restTemplate);
+    }
+
+    @Qualifier("ProjectsInfoServiceApiClient")
+    @Bean
+    public ProjectsApi projectsApi(ApiClient apiClient) {
+        return new ProjectsApi(apiClient);
+    }
+
     private RestTemplate createInsecureRestTemplate() {
         try {
             // Create a trust manager that accepts all certificates
             // WARNING: This is insecure and should only be used in development environments
             TrustManager[] trustAllCerts = new TrustManager[] {
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() { 
-                        return new X509Certificate[0]; // Return empty array instead of null
+                    new X509TrustManager() {
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return new X509Certificate[0]; // Return empty array instead of null
+                        }
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                            // Intentionally empty - accepts all client certificates (insecure)
+                        }
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                            // Intentionally empty - accepts all server certificates (insecure)
+                        }
                     }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) { 
-                        // Intentionally empty - accepts all client certificates (insecure)
-                    }
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) { 
-                        // Intentionally empty - accepts all server certificates (insecure)
-                    }
-                }
             };
 
             // Install the all-trusting trust manager
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-            
+
             // Create hostname verifier that accepts all hostnames (insecure)
             HostnameVerifier allHostsValid = (hostname, session) -> true;
 
@@ -89,7 +107,7 @@ public class ProjectsInfoServiceConfig {
             };
 
             return new RestTemplate(requestFactory);
-            
+
         } catch (GeneralSecurityException e) {
             log.warn("Failed to create insecure RestTemplate, falling back to default: {}", e.getMessage());
             return new RestTemplate();
@@ -101,12 +119,12 @@ public class ProjectsInfoServiceConfig {
             // If custom trust store is provided, configure it
             if (StringUtils.hasText(sslProperties.getTrustStorePath())) {
                 log.info("Custom trust store specified: {} (custom trust store support can be added in future versions)",
-                    sslProperties.getTrustStorePath());
+                        sslProperties.getTrustStorePath());
             }
-            
+
             // Return default RestTemplate with system SSL settings
             return new RestTemplate();
-            
+
         } catch (Exception e) {
             log.warn("Failed to create secure RestTemplate with custom trust store, using default: {}", e.getMessage());
             return new RestTemplate();

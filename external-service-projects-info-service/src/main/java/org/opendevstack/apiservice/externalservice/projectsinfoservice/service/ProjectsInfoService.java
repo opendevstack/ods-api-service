@@ -12,7 +12,7 @@ public interface ProjectsInfoService {
     /**
      * Retrieves the platforms associated with a given project.
      *
-     * @param projectKey the key of the project you want to check
+     * @param projectKey the key of the project you want to check.
      * @return the platforms details associated with the project
      * @throws ProjectsInfoServiceException if workflow execution fails
      */

@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.projectplatform.facade.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.projectsinfoservice.exception.ProjectsInfoServiceException;
 import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.Platforms;
 import org.opendevstack.apiservice.externalservice.projectsinfoservice.service.ProjectsInfoService;
@@ -10,6 +11,7 @@ import org.opendevstack.apiservice.projectplatform.model.ProjectPlatforms;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class ProjectsFacadeImpl implements ProjectsFacade {
 
     private final ProjectsInfoService projectsInfoService;
@@ -30,4 +32,5 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
             throw new ProjectPlatformsException("Failed to retrieve project platforms", e);
         }
     }
+
 }

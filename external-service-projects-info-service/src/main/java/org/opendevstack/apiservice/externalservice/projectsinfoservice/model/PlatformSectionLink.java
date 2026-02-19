@@ -1,7 +1,8 @@
 package org.opendevstack.apiservice.externalservice.projectsinfoservice.model;
 
 import lombok.Data;
-import org.opendevstack.apiservice.externalservice.projectsinfoservice.dto.Link;
+import org.opendevstack.apiservice.externalservice.projects_info_service.v1_0_0.client.model.Link;
+
 
 import java.util.Map;
 

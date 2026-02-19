@@ -1,21 +1,18 @@
 package org.opendevstack.apiservice.projectplatform.mapper;
 
-import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.PlatformSection;
-import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.PlatformSectionLink;
-import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.Platforms;
-import org.opendevstack.apiservice.projectplatform.model.ProjectPlatforms;
-import org.opendevstack.apiservice.projectplatform.model.Section;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.PlatformSection;
+import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.PlatformSectionLink;
+import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.Platforms;
+import org.opendevstack.apiservice.projectplatform.model.ProjectPlatforms;
+import org.opendevstack.apiservice.projectplatform.model.Section;
 
-import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -73,27 +70,7 @@ class ProjectPlatformsMapperTest {
     @Test
     void testToApiModel_WithNullPlatformLinks_MapsOtherFields() {
         // Given
-        Platforms externalPlatforms =
-                new Platforms();
-        externalPlatforms.setSections(new ArrayList<>());
-
-        // When
-        ProjectPlatforms result = mapper.toApiModel(externalPlatforms);
-
-        // Then
-        assertNotNull(result);
-        assertNotNull(result.getSections());
-        assertTrue(result.getSections().isEmpty());
-    }
-
-    @Test
-    void testToApiModel_WithNullDisabledPlatforms_MapsOtherFields() {
-        // Given
-        Platforms externalPlatforms =
-                new Platforms();
-        Map<String, URI> platformLinks = new HashMap<>();
-        platformLinks.put("github", URI.create("https://github.com"));
-        externalPlatforms.setSections(new ArrayList<>());
+        Platforms externalPlatforms = new Platforms(new ArrayList<>());
 
         // When
         ProjectPlatforms result = mapper.toApiModel(externalPlatforms);
@@ -107,48 +84,21 @@ class ProjectPlatformsMapperTest {
     @Test
     void testToApiModel_WithNullSections_MapsOtherFields() {
         // Given
-        Platforms externalPlatforms =
-                new Platforms();
-        Map<String, URI> platformLinks = new HashMap<>();
-        platformLinks.put("github", URI.create("https://github.com"));
-        externalPlatforms.setSections(null);
+        Platforms externalPlatforms = new Platforms(null);
 
         // When
         ProjectPlatforms result = mapper.toApiModel(externalPlatforms);
 
         // Then
         assertNotNull(result);
-        assertTrue(result.getSections().isEmpty());
-    }
-
-    @Test
-    void testToApiModel_WithEmptyCollections_ReturnsEmptyCollections() {
-        // Given
-        Platforms externalPlatforms =
-                new Platforms();
-        externalPlatforms.setSections(new ArrayList<>());
-
-        // When
-        ProjectPlatforms result = mapper.toApiModel(externalPlatforms);
-
-        // Then
-        assertNotNull(result);
-        assertNotNull(result.getSections());
         assertTrue(result.getSections().isEmpty());
     }
 
     @Test
     void testToApiModel_WithSectionContainingNullLinks_HandlesGracefully() {
         // Given
-        Platforms externalPlatforms =
-                new Platforms();
-
-        PlatformSection section =
-                new PlatformSection();
-        section.setSection("Development");
-        section.setLinks(null);
-
-        externalPlatforms.setSections(List.of(section));
+        PlatformSection section = new PlatformSection("Development", null, null);
+        Platforms externalPlatforms = new Platforms(List.of(section));
 
         // When
         ProjectPlatforms result = mapper.toApiModel(externalPlatforms);
@@ -164,15 +114,9 @@ class ProjectPlatformsMapperTest {
     @Test
     void testToApiModel_WithSectionContainingEmptyLinks_ReturnsEmptyLinks() {
         // Given
-        Platforms externalPlatforms =
-                new Platforms();
+        PlatformSection section = new PlatformSection("Development", null, new ArrayList<>());
 
-        PlatformSection section =
-                new PlatformSection();
-        section.setSection("Development");
-        section.setLinks(new ArrayList<>());
-
-        externalPlatforms.setSections(List.of(section));
+        Platforms externalPlatforms = new Platforms(List.of(section));
 
         // When
         ProjectPlatforms result = mapper.toApiModel(externalPlatforms);
@@ -189,14 +133,11 @@ class ProjectPlatformsMapperTest {
     @Test
     void testToApiModel_WithSectionsContainingNullSection_HandlesGracefully() {
         // Given
-        Platforms externalPlatforms =
-                new Platforms();
-
         List<PlatformSection> sections =
                 new ArrayList<>();
         sections.add(null);
 
-        externalPlatforms.setSections(sections);
+        Platforms externalPlatforms = new Platforms(sections);
 
         // When
         ProjectPlatforms result = mapper.toApiModel(externalPlatforms);
@@ -211,19 +152,13 @@ class ProjectPlatformsMapperTest {
     @Test
     void testToApiModel_WithLinksContainingNullLink_HandlesGracefully() {
         // Given
-        Platforms externalPlatforms =
-                new Platforms();
-
-        PlatformSection section =
-                new PlatformSection();
-        section.setSection("Development");
-
-        List<PlatformSectionLink> links =
-                new ArrayList<>();
+        List<PlatformSectionLink> links = new ArrayList<>();
         links.add(null);
-        section.setLinks(links);
 
-        externalPlatforms.setSections(List.of(section));
+        PlatformSection section = new PlatformSection("Development", null, links);
+
+        Platforms externalPlatforms = new Platforms(List.of(section));
+
 
         // When
         ProjectPlatforms result = mapper.toApiModel(externalPlatforms);
@@ -259,17 +194,7 @@ class ProjectPlatformsMapperTest {
 
     // Helper method to create a complete external ProjectPlatforms object
     private Platforms createCompleteExternalProjectPlatforms() {
-        Platforms externalPlatforms =
-                new Platforms();
-
-        // Setup sections
-        List<PlatformSection> sections = new ArrayList<>();
-
         // First section with 2 links
-        PlatformSection section1 =
-                new PlatformSection();
-        section1.setSection("Development");
-
         List<PlatformSectionLink> links1 = new ArrayList<>();
 
         PlatformSectionLink link1 =
@@ -284,14 +209,9 @@ class ProjectPlatformsMapperTest {
         link2.setUrl("https://jira.com/board");
         links1.add(link2);
 
-        section1.setLinks(links1);
-        sections.add(section1);
+        PlatformSection section1 = new PlatformSection("Development", null, links1);
 
         // Second section with 1 link
-        PlatformSection section2 =
-                new PlatformSection();
-        section2.setSection("CI/CD");
-
         List<PlatformSectionLink> links2 = new ArrayList<>();
 
         PlatformSectionLink link3 =
@@ -300,12 +220,14 @@ class ProjectPlatformsMapperTest {
         link3.setUrl("https://jenkins.com/job");
         links2.add(link3);
 
-        section2.setLinks(links2);
-        sections.add(section2);
+        PlatformSection section2 =
+                new PlatformSection("CI/CD", null,  links2);
 
-        externalPlatforms.setSections(sections);
+        // Setup sections
+        List<PlatformSection> sections = new ArrayList<>(List.of(section1, section2));
 
-        return externalPlatforms;
+        return new Platforms(sections);
     }
+
 }
 
