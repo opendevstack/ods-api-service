@@ -41,6 +41,13 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- External Service API -->
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>external-service-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- SpringDoc OpenAPI for Swagger -->
         <dependency>
             <groupId>org.springdoc</groupId>

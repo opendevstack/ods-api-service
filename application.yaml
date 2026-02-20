@@ -16,6 +16,9 @@ management:
       show-values: always
     loggers:
       access: unrestricted
+    health:
+      show-details: always
+      show-components: always
   info:
     git:
       # Show all build-time generated file git.properties info on /actuator/info endpoint

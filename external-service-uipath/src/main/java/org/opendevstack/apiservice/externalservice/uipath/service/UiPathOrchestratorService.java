@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.externalservice.uipath.service;
 
+import org.opendevstack.apiservice.externalservice.api.ExternalService;
 import org.opendevstack.apiservice.externalservice.uipath.exception.UiPathException;
 import org.opendevstack.apiservice.externalservice.uipath.model.UiPathQueueItem;
 import org.opendevstack.apiservice.externalservice.uipath.model.UiPathQueueItemRequest;
@@ -13,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
  * Service interface for integrating with UIPath Orchestrator.
  * Provides methods for authentication, queue item management, and status checking.
  */
-public interface UiPathOrchestratorService {
+public interface UiPathOrchestratorService extends ExternalService {
 
     /**
      * Authenticates to UIPath Orchestrator and returns a bearer token.
@@ -111,6 +112,7 @@ public interface UiPathOrchestratorService {
      *
      * @return true if the platform is healthy, false otherwise
      */
+    @Override
     boolean isHealthy();
 
     /**

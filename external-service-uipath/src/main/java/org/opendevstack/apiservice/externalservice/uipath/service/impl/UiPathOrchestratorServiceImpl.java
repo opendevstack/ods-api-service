@@ -10,8 +10,6 @@ import org.opendevstack.apiservice.externalservice.uipath.model.UiPathQueueItem;
 import org.opendevstack.apiservice.externalservice.uipath.model.UiPathQueueItemRequest;
 import org.opendevstack.apiservice.externalservice.uipath.model.UiPathQueueItemResult;
 import org.opendevstack.apiservice.externalservice.uipath.service.UiPathOrchestratorService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -25,6 +23,8 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -36,9 +36,8 @@ import java.util.concurrent.CompletableFuture;
  * and checking robot execution status.
  */
 @Service("uiPathOrchestratorService")
+@Slf4j
 public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService {
-
-    private static final Logger logger = LoggerFactory.getLogger(UiPathOrchestratorServiceImpl.class);
 
     private final RestTemplate restTemplate;
     private final UiPathProperties properties;
@@ -52,7 +51,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
 
     @Override
     public String authenticate() throws UiPathException.AuthenticationException {
-        logger.debug("Authenticating to UIPath Orchestrator at {}", properties.getHost());
+        log.debug("Authenticating to UIPath Orchestrator at {}", properties.getHost());
 
         try {
             UiPathAuthRequest authRequest = new UiPathAuthRequest(
@@ -76,7 +75,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
                 UiPathAuthResponse authResponse = response.getBody();
 
                 if (authResponse.isSuccess() && StringUtils.hasText(authResponse.getToken())) {
-                    logger.debug("Successfully authenticated to UIPath Orchestrator");
+                    log.debug("Successfully authenticated to UIPath Orchestrator");
                     return authResponse.getToken();
                 } else {
                     String errorMsg = authResponse.getError() != null ? authResponse.getError() : "Unknown authentication error";
@@ -89,7 +88,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
             }
 
         } catch (RestClientException e) {
-            logger.error("Failed to authenticate to UIPath Orchestrator: {}", e.getMessage(), e);
+            log.error("Failed to authenticate to UIPath Orchestrator: {}", e.getMessage(), e);
             throw new UiPathException.AuthenticationException("Authentication failed", e);
         }
     }
@@ -99,7 +98,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
             throws UiPathException.QueueItemCreationException {
         
         String reference = request.getItemData() != null ? request.getItemData().getReference() : "unknown";
-        logger.info("Adding queue item with reference '{}'", reference);
+        log.info("Adding queue item with reference '{}'", reference);
 
         try {
             // Authenticate first
@@ -118,7 +117,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 UiPathQueueItem queueItem = response.getBody();
-                logger.info("Successfully created queue item with ID {} and reference '{}'", 
+                log.info("Successfully created queue item with ID {} and reference '{}'", 
                            queueItem.getId(), reference);
                 return queueItem;
             } else {
@@ -129,10 +128,10 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
             }
 
         } catch (UiPathException.AuthenticationException e) {
-            logger.error("Failed to authenticate before adding queue item: {}", e.getMessage());
+            log.error("Failed to authenticate before adding queue item: {}", e.getMessage(), e);
             throw new UiPathException.QueueItemCreationException(reference, e);
         } catch (RestClientException e) {
-            logger.error("Failed to add queue item with reference '{}': {}", reference, e.getMessage(), e);
+            log.error("Failed to add queue item with reference '{}': {}", reference, e.getMessage(), e);
             throw new UiPathException.QueueItemCreationException(reference, e);
         }
     }
@@ -144,7 +143,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
             UiPathQueueItem result = addQueueItem(request);
             return CompletableFuture.completedFuture(result);
         } catch (UiPathException.QueueItemCreationException e) {
-            logger.error("Async queue item creation failed: {}", e.getMessage(), e);
+            log.error("Async queue item creation failed: {}", e.getMessage(), e);
             return CompletableFuture.failedFuture(e);
         }
     }
@@ -153,7 +152,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     public UiPathQueueItem getQueueItemById(Long queueItemId) 
             throws UiPathException.QueueItemNotFoundException, UiPathException.StatusCheckException {
         
-        logger.debug("Getting queue item by ID: {}", queueItemId);
+        log.debug("Getting queue item by ID: {}", queueItemId);
 
         try {
             String token = authenticate();
@@ -171,17 +170,17 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 UiPathQueueItem queueItem = response.getBody();
-                logger.debug("Found queue item {} with status: {}", queueItemId, queueItem.getStatus());
+                log.debug("Found queue item {} with status: {}", queueItemId, queueItem.getStatus());
                 return queueItem;
             } else {
                 throw new UiPathException.QueueItemNotFoundException(queueItemId.toString());
             }
 
         } catch (UiPathException.AuthenticationException e) {
-            logger.error("Authentication failed while getting queue item: {}", e.getMessage());
+            log.error("Authentication failed while getting queue item: {}", e.getMessage());
             throw new UiPathException.StatusCheckException(queueItemId.toString(), e);
         } catch (RestClientException e) {
-            logger.debug("Queue item not found: {}", queueItemId);
+            log.debug("Queue item not found: {}", queueItemId);
             throw new UiPathException.QueueItemNotFoundException(queueItemId.toString());
         }
     }
@@ -190,7 +189,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     public List<UiPathQueueItem> getQueueItemsByReference(String reference) 
             throws UiPathException.StatusCheckException {
         
-        logger.debug("Getting queue items by reference: '{}'", reference);
+        log.debug("Getting queue items by reference: '{}'", reference);
 
         try {
             String token = authenticate();
@@ -214,20 +213,20 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
                 UiPathODataResponse<UiPathQueueItem> odataResponse = response.getBody();
                 List<UiPathQueueItem> items = odataResponse.getValue();
                 
-                logger.debug("Found {} queue item(s) with reference '{}'", items != null ? items.size() : 0, reference);
+                log.debug("Found {} queue item(s) with reference '{}'", items != null ? items.size() : 0, reference);
                 
                 return items != null ? items : List.of();
             } else {
-                logger.warn("Unexpected response when querying by reference '{}': {}", 
+                log.warn("Unexpected response when querying by reference '{}': {}", 
                            reference, response.getStatusCode());
                 return List.of();
             }
 
         } catch (UiPathException.AuthenticationException e) {
-            logger.error("Authentication failed while querying by reference: {}", e.getMessage());
+            log.error("Authentication failed while querying by reference: {}", e.getMessage());
             throw new UiPathException.StatusCheckException(reference, e);
         } catch (RestClientException e) {
-            logger.error("Failed to query queue items by reference '{}': {}", reference, e.getMessage(), e);
+            log.error("Failed to query queue items by reference '{}': {}", reference, e.getMessage(), e);
             throw new UiPathException.StatusCheckException(reference, e);
         }
     }
@@ -236,12 +235,12 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     public Optional<UiPathQueueItem> getLatestQueueItemByReference(String reference) 
             throws UiPathException.StatusCheckException {
         
-        logger.debug("Getting latest queue item by reference: '{}'", reference);
+        log.debug("Getting latest queue item by reference: '{}'", reference);
 
         List<UiPathQueueItem> items = getQueueItemsByReference(reference);
 
         if (items.isEmpty()) {
-            logger.debug("No queue items found with reference '{}'", reference);
+            log.debug("No queue items found with reference '{}'", reference);
             return Optional.empty();
         }
 
@@ -250,7 +249,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
                 .max(Comparator.comparing(UiPathQueueItem::getId));
 
         latestItem.ifPresent(item -> 
-            logger.debug("Latest queue item for reference '{}' is ID {} with status: {}", 
+            log.debug("Latest queue item for reference '{}' is ID {} with status: {}", 
                         reference, item.getId(), item.getStatus())
         );
 
@@ -261,7 +260,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     public boolean hasQueueItemFinalized(String reference) 
             throws UiPathException.QueueItemNotFoundException, UiPathException.StatusCheckException {
         
-        logger.debug("Checking if queue item with reference '{}' has finalized", reference);
+        log.debug("Checking if queue item with reference '{}' has finalized", reference);
 
         Optional<UiPathQueueItem> latestItem = getLatestQueueItemByReference(reference);
 
@@ -272,7 +271,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
         UiPathQueueItem item = latestItem.get();
         boolean finalized = item.isFinalized();
         
-        logger.debug("Queue item {} (reference '{}') finalized status: {} (status: {})", 
+        log.debug("Queue item {} (reference '{}') finalized status: {} (status: {})", 
                     item.getId(), reference, finalized, item.getStatus());
 
         return finalized;
@@ -282,12 +281,12 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     public boolean hasQueueItemFinalizedById(Long queueItemId) 
             throws UiPathException.QueueItemNotFoundException, UiPathException.StatusCheckException {
         
-        logger.debug("Checking if queue item {} has finalized", queueItemId);
+        log.debug("Checking if queue item {} has finalized", queueItemId);
 
         UiPathQueueItem item = getQueueItemById(queueItemId);
         boolean finalized = item.isFinalized();
         
-        logger.debug("Queue item {} finalized status: {} (status: {})", 
+        log.debug("Queue item {} finalized status: {} (status: {})", 
                     queueItemId, finalized, item.getStatus());
 
         return finalized;
@@ -298,10 +297,10 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
         try {
             String token = authenticate();
             boolean isValid = StringUtils.hasText(token);
-            logger.debug("Connection validation: {}", isValid ? "successful" : "failed");
+            log.debug("Connection validation: {}", isValid ? "successful" : "failed");
             return isValid;
         } catch (Exception e) {
-            logger.warn("Connection validation failed: {}", e.getMessage());
+            log.warn("Connection validation failed: {}", e.getMessage());
             return false;
         }
     }
@@ -311,7 +310,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
         try {
             return validateConnection();
         } catch (Exception e) {
-            logger.debug("Health check failed: {}", e.getMessage());
+            log.debug("Health check failed: {}", e.getMessage());
             return false;
         }
     }
@@ -320,44 +319,44 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     public UiPathQueueItemResult checkQueueItemByReference(String reference) {
         // If no UIPath reference, consider the process complete and successful
         if (reference == null || reference.isEmpty()) {
-            logger.debug("No UIPath reference provided, returning NO_REFERENCE result");
+            log.debug("No UIPath reference provided, returning NO_REFERENCE result");
             return UiPathQueueItemResult.noReference();
         }
 
         try {
-            logger.debug("Checking UIPath queue item status for reference: '{}'", reference);
+            log.debug("Checking UIPath queue item status for reference: '{}'", reference);
             Optional<UiPathQueueItem> queueItem = getLatestQueueItemByReference(reference);
 
             if (queueItem.isEmpty()) {
-                logger.warn("UIPath queue item not found for reference: '{}'", reference);
+                log.warn("UIPath queue item not found for reference: '{}'", reference);
                 return UiPathQueueItemResult.notFound(reference);
             }
 
             UiPathQueueItem item = queueItem.get();
             QueueItemStatus status = item.getStatusEnum();
-            logger.debug("UIPath queue item '{}' status: {}", reference, status);
+            log.debug("UIPath queue item '{}' status: {}", reference, status);
 
             // If UIPath is not in final state, return in-progress
             if (!status.isFinalState()) {
-                logger.debug("UIPath queue item '{}' is still in progress with status: {}", reference, status);
+                log.debug("UIPath queue item '{}' is still in progress with status: {}", reference, status);
                 return UiPathQueueItemResult.inProgress(item);
             }
 
             // If UIPath failed, return failure
             if (!status.isSuccessful()) {
-                logger.warn("UIPath queue item '{}' failed with status: {}", reference, status);
+                log.warn("UIPath queue item '{}' failed with status: {}", reference, status);
                 return UiPathQueueItemResult.failure(item);
             }
 
             // UIPath succeeded
-            logger.debug("UIPath queue item '{}' completed successfully", reference);
+            log.debug("UIPath queue item '{}' completed successfully", reference);
             return UiPathQueueItemResult.success(item);
 
         } catch (UiPathException.StatusCheckException e) {
-            logger.error("Failed to check UIPath status for reference '{}': {}", reference, e.getMessage(), e);
+            log.error("Failed to check UIPath status for reference '{}': {}", reference, e.getMessage(), e);
             return UiPathQueueItemResult.error("Failed to check UIPath status", e.getMessage());
         } catch (Exception e) {
-            logger.error("Unexpected error checking UIPath status for reference '{}': {}", reference, e.getMessage(), e);
+            log.error("Unexpected error checking UIPath status for reference '{}': {}", reference, e.getMessage(), e);
             return UiPathQueueItemResult.error("Unexpected error checking UIPath", e.getMessage());
         }
     }

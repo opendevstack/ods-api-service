@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.externalservice.ocp.service;
 
+import org.opendevstack.apiservice.externalservice.api.ExternalService;
 import org.opendevstack.apiservice.externalservice.ocp.exception.OpenshiftException;
 
 import java.util.Map;
@@ -9,7 +10,7 @@ import java.util.Set;
  * Service interface for interacting with OpenShift clusters.
  * Provides high-level methods to retrieve secrets and other resources from multiple OpenShift instances.
  */
-public interface OpenshiftService {
+public interface OpenshiftService extends ExternalService {
     
     /**
      * Get a secret from a specific OpenShift instance
@@ -88,5 +89,14 @@ public interface OpenshiftService {
      * @return true if configured, false otherwise
      */
     boolean hasInstance(String instanceName);
+    
+    /**
+     * Checks if the OpenShift service is healthy and reachable.
+     * This method is used by health indicators and should not throw exceptions.
+     *
+     * @return true if the service is healthy, false otherwise
+     */
+    @Override
+    boolean isHealthy();
 }
 
