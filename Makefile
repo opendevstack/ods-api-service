@@ -3,7 +3,7 @@
 
 # Project variables
 PROJECT_NAME := devstack-api-service
-VERSION := 0.0.1-SNAPSHOT
+VERSION := 0.0.2-SNAPSHOT
 JAVA_VERSION := 21
 MAIN_CLASS := org.opendevstack.apiservice.core.DevstackApiServiceApplication
 

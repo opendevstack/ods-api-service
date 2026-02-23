@@ -44,7 +44,7 @@ openapi:
 otel:
     service:
         name: devstack-api-service-dev
-        version: 0.0.1-SNAPSHOT
+        version: 0.0.2-SNAPSHOT
     exporter:
         otlp:
             endpoint: http://opentelemetry.example.com
@@ -55,7 +55,7 @@ otel:
     metrics:
         exporter: none
     resource:
-        attributes: service.name=devstack-api-service,service.version=0.0.1-SNAPSHOT,deployment.environment=development
+        attributes: service.name=devstack-api-service,service.version=0.0.2-SNAPSHOT,deployment.environment=development
     instrumentation:
         jdbc:
             enabled: false

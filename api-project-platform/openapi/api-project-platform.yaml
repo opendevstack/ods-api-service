@@ -3,8 +3,7 @@ info:
   title: ODS API Server
   description: API documentation for ODS (Open DevStack) API Service
   contact:
-    name: EDPCore Team
-    url: https://confluence.biscrum.com/pages/viewpage.action?spaceKey=EDP&title=Welcome
+    name: ODS Team
   version: v0.0.1
 servers:
   - url: http://{baseurl}/api/v1

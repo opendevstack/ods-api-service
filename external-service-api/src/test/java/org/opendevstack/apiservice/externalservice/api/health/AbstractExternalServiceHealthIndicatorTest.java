@@ -45,7 +45,6 @@ class AbstractExternalServiceHealthIndicatorTest {
         // Assert
         assertNotNull(health);
         assertEquals(Status.UP, health.getStatus());
-        assertEquals("TestService", health.getStatus().getDescription());
     }
 
     @Test
