@@ -1,0 +1,232 @@
+openapi: 3.0.1
+info:
+  title: Jira Data Center REST API
+  description: >
+    Jira Data Center / Server REST API v2.
+    Focused spec covering the operations required by this module:
+    server info (health check) and project retrieval (existence check).
+  version: "2"
+servers:
+  - url: "{baseUrl}"
+    variables:
+      baseUrl:
+        default: http://localhost:8080
+
+security:
+  - bearerAuth: []
+  - basicAuth: []
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+
+    ServerInfo:
+      type: object
+      description: Information about the Jira server instance.
+      properties:
+        baseUrl:
+          type: string
+          description: The base URL of the Jira instance.
+        version:
+          type: string
+          description: The version of the Jira instance.
+        versionNumbers:
+          type: array
+          description: The version numbers of the Jira instance.
+          items:
+            type: integer
+            format: int32
+        buildNumber:
+          type: integer
+          format: int32
+          description: The build number of the Jira instance.
+        buildDate:
+          type: string
+          description: The build date of the Jira instance.
+        serverTime:
+          type: string
+          description: The server time of the Jira instance.
+        scmInfo:
+          type: string
+          description: The SCM information of the Jira instance.
+        serverTitle:
+          type: string
+          description: The title of the Jira server.
+        deploymentType:
+          type: string
+          description: The deployment type (e.g., Server, DataCenter).
+
+    AvatarUrls:
+      type: object
+      description: URLs for the project or user avatar images at different sizes.
+      properties:
+        48x48:
+          type: string
+        24x24:
+          type: string
+        16x16:
+          type: string
+        32x32:
+          type: string
+
+    ProjectCategory:
+      type: object
+      description: A Jira project category.
+      properties:
+        self:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    ProjectInsight:
+      type: object
+      description: Insight data for a Jira project.
+      properties:
+        totalIssueCount:
+          type: integer
+          format: int64
+        lastIssueUpdateTime:
+          type: string
+
+    Project:
+      type: object
+      description: A Jira project.
+      properties:
+        self:
+          type: string
+          description: The URL of the project.
+        id:
+          type: string
+          description: The ID of the project.
+        key:
+          type: string
+          description: The key of the project.
+        description:
+          type: string
+          description: The description of the project.
+        name:
+          type: string
+          description: The name of the project.
+        avatarUrls:
+          $ref: '#/components/schemas/AvatarUrls'
+        projectTypeKey:
+          type: string
+          description: The project type (e.g., software, business, service_desk).
+        simplified:
+          type: boolean
+          description: Whether the project is simplified.
+        style:
+          type: string
+          description: The project style.
+        isPrivate:
+          type: boolean
+          description: Whether the project is private.
+        projectCategory:
+          $ref: '#/components/schemas/ProjectCategory'
+        insight:
+          $ref: '#/components/schemas/ProjectInsight'
+
+    ErrorCollection:
+      type: object
+      description: A collection of errors returned by the Jira API.
+      properties:
+        errorMessages:
+          type: array
+          items:
+            type: string
+          description: The error messages.
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+          description: The errors keyed by field name.
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code.
+
+paths:
+
+  /rest/api/2/serverInfo:
+    get:
+      tags:
+        - ServerInfo
+      operationId: getServerInfo
+      summary: Get server info
+      description: >
+        Returns information about the Jira instance including the server version,
+        build number, and base URL. This endpoint does not require authentication
+        and is used for connectivity health checks.
+      responses:
+        "200":
+          description: Returned if the request is successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerInfo'
+        "401":
+          description: Returned if the authentication credentials are incorrect or missing.
+
+  /rest/api/2/project/{projectIdOrKey}:
+    get:
+      tags:
+        - Project
+      operationId: getProject
+      summary: Get project
+      description: >
+        Returns the project details for a project. Returns a 404 if the project
+        does not exist or the calling user does not have permission to view it.
+      parameters:
+        - name: projectIdOrKey
+          in: path
+          required: true
+          description: The project ID or project key (case-insensitive).
+          schema:
+            type: string
+        - name: expand
+          in: query
+          required: false
+          description: >
+            Use expand to include additional information in the response.
+            This parameter accepts a comma-separated list. Possible values:
+            description, issueTypes, lead, projectKeys, issueTypeHierarchy.
+          schema:
+            type: string
+        - name: properties
+          in: query
+          required: false
+          description: >
+            A list of project properties to return for the project.
+            This parameter accepts a comma-separated list.
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: Returned if the request is successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        "401":
+          description: Returned if the authentication credentials are incorrect or missing.
+        "404":
+          description: >
+            Returned if the project is not found, or the calling user
+            does not have permission to view it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCollection'
