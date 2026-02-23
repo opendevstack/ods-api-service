@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opendevstack.apiservice</groupId>
         <artifactId>devstack-api-service</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>external-service-bitbucket</artifactId>
@@ -14,6 +14,13 @@
     <description>Service module for integrating with Bitbucket</description>
 
     <dependencies>
+        <!-- External Service API -->
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>external-service-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Boot Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -24,6 +31,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Actuator for health checks -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <!-- Jackson for JSON processing -->

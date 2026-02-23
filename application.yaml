@@ -16,6 +16,9 @@ management:
       show-values: always
     loggers:
       access: unrestricted
+    health:
+      show-details: always
+      show-components: always
   info:
     git:
       # Show all build-time generated file git.properties info on /actuator/info endpoint
@@ -41,7 +44,7 @@ openapi:
 otel:
     service:
         name: devstack-api-service-dev
-        version: 0.0.1-SNAPSHOT
+        version: 0.0.2-SNAPSHOT
     exporter:
         otlp:
             endpoint: http://opentelemetry.example.com
@@ -52,7 +55,7 @@ otel:
     metrics:
         exporter: none
     resource:
-        attributes: service.name=devstack-api-service,service.version=0.0.1-SNAPSHOT,deployment.environment=development
+        attributes: service.name=devstack-api-service,service.version=0.0.2-SNAPSHOT,deployment.environment=development
     instrumentation:
         jdbc:
             enabled: false

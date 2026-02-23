@@ -107,4 +107,16 @@ public class WebhookProxyServiceImpl implements WebhookProxyService {
         
         return clusterConfig.buildWebhookProxyUrl(projectKey);
     }
+    
+    @Override
+    public boolean isHealthy() {
+        try {
+            // Check if at least one cluster is configured
+            Set<String> clusters = getAvailableClusters();
+            return !clusters.isEmpty();
+        } catch (Exception e) {
+            log.debug("Health check failed", e);
+            return false;
+        }
+    }
 }

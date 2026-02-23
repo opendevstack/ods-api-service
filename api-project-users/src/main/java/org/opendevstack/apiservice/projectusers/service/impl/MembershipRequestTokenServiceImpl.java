@@ -8,8 +8,8 @@ import org.opendevstack.apiservice.projectusers.service.MembershipRequestTokenSe
 import org.opendevstack.apiservice.projectusers.service.JwtMembershipRequestClaims;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,10 +24,9 @@ import java.util.Map;
  * JWT-based implementation of MembershipRequestTokenService.
  * Provides stateless request tracking using signed JWT tokens.
  */
+@Slf4j
 @Service("membershipRequestTokenService")
 public class MembershipRequestTokenServiceImpl implements MembershipRequestTokenService {
-
-    private static final Logger logger = LoggerFactory.getLogger(MembershipRequestTokenServiceImpl.class);
 
     private final SecretKey secretKey;
     private final long tokenExpirationHours;
@@ -67,11 +66,11 @@ public class MembershipRequestTokenServiceImpl implements MembershipRequestToken
             // Generate user-friendly request ID with prefix and embed the full token
             String requestId = "req_" + System.currentTimeMillis() + "_" + token;
 
-            logger.debug("Created request token for job '{}', project '{}', user '{}'", jobId, projectKey, user);
+            log.debug("Created request token for job '{}', project '{}', user '{}'", jobId, projectKey, user);
             return requestId;
 
         } catch (Exception e) {
-            logger.warn("Failed to create request token for job '{}': {}", jobId, e.getMessage(), e);
+            log.warn("Failed to create request token for job '{}': {}", jobId, e.getMessage(), e);
             throw new TokenCreationException("Failed to create request token", e);
         }
     }
@@ -112,16 +111,16 @@ public class MembershipRequestTokenServiceImpl implements MembershipRequestToken
             return result;
 
         } catch (ExpiredJwtException e) {
-            logger.warn("Request token expired: {}", e.getMessage());
+            log.warn("Request token expired: {}", e.getMessage());
             throw new TokenExpiredException("Request token has expired");
         } catch (JwtException e) {
-            logger.warn("Invalid request token: {}", e.getMessage());
+            log.warn("Invalid request token: {}", e.getMessage());
             throw new InvalidTokenException("Invalid request token");
         } catch (InvalidTokenException e) {
             // Re-throw InvalidTokenException as-is
             throw e;
         } catch (Exception e) {
-            logger.warn("Failed to decode request token: {}", e.getMessage(), e);
+            log.warn("Failed to decode request token: {}", e.getMessage(), e);
             throw new TokenDecodingException("Failed to decode request token", e);
         }
     }
@@ -136,7 +135,7 @@ public class MembershipRequestTokenServiceImpl implements MembershipRequestToken
                     .parseSignedClaims(jwtToken);
             return true;
         } catch (Exception e) {
-            logger.error("Token validation failed: {}", e.getMessage(), e);
+            log.error("Token validation failed: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -152,7 +151,7 @@ public class MembershipRequestTokenServiceImpl implements MembershipRequestToken
                     .getPayload();
             return claims.get(JwtMembershipRequestClaims.CLAIM_JOB_ID, String.class);
         } catch (Exception e) {
-            logger.error("Failed to extract job ID from token: {}", e.getMessage(), e);
+            log.error("Failed to extract job ID from token: {}", e.getMessage(), e);
             return null;
         }
     }

@@ -8,9 +8,9 @@ import org.opendevstack.apiservice.externalservice.uipath.service.UiPathOrchestr
 import org.opendevstack.apiservice.projectusers.model.MembershipRequestStatusResponse;
 import org.opendevstack.apiservice.projectusers.service.MembershipRequestStatusService;
 import org.opendevstack.apiservice.projectusers.service.MembershipRequestTokenService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
@@ -25,10 +25,9 @@ import java.util.Map;
  * The overall status is determined by checking both systems and ensuring both
  * have completed successfully.
  */
+@Slf4j
 @Service("membershipRequestStatusService")
 public class MembershipRequestStatusServiceImpl implements MembershipRequestStatusService {
-
-    private static final Logger logger = LoggerFactory.getLogger(MembershipRequestStatusServiceImpl.class);
 
     private final MembershipRequestTokenService tokenService;
     private final AutomationPlatformService automationPlatformService;
@@ -44,7 +43,7 @@ public class MembershipRequestStatusServiceImpl implements MembershipRequestStat
 
     @Override
     public MembershipRequestStatusResponse getRequestStatus(String requestId) {
-        logger.debug("Getting status for request ID: {}", requestId);
+        log.debug("Getting status for request ID: {}", requestId);
 
         // Decode and validate the request token
         Map<String, Object> tokenData = tokenService.decodeRequestToken(requestId);
@@ -58,11 +57,11 @@ public class MembershipRequestStatusServiceImpl implements MembershipRequestStat
         try {
             // Step 1: Check Ansible Automation Platform status
             AutomationJobStatus ansibleStatus = automationPlatformService.getWorkflowJobStatus(jobId);
-            logger.debug("Ansible job '{}' status: {}", jobId, ansibleStatus.getStatus());
+            log.debug("Ansible job '{}' status: {}", jobId, ansibleStatus.getStatus());
 
             // If AAP is not completed, return in-progress status
             if (!isAnsibleTerminalStatus(ansibleStatus.getStatus())) {
-                logger.debug("Ansible workflow still in progress");
+                log.debug("Ansible workflow still in progress");
                 return createResponse(requestId, projectKey, user, environment,
                         MembershipRequestStatusResponse.StatusEnum.IN_PROGRESS,
                         false, false,
@@ -72,7 +71,7 @@ public class MembershipRequestStatusServiceImpl implements MembershipRequestStat
 
             // Step 2: If AAP has completed but failed, return failure status
             if (ansibleStatus.getStatus() != AutomationJobStatus.Status.SUCCESSFUL) {
-                logger.info("Ansible workflow completed with failure status: {}", ansibleStatus.getStatus());
+                log.info("Ansible workflow completed with failure status: {}", ansibleStatus.getStatus());
                 return createResponse(requestId, projectKey, user, environment,
                         MembershipRequestStatusResponse.StatusEnum.COMPLETED,
                         true, false,
@@ -81,15 +80,15 @@ public class MembershipRequestStatusServiceImpl implements MembershipRequestStat
             }
 
             // Step 3: AAP succeeded, now check UIPath status
-            logger.debug("Ansible workflow completed successfully, checking UIPath status");
+            log.debug("Ansible workflow completed successfully, checking UIPath status");
             return checkUiPathAndCreateResponse(requestId, projectKey, user, environment, uipathReference);
 
         } catch (AutomationPlatformException e) {
-            logger.error("Failed to get job status for request '{}': {}", requestId, e.getMessage(), e);
+            log.error("Failed to get job status for request '{}': {}", requestId, e.getMessage(), e);
             return createErrorResponse(requestId, projectKey, user, environment,
                     "Failed to retrieve request status", e.getMessage());
         } catch (Exception e) {
-            logger.error("Unexpected error while getting request status for '{}': {}", requestId, e.getMessage(), e);
+            log.error("Unexpected error while getting request status for '{}': {}", requestId, e.getMessage(), e);
             return createErrorResponse(requestId, projectKey, user, environment,
                     "Failed to retrieve request status", e.getMessage());
         }
@@ -102,7 +101,7 @@ public class MembershipRequestStatusServiceImpl implements MembershipRequestStat
             String user, String environment,
             String uipathReference) {
         
-        logger.debug("Checking UIPath status for reference: '{}'", uipathReference);
+        log.debug("Checking UIPath status for reference: '{}'", uipathReference);
         
         // Use the generic service method to check the queue item status
         UiPathQueueItemResult result = uiPathService.checkQueueItemByReference(uipathReference);
@@ -110,17 +109,17 @@ public class MembershipRequestStatusServiceImpl implements MembershipRequestStat
         // Map the result to the appropriate response
         return switch (result.getResultStatus()) {
             case NO_REFERENCE -> {
-                logger.debug("No UIPath reference provided, marking request as completed successfully");
+                log.debug("No UIPath reference provided, marking request as completed successfully");
                 yield createSuccessResponse(requestId, projectKey, user, environment,
                         "Membership request completed");
             }
             case NOT_FOUND -> {
-                logger.warn("UIPath queue item not found for reference: '{}'", uipathReference);
+                log.warn("UIPath queue item not found for reference: '{}'", uipathReference);
                 yield createErrorResponse(requestId, projectKey, user, environment,
                         result.getMessage(), result.getErrorDetails());
             }
             case IN_PROGRESS -> {
-                logger.debug("UIPath process is still in progress");
+                log.debug("UIPath process is still in progress");
                 yield createResponse(requestId, projectKey, user, environment,
                         MembershipRequestStatusResponse.StatusEnum.IN_PROGRESS,
                         false, false,
@@ -128,17 +127,17 @@ public class MembershipRequestStatusServiceImpl implements MembershipRequestStat
                         null);
             }
             case SUCCESS -> {
-                logger.debug("UIPath process completed successfully");
+                log.debug("UIPath process completed successfully");
                 yield createSuccessResponse(requestId, projectKey, user, environment,
                         "Membership request completed");
             }
             case FAILURE -> {
-                logger.warn("UIPath process failed");
+                log.warn("UIPath process failed");
                 yield createErrorResponse(requestId, projectKey, user, environment,
                         result.getMessage(), result.getErrorDetails());
             }
             case ERROR -> {
-                logger.error("Error checking UIPath status: {}", result.getMessage());
+                log.error("Error checking UIPath status: {}", result.getMessage());
                 yield createErrorResponse(requestId, projectKey, user, environment,
                         result.getMessage(), result.getErrorDetails());
             }
@@ -207,7 +206,7 @@ public class MembershipRequestStatusServiceImpl implements MembershipRequestStat
 
     @Override
     public boolean validateRequestToken(String requestId, String projectKey, String user) {
-        logger.debug("Validating request token for requestId: {}, projectKey: {}, user: {}", requestId, projectKey, user);
+        log.debug("Validating request token for requestId: {}, projectKey: {}, user: {}", requestId, projectKey, user);
         try {
             Map<String, Object> tokenData = tokenService.decodeRequestToken(requestId);
             String tokenProjectKey = (String) tokenData.get("projectKey");
@@ -215,11 +214,11 @@ public class MembershipRequestStatusServiceImpl implements MembershipRequestStat
 
             boolean isValid = projectKey.equals(tokenProjectKey) && user.equals(tokenUser);
             if (!isValid) {
-                logger.warn("Request token validation failed: projectKey or user does not match");
+                log.warn("Request token validation failed: projectKey or user does not match");
             }
             return isValid;
         } catch (Exception e) {
-            logger.error("Error validating request token: {}", e.getMessage(), e);
+            log.error("Error validating request token: {}", e.getMessage(), e);
             return false;
         }
     }

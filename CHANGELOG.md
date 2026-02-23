@@ -5,6 +5,29 @@ All notable changes to the DevStack API Service project will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.2] - 2026-02-20
+
+### Added
+
+#### External Service API Module (`external-service-api`)
+- **New module** for standardizing external service integrations
+- `ExternalService` interface providing common contract for all external services
+- `isHealthy()` method for health check implementation across all external services
+- `AbstractExternalServiceHealthIndicator` base class for standardized health monitoring
+
+#### Health Monitoring & Observability
+- **Spring Boot Actuator** health indicators for all external services:
+
+### Changed
+- Updated all external service implementations to extend `ExternalService` interface
+- Use of lombok.extern.slf4j.Slf4j to remove boilerplate code.
+
+### Dependencies
+- Updated Spring Boot version
+- Added health indicator dependencies across external service modules
+
+---
+
 ## [0.0.1-SNAPSHOT] - 2025-11-27
 
 ### Added
