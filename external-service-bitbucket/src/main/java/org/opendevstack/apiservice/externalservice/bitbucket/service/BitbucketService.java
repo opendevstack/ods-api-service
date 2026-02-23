@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.externalservice.bitbucket.service;
 
+import org.opendevstack.apiservice.externalservice.api.ExternalService;
 import org.opendevstack.apiservice.externalservice.bitbucket.exception.BitbucketException;
 
 import java.util.Set;
@@ -8,7 +9,7 @@ import java.util.Set;
  * Service interface for interacting with Bitbucket repositories.
  * Provides high-level methods to work with branches in Bitbucket repositories across multiple instances.
  */
-public interface BitbucketService {
+public interface BitbucketService extends ExternalService {
     
     /**
      * Get the default branch for a repository in a specific Bitbucket instance
@@ -47,4 +48,13 @@ public interface BitbucketService {
      * @return true if configured, false otherwise
      */
     boolean hasInstance(String instanceName);
+    
+    /**
+     * Checks if the Bitbucket service is healthy and reachable.
+     * This method is used by health indicators and should not throw exceptions.
+     *
+     * @return true if the service is healthy, false otherwise
+     */
+    @Override
+    boolean isHealthy();
 }

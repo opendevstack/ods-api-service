@@ -8,10 +8,10 @@ import org.opendevstack.apiservice.projectusers.model.AddUserToProjectRequest;
 import org.opendevstack.apiservice.projectusers.model.MembershipRequestResponse;
 import org.opendevstack.apiservice.projectusers.service.MembershipRequestTokenService;
 import org.opendevstack.apiservice.projectusers.service.ProjectUserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
@@ -19,10 +19,9 @@ import java.util.*;
  * Implementation of ProjectUserService that manages project users and integrates with automation platform.
  * This is a stateless implementation that uses the automation platform for persistence.
  */
+@Slf4j
 @Service("projectUserService")
 public class ProjectUserServiceImpl implements ProjectUserService {
-
-    private static final Logger logger = LoggerFactory.getLogger(ProjectUserServiceImpl.class);
     
     @Value("${apis.project-users.ansible-workflow-name}")
     private String addUserWorkflow;
@@ -38,7 +37,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
 
     @Override
     public MembershipRequestResponse addUserToProject(String projectKey, AddUserToProjectRequest request) {
-        logger.info("Adding user '{}' to project '{}' with role '{}'", request.getUser(), projectKey, request.getRole());
+        log.info("Adding user '{}' to project '{}' with role '{}'", request.getUser(), projectKey, request.getRole());
 
         // Validate project exists (this would typically be a call to a project service)
         validateProject(projectKey);
@@ -75,7 +74,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
                     getCurrentUser()
                 );
 
-                logger.info("Successfully triggered membership request for user '{}' to project '{}' with job ID: {} and request ID: {}", 
+                log.info("Successfully triggered membership request for user '{}' to project '{}' with job ID: {} and request ID: {}", 
                     request.getUser(), projectKey, result.getJobId(), requestId);
 
                 // Create response with request tracking information
@@ -96,7 +95,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
             }
 
         } catch (org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException e) {
-            logger.error("Failed to add user '{}' to project '{}': {}", request.getUser(), projectKey, e.getMessage(), e);
+            log.error("Failed to add user '{}' to project '{}': {}", request.getUser(), projectKey, e.getMessage(), e);
             throw new AutomationPlatformException(
                 "Automation platform execution failed", e);
         }
@@ -107,7 +106,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
         // In a real implementation, this would validate against a project service
         // In our case interact with Jira to check if the project exists.
         if (projectKey == null || projectKey.trim().isEmpty()) {
-            logger.error("Invalid project key: {}", projectKey);
+            log.error("Invalid project key: {}", projectKey);
             throw new ProjectNotFoundException(projectKey);
         }
         // Add additional validation logic as needed

@@ -9,21 +9,20 @@ import org.opendevstack.apiservice.projectusers.api.ProjectUsersApi;
 import org.opendevstack.apiservice.projectusers.exception.InvalidTokenException;
 import org.opendevstack.apiservice.projectusers.service.MembershipRequestStatusService;
 import org.opendevstack.apiservice.projectusers.service.ProjectUserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * REST Controller for managing project users and their roles.
  * Provides endpoints for adding, removing, updating, and querying users in projects.
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/v1")
 public class ProjectUserController implements ProjectUsersApi{
-
-    private static final Logger logger = LoggerFactory.getLogger(ProjectUserController.class);
 
     private final ProjectUserService projectUserService;
     private final MembershipRequestStatusService statusService;
@@ -46,7 +45,7 @@ public class ProjectUserController implements ProjectUsersApi{
             String projectKey,
             AddUserToProjectRequest addUserToProjectRequest) {
         
-        logger.info("Triggering membership request for account '{}' of user '{}' to project '{}' with role '{}'", 
+        log.info("Triggering membership request for account '{}' of user '{}' to project '{}' with role '{}'", 
             addUserToProjectRequest.getAccount(), addUserToProjectRequest.getUser(), projectKey, addUserToProjectRequest.getRole());
         
         MembershipRequestResponse response = projectUserService.addUserToProject(projectKey, addUserToProjectRequest);
@@ -66,7 +65,7 @@ public class ProjectUserController implements ProjectUsersApi{
             String user,
             String requestId) {
         
-        logger.info("Getting status for request '{}' - project '{}', user '{}'", requestId, projectKey, user);
+        log.info("Getting status for request '{}' - project '{}', user '{}'", requestId, projectKey, user);
         
         // Check the request is valid for the given project and user
         if (!statusService.validateRequestToken(requestId, projectKey, user)) {

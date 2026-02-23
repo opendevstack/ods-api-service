@@ -1,7 +1,5 @@
 package org.opendevstack.apiservice.externalservice.uipath.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +16,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Configuration class for UIPath service components.
@@ -25,9 +24,8 @@ import java.security.cert.X509Certificate;
 @Configuration
 @EnableAsync
 @EnableConfigurationProperties(UiPathProperties.class)
+@Slf4j
 public class UiPathServiceConfig {
-
-    private static final Logger logger = LoggerFactory.getLogger(UiPathServiceConfig.class);
 
     private final UiPathProperties uiPathProperties;
 
@@ -44,10 +42,10 @@ public class UiPathServiceConfig {
     @Bean(name = "uiPathRestTemplate")
     public RestTemplate uiPathRestTemplate() {
         if (!uiPathProperties.getSsl().isVerifyCertificates()) {
-            logger.warn("UIPath SSL certificate verification is DISABLED - this should only be used in development environments");
+            log.warn("UIPath SSL certificate verification is DISABLED - this should only be used in development environments");
             return createInsecureRestTemplate();
         } else {
-            logger.info("UIPath SSL certificate verification is ENABLED");
+            log.info("UIPath SSL certificate verification is ENABLED");
             return createSecureRestTemplate();
         }
     }
@@ -95,7 +93,7 @@ public class UiPathServiceConfig {
             return new RestTemplate(requestFactory);
 
         } catch (GeneralSecurityException e) {
-            logger.warn("Failed to create insecure RestTemplate, falling back to default: {}", e.getMessage());
+            log.warn("Failed to create insecure RestTemplate, falling back to default: {}", e.getMessage());
             return createSecureRestTemplate();
         }
     }

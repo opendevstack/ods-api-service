@@ -4,8 +4,6 @@ import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatf
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationExecutionResult;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationJobStatus;
 import org.opendevstack.apiservice.externalservice.aap.service.AutomationPlatformService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriUtils;
+
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -28,9 +28,8 @@ import java.util.concurrent.CompletableFuture;
  * This service provides integration with Ansible AWX/Tower for executing workflows and modules.
  */
 @Service("automationPlatformService")
+@Slf4j
 public class AnsibleAutomationPlatformService implements AutomationPlatformService {
-
-    private static final Logger logger = LoggerFactory.getLogger(AnsibleAutomationPlatformService.class);
 
     private final RestTemplate restTemplate;
 
@@ -52,7 +51,7 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
 
     @Override
     public AutomationExecutionResult executeWorkflow(String workflowName, Map<String, Object> parameters) throws AutomationPlatformException {
-        logger.info("Executing workflow '{}' with parameters: {}", workflowName, parameters);
+        log.info("Executing workflow '{}' with parameters: {}", workflowName, parameters);
         
         try {
             // Create headers with authentication
@@ -77,14 +76,14 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
                 AutomationExecutionResult result = new AutomationExecutionResult(jobId, status, true, "Workflow executed successfully");
                 result.setMetadata(responseBody);
                 
-                logger.info("Workflow '{}' executed successfully with job ID: {}", workflowName, jobId);
+                log.info("Workflow '{}' executed successfully with job ID: {}", workflowName, jobId);
                 return result;
             } else {
                 throw new AutomationPlatformException.WorkflowExecutionException(workflowName, "Unexpected response status: " + response.getStatusCode());
             }
             
         } catch (RestClientException e) {
-            logger.error("Failed to execute workflow '{}': {}", workflowName, e.getMessage(), e);
+            log.error("Failed to execute workflow '{}': {}", workflowName, e.getMessage(), e);
             throw new AutomationPlatformException.WorkflowExecutionException(workflowName, e);
         }
     }
@@ -96,7 +95,7 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
             AutomationExecutionResult result = executeWorkflow(workflowName, parameters);
             return CompletableFuture.completedFuture(result);
         } catch (AutomationPlatformException e) {
-            logger.error("Async workflow execution failed: {}", e.getMessage(), e);
+            log.error("Async workflow execution failed: {}", e.getMessage(), e);
             AutomationExecutionResult errorResult = AutomationExecutionResult.failure(
                 UUID.randomUUID().toString(), 
                 "Async execution failed: " + e.getMessage(),
@@ -108,7 +107,7 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
 
     @Override
     public AutomationJobStatus getJobStatus(String jobId) throws AutomationPlatformException {
-        logger.debug("Checking status for job ID: {}", jobId);
+        log.debug("Checking status for job ID: {}", jobId);
 
         try {
             HttpHeaders headers = createAuthHeaders();
@@ -118,14 +117,14 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
             String url = baseUrl + "/jobs/" + encodedJobId + "/";
             return fetchJobStatus(jobId, url, request);
         } catch (RestClientException e) {
-            logger.error("Failed to get job status for ID '{}': {}", jobId, e.getMessage(), e);
+            log.error("Failed to get job status for ID '{}': {}", jobId, e.getMessage(), e);
             throw new AutomationPlatformException("Failed to get job status", e);
         }
     }
 
     @Override
     public AutomationJobStatus getWorkflowJobStatus(String workflowId) throws AutomationPlatformException {
-        logger.debug("Checking workflow status for job ID: {}", workflowId);
+        log.debug("Checking workflow status for job ID: {}", workflowId);
 
         try {
             HttpHeaders headers = createAuthHeaders();
@@ -135,7 +134,7 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
             String url = baseUrl + "/workflow_jobs/" + encodedWorkflowId + "/";
             return fetchJobStatus(workflowId, url, request);
         } catch (RestClientException e) {
-            logger.error("Failed to get workflow job status for ID '{}': {}", workflowId, e.getMessage(), e);
+            log.error("Failed to get workflow job status for ID '{}': {}", workflowId, e.getMessage(), e);
             throw new AutomationPlatformException("Failed to get workflow job status", e);
         }
     }
@@ -158,7 +157,7 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
                 throw new AutomationPlatformException.JobNotFoundException(jobId);
             }
         } catch (RestClientException e) {
-            logger.debug("Job not found at {}: {}", url, e.getMessage());
+            log.debug("Job not found at {}: {}", url, e.getMessage());
             throw new AutomationPlatformException.JobNotFoundException(jobId);
         }
     }
@@ -173,11 +172,11 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
             ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, request, Map.class);
             
             boolean isValid = response.getStatusCode().is2xxSuccessful();
-            logger.debug("Connection validation: {}", isValid ? "successful" : "failed");
+            log.debug("Connection validation: {}", isValid ? "successful" : "failed");
             return isValid;
             
         } catch (Exception e) {
-            logger.warn("Connection validation failed: {}", e.getMessage());
+            log.warn("Connection validation failed: {}", e.getMessage());
             return false;
         }
     }
@@ -189,7 +188,7 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
             // as health checks are frequent and failures are expected to be handled by the health indicator
             return validateConnection();
         } catch (Exception e) {
-            logger.debug("Health check failed: {}", e.getMessage());
+            log.debug("Health check failed: {}", e.getMessage());
             return false;
         }
     }

@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -31,10 +31,9 @@ import java.util.stream.Collectors;
  * Provides comprehensive error handling with detailed validation error
  * messages.
  */
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * Handles validation errors from @Valid annotations on request bodies.
@@ -43,7 +42,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ValidationErrorResponse> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException ex) {
 
-        logger.warn("Validation failed for request: {}", ex.getMessage());
+        log.warn("Validation failed for request: {}", ex.getMessage());
 
         List<FieldError> fieldErrors = new ArrayList<>();
 
@@ -90,7 +89,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleConstraintViolationException(
             ConstraintViolationException ex) {
 
-        logger.warn("Constraint violation: {}", ex.getMessage());
+        log.warn("Constraint violation: {}", ex.getMessage());
 
         List<String> errors = ex.getConstraintViolations()
                 .stream()
@@ -114,7 +113,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleHttpMessageNotReadableException(
             HttpMessageNotReadableException ex) {
 
-        logger.warn("Invalid request body: {}", ex.getMessage());
+        log.warn("Invalid request body: {}", ex.getMessage());
 
     String errorMessage = ErrorMessages.INVALID_REQUEST_BODY;
     String errorCode = ErrorCodes.PROJECT_USER_ERROR;
@@ -171,7 +170,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleMissingPathVariableException(
             MissingPathVariableException ex) {
 
-        logger.warn("Missing path variable: {}", ex.getMessage());
+        log.warn("Missing path variable: {}", ex.getMessage());
 
     String errorMessage = String.format(
         ErrorMessages.REQUIRED_PATH_PARAMETER_MISSING,
@@ -191,7 +190,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleMissingServletRequestParameterException(
             MissingServletRequestParameterException ex) {
 
-        logger.warn("Missing request parameter: {}", ex.getMessage());
+        log.warn("Missing request parameter: {}", ex.getMessage());
 
     String errorMessage = String.format(
         ErrorMessages.REQUIRED_REQUEST_PARAMETER_MISSING,
@@ -211,7 +210,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleMethodArgumentTypeMismatchException(
             MethodArgumentTypeMismatchException ex) {
 
-        logger.warn("Method argument type mismatch: {}", ex.getMessage());
+        log.warn("Method argument type mismatch: {}", ex.getMessage());
 
     String errorMessage = String.format(
         ErrorMessages.PARAMETER_TYPE_CONVERSION_FAILED,
@@ -233,7 +232,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleProjectNotFoundException(
             ProjectNotFoundException ex) {
 
-        logger.warn("Project not found: {}", ex.getMessage());
+        log.warn("Project not found: {}", ex.getMessage());
     BaseApiResponse errorResponse = new BaseApiResponse();
     errorResponse.setSuccess(false);
     errorResponse.setMessage(ex.getMessage());
@@ -249,7 +248,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleUserNotFoundException(
             UserNotFoundException ex) {
 
-        logger.warn("User not found: {}", ex.getMessage());
+        log.warn("User not found: {}", ex.getMessage());
     BaseApiResponse errorResponse = new BaseApiResponse();
     errorResponse.setSuccess(false);
     errorResponse.setMessage(ex.getMessage());
@@ -265,7 +264,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleUserNotAuthenticatedException(
             UserNotAuthenticatedException ex) {
 
-        logger.warn("User not authenticated: {}", ex.getMessage());
+        log.warn("User not authenticated: {}", ex.getMessage());
         BaseApiResponse errorResponse = new BaseApiResponse();
         errorResponse.setSuccess(false);
         errorResponse.setMessage(ex.getMessage());
@@ -281,7 +280,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleUserNotAuthorizedException(
             UserNotAuthorizedException ex) {
 
-        logger.warn("User not authorized: {}", ex.getMessage());
+        log.warn("User not authorized: {}", ex.getMessage());
         BaseApiResponse errorResponse = new BaseApiResponse();
         errorResponse.setSuccess(false);
         errorResponse.setMessage(ex.getMessage());
@@ -297,7 +296,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleInvalidRoleException(
             InvalidRoleException ex) {
 
-        logger.warn("Invalid role: {}", ex.getMessage());
+        log.warn("Invalid role: {}", ex.getMessage());
     BaseApiResponse errorResponse = new BaseApiResponse();
     errorResponse.setSuccess(false);
     errorResponse.setMessage(ex.getMessage());
@@ -313,7 +312,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseApiResponse> handleAutomationPlatformException(
             AutomationPlatformException ex) {
 
-        logger.error("Automation platform error: {}", ex.getMessage(), ex);
+        log.error("Automation platform error: {}", ex.getMessage(), ex);
     BaseApiResponse errorResponse = new BaseApiResponse();
     errorResponse.setSuccess(false);
     errorResponse.setMessage(String.format(ErrorMessages.EXTERNAL_SERVICE_ERROR, ex.getMessage()));
@@ -327,7 +326,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ProjectUserException.class)
     public ResponseEntity<BaseApiResponse> handleProjectUserException(ProjectUserException ex) {
-        logger.error("Project user operation failed: {}", ex.getMessage(), ex);
+        log.error("Project user operation failed: {}", ex.getMessage(), ex);
     BaseApiResponse errorResponse = new BaseApiResponse();
     errorResponse.setSuccess(false);
     errorResponse.setMessage(String.format(ErrorMessages.OPERATION_FAILED, ex.getMessage()));
@@ -341,7 +340,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<BaseApiResponse> handleGenericException(Exception ex) {
-        logger.error("Unexpected error occurred: {}", ex.getMessage(), ex);
+        log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
     BaseApiResponse errorResponse = new BaseApiResponse();
     errorResponse.setSuccess(false);
     errorResponse.setMessage(ErrorMessages.UNEXPECTED_ERROR);

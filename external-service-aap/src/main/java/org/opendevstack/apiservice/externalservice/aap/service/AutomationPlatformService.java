@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.externalservice.aap.service;
 
+import org.opendevstack.apiservice.externalservice.api.ExternalService;
 import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationExecutionResult;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationJobStatus;
@@ -11,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
  * Generic service interface for integrating with automation platforms like Ansible Automation Platform.
  * This interface provides a generic way to call different workflows and modules.
  */
-public interface AutomationPlatformService {
+public interface AutomationPlatformService extends ExternalService {
 
     /**
      * Executes a workflow on the automation platform synchronously.

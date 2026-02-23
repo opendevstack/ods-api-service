@@ -1,7 +1,5 @@
 package org.opendevstack.apiservice.externalservice.aap.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -11,6 +9,8 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+
+import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -28,9 +28,8 @@ import java.security.cert.X509Certificate;
 @Configuration
 @EnableAsync
 @EnableConfigurationProperties(SslProperties.class)
+@Slf4j
 public class ExternalServiceConfig {
-
-    private static final Logger logger = LoggerFactory.getLogger(ExternalServiceConfig.class);
 
     private final SslProperties sslProperties;
 
@@ -46,10 +45,10 @@ public class ExternalServiceConfig {
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder) {
         if (!sslProperties.isVerifyCertificates()) {
-            logger.warn("SSL certificate verification is DISABLED - this should only be used in development environments");
+            log.warn("SSL certificate verification is DISABLED - this should only be used in development environments");
             return createInsecureRestTemplate();
         } else {
-            logger.info("SSL certificate verification is ENABLED");
+            log.info("SSL certificate verification is ENABLED");
             return createSecureRestTemplate();
         }
     }
@@ -94,7 +93,7 @@ public class ExternalServiceConfig {
             return new RestTemplate(requestFactory);
             
         } catch (GeneralSecurityException e) {
-            logger.warn("Failed to create insecure RestTemplate, falling back to default: {}", e.getMessage());
+            log.warn("Failed to create insecure RestTemplate, falling back to default: {}", e.getMessage());
             return new RestTemplate();
         }
     }
@@ -103,7 +102,7 @@ public class ExternalServiceConfig {
         try {
             // If custom trust store is provided, configure it
             if (StringUtils.hasText(sslProperties.getTrustStorePath())) {
-                logger.info("Custom trust store specified: {} (custom trust store support can be added in future versions)", 
+                log.info("Custom trust store specified: {} (custom trust store support can be added in future versions)", 
                     sslProperties.getTrustStorePath());
             }
             
@@ -111,7 +110,7 @@ public class ExternalServiceConfig {
             return new RestTemplate();
             
         } catch (Exception e) {
-            logger.warn("Failed to create secure RestTemplate with custom trust store, using default: {}", e.getMessage());
+            log.warn("Failed to create secure RestTemplate with custom trust store, using default: {}", e.getMessage());
             return new RestTemplate();
         }
     }

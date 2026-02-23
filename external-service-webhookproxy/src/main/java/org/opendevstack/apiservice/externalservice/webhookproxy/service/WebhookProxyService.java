@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.externalservice.webhookproxy.service;
 
+import org.opendevstack.apiservice.externalservice.api.ExternalService;
 import org.opendevstack.apiservice.externalservice.webhookproxy.dto.WebhookProxyBuildRequest;
 import org.opendevstack.apiservice.externalservice.webhookproxy.dto.WebhookProxyBuildResponse;
 import org.opendevstack.apiservice.externalservice.webhookproxy.exception.WebhookProxyException;
@@ -10,7 +11,7 @@ import java.util.Set;
  * Service interface for triggering builds via the ODS Webhook Proxy.
  * Provides high-level methods to trigger release manager builds across different clusters.
  */
-public interface WebhookProxyService {
+public interface WebhookProxyService extends ExternalService {
     
     /**
      * Trigger a release manager build via webhook proxy
@@ -67,4 +68,13 @@ public interface WebhookProxyService {
      * @throws WebhookProxyException.ConfigurationException if the cluster is not configured
      */
     String getWebhookProxyUrl(String clusterName, String projectKey) throws WebhookProxyException.ConfigurationException;
+    
+    /**
+     * Checks if the webhook proxy is healthy and reachable.
+     * This method is used by health indicators and should not throw exceptions.
+     *
+     * @return true if the service is healthy, false otherwise
+     */
+    @Override
+    boolean isHealthy();
 }

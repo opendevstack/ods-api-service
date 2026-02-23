@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.externalservice.projectsinfoservice.service;
 
+import org.opendevstack.apiservice.externalservice.api.ExternalService;
 import org.opendevstack.apiservice.externalservice.projectsinfoservice.exception.ProjectsInfoServiceException;
 import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.Platforms;
 
@@ -7,7 +8,7 @@ import org.opendevstack.apiservice.externalservice.projectsinfoservice.model.Pla
  * Service interface for integrating with projects info service
  * This interface provides a generic way to consume the service.
  */
-public interface ProjectsInfoService {
+public interface ProjectsInfoService extends ExternalService {
 
     /**
      * Retrieves the platforms associated with a given project.

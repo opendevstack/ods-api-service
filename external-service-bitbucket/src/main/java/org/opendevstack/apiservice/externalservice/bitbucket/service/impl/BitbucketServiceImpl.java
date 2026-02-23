@@ -138,4 +138,21 @@ public class BitbucketServiceImpl implements BitbucketService {
     public boolean hasInstance(String instanceName) {
         return clientFactory.hasInstance(instanceName);
     }
+    
+    @Override
+    public boolean isHealthy() {
+        try {
+            // Check if at least one instance is available
+            Set<String> instances = getAvailableInstances();
+            if (instances.isEmpty()) {
+                return false;
+            }
+            // Try to access the first instance
+            String instanceName = instances.iterator().next();
+            return hasInstance(instanceName);
+        } catch (Exception e) {
+            log.debug("Health check failed", e);
+            return false;
+        }
+    }
 }
