@@ -2,6 +2,7 @@ package org.opendevstack.apiservice.externalservice.jira.client;
 
 import org.opendevstack.apiservice.externalservice.jira.config.JiraServiceConfiguration.JiraInstanceConfig;
 import lombok.extern.slf4j.Slf4j;
+import lombok.Getter;
 import org.springframework.web.client.RestTemplate;
 import org.openapitools.jackson.nullable.JsonNullableModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,7 @@ import org.springframework.http.converter.HttpMessageConverter;
  * for a specific Jira instance.
  */
 @Slf4j
+@Getter
 public class JiraApiClient {
 
     private final String instanceName;
@@ -57,39 +59,12 @@ public class JiraApiClient {
     }
 
     /**
-     * Get the underlying generated ApiClient for advanced usage.
-     *
-     * @return The generated ApiClient instance
-     */
-    public ApiClient getApiClient() {
-        return apiClient;
-    }
-
-    /**
-     * Get the instance name this client is configured for.
-     *
-     * @return Instance name
-     */
-    public String getInstanceName() {
-        return instanceName;
-    }
-
-    /**
      * Get the base URL for this Jira instance.
      *
      * @return Base URL
      */
     public String getBaseUrl() {
         return config.getBaseUrl();
-    }
-
-    /**
-     * Get the configuration for this instance.
-     *
-     * @return Instance configuration
-     */
-    public JiraInstanceConfig getConfig() {
-        return config;
     }
 
     /**
