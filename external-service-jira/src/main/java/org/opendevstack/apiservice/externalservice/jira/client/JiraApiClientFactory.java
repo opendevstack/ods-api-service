@@ -5,6 +5,8 @@ import org.opendevstack.apiservice.externalservice.jira.config.JiraServiceConfig
 import org.opendevstack.apiservice.externalservice.jira.exception.JiraException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -15,7 +17,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Factory for creating {@link JiraApiClient} instances.
@@ -27,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JiraApiClientFactory {
 
     private final JiraServiceConfiguration configuration;
-    private final Map<String, JiraApiClient> clientCache;
     private final RestTemplateBuilder restTemplateBuilder;
 
     /**
@@ -40,7 +40,6 @@ public class JiraApiClientFactory {
                                 RestTemplateBuilder restTemplateBuilder) {
         this.configuration = configuration;
         this.restTemplateBuilder = restTemplateBuilder;
-        this.clientCache = new ConcurrentHashMap<>();
 
         log.info("JiraApiClientFactory initialized with {} instance(s)",
                 configuration.getInstances().size());
@@ -49,9 +48,7 @@ public class JiraApiClientFactory {
     /**
      * Resolve the effective instance name.
      * <ul>
-     *   <li>If {@code instanceName} is non-null and non-blank, it is returned as-is.</li>
-     *   <li>If {@code instanceName} is {@code null} or blank and a default instance is configured
-     *       via {@code externalservices.jira.default-instance}, that value is returned.</li>
+     *   <li>If the default instance is configured via {@code externalservices.jira.default-instance}, it is returned.</li>
      *   <li>Otherwise the first entry of the instances map is returned (insertion order).</li>
      *   <li>If no instances are configured at all, a {@link JiraException} is thrown.</li>
      * </ul>
@@ -60,10 +57,7 @@ public class JiraApiClientFactory {
      * @return The resolved instance name (never {@code null}/blank)
      * @throws JiraException if no Jira instances are configured
      */
-    public String resolveInstanceName(String instanceName) throws JiraException {
-        if (instanceName != null && !instanceName.isBlank()) {
-            return instanceName;
-        }
+    public String getDefaultInstanceName() throws JiraException {
 
         String defaultInstance = configuration.getDefaultInstance();
         if (defaultInstance != null && !defaultInstance.isBlank()) {
@@ -86,12 +80,12 @@ public class JiraApiClientFactory {
      * @return Configured JiraApiClient
      * @throws JiraException if the instance is not configured
      */
+    @Cacheable(value = "jiraApiClients", key = "#instanceName")
     public JiraApiClient getClient(String instanceName) throws JiraException {
-        instanceName = resolveInstanceName(instanceName);
-
-        if (clientCache.containsKey(instanceName)) {
-            log.debug("Returning cached client for instance '{}'", instanceName);
-            return clientCache.get(instanceName);
+        if (instanceName == null || instanceName.isBlank()) {
+            throw new JiraException(
+                String.format("Provide instance name. Available instances: %s",
+                       configuration.getInstances().keySet()));
         }
 
         JiraInstanceConfig instanceConfig = configuration.getInstances().get(instanceName);
@@ -105,11 +99,7 @@ public class JiraApiClientFactory {
         log.info("Creating new JiraApiClient for instance '{}'", instanceName);
 
         RestTemplate restTemplate = createRestTemplate(instanceConfig);
-        JiraApiClient client = new JiraApiClient(instanceName, instanceConfig, restTemplate);
-
-        clientCache.put(instanceName, client);
-
-        return client;
+        return new JiraApiClient(instanceName, instanceConfig, restTemplate);
     }
 
     /**
@@ -119,8 +109,13 @@ public class JiraApiClientFactory {
      * @return JiraApiClient for the default instance
      * @throws JiraException if no instances are configured
      */
-    public JiraApiClient getDefaultClient() throws JiraException {
-        return getClient(null);
+    @Cacheable(value = "jiraApiClients", key = "'default'")
+    public JiraApiClient getClient() throws JiraException {
+        String defaultInstanceName = getDefaultInstanceName();
+        JiraInstanceConfig instanceConfig = configuration.getInstances().get(defaultInstanceName);
+        RestTemplate restTemplate = createRestTemplate(instanceConfig);
+
+        return  new JiraApiClient(defaultInstanceName, instanceConfig, restTemplate);
     }
 
     /**
@@ -145,9 +140,9 @@ public class JiraApiClientFactory {
     /**
      * Clear the client cache (useful for testing or when configuration changes).
      */
+    @CacheEvict(value = "jiraApiClients", allEntries = true)
     public void clearCache() {
         log.info("Clearing JiraApiClient cache");
-        clientCache.clear();
     }
 
     /**

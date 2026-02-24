@@ -140,7 +140,7 @@ class JiraServiceTest {
     void testIsHealthy_RestClientException_ReturnsFalse() throws JiraException {
         // Arrange
         when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
-        when(clientFactory.getDefaultClient()).thenReturn(jiraApiClient);
+        when(clientFactory.getClient()).thenReturn(jiraApiClient);
         when(jiraApiClient.getApiClient()).thenReturn(apiClient);
         when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(new RestClientException("Connection refused"));
@@ -156,7 +156,7 @@ class JiraServiceTest {
     void testIsHealthy_JiraException_ReturnsFalse() throws JiraException {
         // Arrange
         when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
-        when(clientFactory.getDefaultClient()).thenThrow(new JiraException("No Jira instances configured"));
+        when(clientFactory.getClient()).thenThrow(new JiraException("No Jira instances configured"));
 
         // Act
         boolean result = jiraService.isHealthy();
@@ -283,17 +283,17 @@ class JiraServiceTest {
 
     @Test
     void testGetDefaultInstance_DelegatesToFactory() throws JiraException {
-        when(clientFactory.resolveInstanceName(null)).thenReturn("prod");
+        when(clientFactory.getDefaultInstanceName()).thenReturn("prod");
 
         String result = jiraService.getDefaultInstance();
 
         assertEquals("prod", result);
-        verify(clientFactory).resolveInstanceName(null);
+        verify(clientFactory).getDefaultInstanceName();
     }
 
     @Test
     void testGetDefaultInstance_FactoryThrows_PropagatesException() throws JiraException {
-        when(clientFactory.resolveInstanceName(null))
+        when(clientFactory.getDefaultInstanceName())
                 .thenThrow(new JiraException("No Jira instances configured"));
 
         assertThrows(JiraException.class, () -> jiraService.getDefaultInstance());

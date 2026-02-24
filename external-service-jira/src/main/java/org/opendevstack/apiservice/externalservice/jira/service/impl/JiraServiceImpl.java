@@ -93,7 +93,7 @@ public class JiraServiceImpl implements JiraService {
      */
     @Override
     public String getDefaultInstance() throws JiraException {
-        return clientFactory.resolveInstanceName(null);
+        return clientFactory.getDefaultInstanceName();
     }
 
     /**
@@ -111,7 +111,7 @@ public class JiraServiceImpl implements JiraService {
                 return false;
             }
 
-            JiraApiClient defaultClient = clientFactory.getDefaultClient();
+            JiraApiClient defaultClient = clientFactory.getClient();
             ApiClient apiClient = defaultClient.getApiClient();
 
             ServerInfoApi serverInfoApi = new ServerInfoApi(apiClient);

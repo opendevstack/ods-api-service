@@ -2,6 +2,7 @@ package org.opendevstack.apiservice.externalservice.jira.integration;
 
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.ComponentScan;
 
 /**
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @SpringBootConfiguration
 @EnableAutoConfiguration
+@EnableCaching
 @ComponentScan(basePackages = "org.opendevstack.apiservice.externalservice.jira")
 public class JiraIntegrationTestConfig {
     // All beans will be auto-configured by Spring Boot

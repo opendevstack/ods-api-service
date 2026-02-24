@@ -44,36 +44,18 @@ class JiraApiClientFactoryTest {
     }
 
     // -------------------------------------------------------------------------
-    // resolveInstanceName – explicit name
-    // -------------------------------------------------------------------------
-
-    @Test
-    void resolveInstanceName_explicitName_returnsSameName() throws JiraException {
-        assertEquals("dev",  factory().resolveInstanceName("dev"));
-        assertEquals("prod", factory().resolveInstanceName("prod"));
-    }
-
-    // -------------------------------------------------------------------------
-    // resolveInstanceName – null / blank → configured default
+    // resolveInstanceName → configured default
     // -------------------------------------------------------------------------
 
     @Test
     void resolveInstanceName_null_returnsConfiguredDefaultInstance() throws JiraException {
         configuration.setDefaultInstance("prod");
 
-        assertEquals("prod", factory().resolveInstanceName(null));
-    }
-
-    @Test
-    void resolveInstanceName_blank_returnsConfiguredDefaultInstance() throws JiraException {
-        configuration.setDefaultInstance("prod");
-
-        assertEquals("prod", factory().resolveInstanceName(""));
-        assertEquals("prod", factory().resolveInstanceName("   "));
+        assertEquals("prod", factory().getDefaultInstanceName());
     }
 
     // -------------------------------------------------------------------------
-    // resolveInstanceName – null / blank → fallback to first instance
+    // resolveInstanceName – without default → fallback to first instance
     // -------------------------------------------------------------------------
 
     @Test
@@ -84,17 +66,7 @@ class JiraApiClientFactoryTest {
         instances.put("beta",  config("https://jira-beta.example.com"));
         configuration.setInstances(instances);
 
-        assertEquals("alpha", factory().resolveInstanceName(null));
-    }
-
-    @Test
-    void resolveInstanceName_blank_noDefaultConfigured_returnsFirstInstance() throws JiraException {
-        Map<String, JiraInstanceConfig> instances = new LinkedHashMap<>();
-        instances.put("first", config("https://jira.example.com"));
-        configuration.setInstances(instances);
-
-        assertEquals("first", factory().resolveInstanceName(""));
-        assertEquals("first", factory().resolveInstanceName("   "));
+        assertEquals("alpha", factory().getDefaultInstanceName());
     }
 
     // -------------------------------------------------------------------------
@@ -106,7 +78,7 @@ class JiraApiClientFactoryTest {
         // no instances set → empty map
         JiraApiClientFactory f = factory();
 
-        JiraException ex = assertThrows(JiraException.class, () -> f.resolveInstanceName(null));
+        JiraException ex = assertThrows(JiraException.class, () -> f.getDefaultInstanceName());
         assertTrue(ex.getMessage().toLowerCase().contains("no jira instances configured"),
                 "Expected 'no jira instances configured' in: " + ex.getMessage());
     }
@@ -116,27 +88,18 @@ class JiraApiClientFactoryTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void getClient_null_resolvesToConfiguredDefaultInstance() throws JiraException {
-        when(restTemplateBuilder.build()).thenReturn(restTemplate);
-        configuration.setDefaultInstance("dev");
-        configuration.setInstances(Map.of("dev", config("https://jira.dev.example.com")));
+    void getClient_null_throwsJiraException() throws JiraException {
 
-        JiraApiClient client = factory().getClient(null);
-
-        assertNotNull(client);
-        assertEquals("dev", client.getInstanceName());
+        JiraException ex = assertThrows(JiraException.class, () -> factory().getClient(null));
+        assertTrue(ex.getMessage().toLowerCase().contains("provide instance name"),
+                "Expected 'provide instance name' in: " + ex.getMessage());
     }
 
     @Test
-    void getClient_blank_resolvesToConfiguredDefaultInstance() throws JiraException {
-        when(restTemplateBuilder.build()).thenReturn(restTemplate);
-        configuration.setDefaultInstance("dev");
-        configuration.setInstances(Map.of("dev", config("https://jira.dev.example.com")));
-
-        JiraApiClient client = factory().getClient("");
-
-        assertNotNull(client);
-        assertEquals("dev", client.getInstanceName());
+    void getClient_blank_throwsJiraException() throws JiraException {
+        JiraException ex = assertThrows(JiraException.class, () -> factory().getClient(""));
+        assertTrue(ex.getMessage().toLowerCase().contains("provide instance name"),
+                "Expected 'provide instance name' in: " + ex.getMessage());
     }
 
     @Test
@@ -150,55 +113,39 @@ class JiraApiClientFactoryTest {
     }
 
     // -------------------------------------------------------------------------
-    // getDefaultClient – convenience method
+    // getClient – convenience method for default instance
     // -------------------------------------------------------------------------
 
     @Test
-    void getDefaultClient_returnsClientForConfiguredDefaultInstance() throws JiraException {
+    void getClient_returnsClientForConfiguredDefaultInstance() throws JiraException {
         when(restTemplateBuilder.build()).thenReturn(restTemplate);
         configuration.setDefaultInstance("prod");
         configuration.setInstances(orderedMap("dev", "prod"));
 
-        JiraApiClient client = factory().getDefaultClient();
+        JiraApiClient client = factory().getClient();
 
         assertNotNull(client);
         assertEquals("prod", client.getInstanceName());
     }
 
     @Test
-    void getDefaultClient_noDefaultConfigured_returnsFirstInstance() throws JiraException {
+    void getClient_noDefaultConfigured_returnsFirstInstance() throws JiraException {
         when(restTemplateBuilder.build()).thenReturn(restTemplate);
         Map<String, JiraInstanceConfig> instances = new LinkedHashMap<>();
         instances.put("alpha", config("https://jira-alpha.example.com"));
         instances.put("beta",  config("https://jira-beta.example.com"));
         configuration.setInstances(instances);
 
-        JiraApiClient client = factory().getDefaultClient();
+        JiraApiClient client = factory().getClient();
 
         assertNotNull(client);
         assertEquals("alpha", client.getInstanceName());
     }
 
     @Test
-    void getDefaultClient_noInstancesConfigured_throwsJiraException() {
-        JiraException ex = assertThrows(JiraException.class, () -> factory().getDefaultClient());
+    void getClient_noInstancesConfigured_throwsJiraException() {
+        JiraException ex = assertThrows(JiraException.class, () -> factory().getClient());
         assertTrue(ex.getMessage().toLowerCase().contains("no jira instances configured"));
-    }
-
-    // -------------------------------------------------------------------------
-    // Client cache – same instance name returns cached client
-    // -------------------------------------------------------------------------
-
-    @Test
-    void getClient_cachedOnSecondCall() throws JiraException {
-        when(restTemplateBuilder.build()).thenReturn(restTemplate);
-        configuration.setInstances(Map.of("dev", config("https://jira.dev.example.com")));
-        JiraApiClientFactory f = factory();
-
-        JiraApiClient first  = f.getClient("dev");
-        JiraApiClient second = f.getClient("dev");
-
-        assertSame(first, second, "Second call should return the cached instance");
     }
 
     // -------------------------------------------------------------------------
