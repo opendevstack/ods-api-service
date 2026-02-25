@@ -76,6 +76,16 @@ public interface OpenshiftService extends ExternalService {
     boolean secretExists(String instanceName, String secretName, String namespace);
     
     /**
+     * Check if a project exists in a specific OpenShift instance
+     * 
+     * @param instanceName Name of the OpenShift instance
+     * @param projectName Name of the project
+     * @return true if the project exists (HTTP 200), false if not found (HTTP 404)
+     * @throws OpenshiftException if any other error occurs
+     */
+    boolean projectExists(String instanceName, String projectName) throws OpenshiftException;
+    
+    /**
      * Get all available OpenShift instance names
      * 
      * @return Set of configured instance names

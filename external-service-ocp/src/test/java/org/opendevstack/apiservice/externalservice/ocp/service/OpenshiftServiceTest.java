@@ -84,6 +84,7 @@ class OpenshiftServiceTest {
         verify(apiClient).getSecret(secretName, namespace);
     }
 
+
     @Test
     void testGetSecretValue_Success() throws OpenshiftException {
         // Arrange
@@ -195,6 +196,63 @@ class OpenshiftServiceTest {
         assertFalse(result);
         verify(clientFactory).getClient(instanceName);
         verify(apiClient, never()).secretExists(anyString());
+    }
+
+    @Test
+    void testProjectExists_ReturnsTrue() throws OpenshiftException {
+        // Arrange
+        String instanceName = "dev";
+        String projectName = "existing-project";
+
+        when(clientFactory.getClient(instanceName)).thenReturn(apiClient);
+        when(apiClient.projectExists(projectName)).thenReturn(true);
+
+        // Act
+        boolean result = openshiftService.projectExists(instanceName, projectName);
+
+        // Assert
+        assertTrue(result);
+        verify(clientFactory).getClient(instanceName);
+        verify(apiClient).projectExists(projectName);
+    }
+
+    @Test
+    void testProjectExists_ReturnsFalse() throws OpenshiftException {
+        // Arrange
+        String instanceName = "dev";
+        String projectName = "non-existing-project";
+
+        when(clientFactory.getClient(instanceName)).thenReturn(apiClient);
+        when(apiClient.projectExists(projectName)).thenReturn(false);
+
+        // Act
+        boolean result = openshiftService.projectExists(instanceName, projectName);
+
+        // Assert
+        assertFalse(result);
+        verify(clientFactory).getClient(instanceName);
+        verify(apiClient).projectExists(projectName);
+    }
+
+    @Test
+    void testProjectExists_ThrowsException() throws OpenshiftException {
+        // Arrange
+        String instanceName = "dev";
+        String projectName = "test-project";
+        String errorMessage = "Connection failed";
+
+        when(clientFactory.getClient(instanceName)).thenReturn(apiClient);
+        when(apiClient.projectExists(projectName)).thenThrow(new OpenshiftException(errorMessage));
+
+        // Act & Assert
+        OpenshiftException exception = assertThrows(
+            OpenshiftException.class,
+            () -> openshiftService.projectExists(instanceName, projectName)
+        );
+
+        assertEquals(errorMessage, exception.getMessage());
+        verify(clientFactory).getClient(instanceName);
+        verify(apiClient).projectExists(projectName);
     }
 
     @Test

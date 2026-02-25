@@ -80,7 +80,7 @@ public class JiraApiClientFactory {
      * @return Configured JiraApiClient
      * @throws JiraException if the instance is not configured
      */
-    @Cacheable(value = "jiraApiClients", key = "#instanceName")
+    @Cacheable(value = "jiraApiClients", key = "#instanceName", condition = "#instanceName != null && !#instanceName.isBlank()")
     public JiraApiClient getClient(String instanceName) throws JiraException {
         if (instanceName == null || instanceName.isBlank()) {
             throw new JiraException(

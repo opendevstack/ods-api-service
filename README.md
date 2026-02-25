@@ -19,7 +19,7 @@ The system will expose RESTful APIs for third-party client applications and futu
 Before using the Makefile, ensure you have the following installed:
 
 ### Required
-- **Java 17+** - The project uses Java 17
+- **Java 17+** - The project uses Java 21
 - **Maven** - Maven wrapper (`mvnw`) is included in the project
 - **Make** - For running Makefile commands
 
@@ -265,15 +265,17 @@ Port 8080 was already in use
 ## 📁 Project Structure
 
 ```
-devstack-api-service/
-├── Makefile                    # Build automation
-├── pom.xml                     # Parent POM
-├── mvnw                        # Maven wrapper
-├── core/                       # Main application module
+ods-api-service/
+├── Makefile                   # Build automation
+├── pom.xml                    # Parent POM
+├── mvnw                       # Maven wrapper
+├── api-xxx                    # Api module
+├── external-service-yyy       # External service module
+├── core/                      # Main application module
 │   ├── pom.xml                # Core module POM
 │   ├── src/                   # Source code
 │   └── target/                # Build output
-└── docker/                     # Docker configuration
+└── docker/                    # Docker configuration
     ├── Dockerfile             # Standard container definition
     └── Docker.native          # Native container definition
 ```

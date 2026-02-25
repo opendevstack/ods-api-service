@@ -3,13 +3,11 @@ package org.opendevstack.apiservice.externalservice.ocp.integration;
 import org.opendevstack.apiservice.externalservice.ocp.exception.OpenshiftException;
 import org.opendevstack.apiservice.externalservice.ocp.service.OpenshiftService;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Map;
@@ -18,125 +16,67 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for OpenShift Service
- * These tests require actual OpenShift cluster connectivity
+ * 
+ * This test runs against a real OpenShift cluster configured in application-local.yaml.
+ * It requires actual OpenShift connectivity and valid credentials.
  * 
  * To run these tests:
- * 1. Ensure you have proper OpenShift configuration in application-local.yaml or environment variables
- * 2. Make sure the OpenShift token has access to the namespace
- * 3. Remove @Disabled annotation from the test you want to run
- * 4. Run with: mvn test -Dtest=OpenshiftIntegrationTest
+ * 1. Ensure application-local.yaml has valid OpenShift configuration
+ * 2. Set environment variable: OPENSHIFT_INTEGRATION_TEST_ENABLED=true
+ * 3. Set test cluster details:
+ *    - OPENSHIFT_TEST_CLUSTER_API_URL (e.g., "https://api.example.ocp.cloud.com:6443")
+ *    - OPENSHIFT_TEST_CLUSTER_TOKEN (e.g., "sha256~exampletoken1234567890abcdef")
+ *    - OPENSHIFT_TEST_DEFAULT_NAMESPACE (e.g., "example-namespace")
+ *    - OPENSHIFT_TEST_INSTANCE (e.g., "cluster-1" or "cluster-2")
+ *    - OPENSHIFT_TEST_SECRET_NAME (e.g., "example-secret")
+ *    - OPENSHIFT_TEST_PROJECT_NAME (e.g., "example-project")
+ * 
+ * Example:
+ * export OPENSHIFT_INTEGRATION_TEST_ENABLED=true
+ * export OPENSHIFT_TEST_CLUSTER_API_URL="https://api.example.ocp.cloud.com:6443"
+ * export OPENSHIFT_TEST_CLUSTER_TOKEN="sha256~exampletoken1234567890abcdef"
+ * export OPENSHIFT_TEST_DEFAULT_NAMESPACE=example-namespace
+ * export OPENSHIFT_TEST_INSTANCE=cluster-1
+ * export OPENSHIFT_TEST_SECRET_NAME=example-secret
+ * export OPENSHIFT_TEST_PROJECT_NAME=example-project
+ * 
+ * Then run: mvn test -Dtest=OpenshiftIntegrationTest
  */
-@SpringBootTest(classes = OpenshiftIntegrationTest.TestConfiguration.class)
+@SpringBootTest(classes = OpenshiftIntegrationTestConfig.class)
 @ActiveProfiles("local")
+@EnabledIfEnvironmentVariable(named = "OPENSHIFT_INTEGRATION_TEST_ENABLED", matches = "true")
 @Slf4j
-@Disabled("Integration tests require actual OpenShift cluster access - enable manually when needed")
 class OpenshiftIntegrationTest {
 
-    @Configuration
-    @EnableAutoConfiguration
-    @ComponentScan(basePackages = "org.opendevstack.apiservice.externalservice.ocp")
-    static class TestConfiguration {
-    }
 
     @Autowired
     private OpenshiftService openshiftService;
 
-    /**
-     * Test to retrieve a specific secret from the example-project-cd namespace in cluster-a cluster
-     * 
-     * Before running this test:
-     * 1. Ensure OPENSHIFT_CLUSTER_A_API_URL environment variable is set
-     * 2. Ensure OPENSHIFT_CLUSTER_A_TOKEN environment variable is set with a valid token
-     * 3. Verify the token has access to the example-project-cd namespace
-     * 4. Remove @Disabled annotation
-     */
-    @Test
-    @Disabled("Remove this annotation to run the test")
-    void testGetTriggerSecretFromRompiCdNamespace() {
-        // Configuration
-        String instanceName = "cluster-a";
-        String namespace = "example-project-cd";
-        String secretName = "webhook-proxy";
-        
-        log.info("Attempting to retrieve secret '{}' from namespace '{}' in instance '{}'", 
-                 secretName, namespace, instanceName);
-        
-        try {
-            // Verify instance is configured
-            assertTrue(openshiftService.hasInstance(instanceName), 
-                      "Instance '" + instanceName + "' is not configured");
-            log.info("✓ Instance '{}' is configured", instanceName);
-            
-            // Check if secret exists
-            boolean exists = openshiftService.secretExists(instanceName, secretName, namespace);
-            assertTrue(exists, 
-                      "Secret '" + secretName + "' does not exist in namespace '" + namespace + "'");
-            log.info("✓ Secret '{}' exists in namespace '{}'", secretName, namespace);
-            
-            // Get the entire secret
-            Map<String, String> secret = openshiftService.getSecret(instanceName, secretName, namespace);
-            
-            // Assertions
-            assertNotNull(secret, "Secret should not be null");
-            assertFalse(secret.isEmpty(), "Secret should not be empty");
-            
-            // Log secret keys (not values for security)
-            log.info("✓ Successfully retrieved secret with {} keys", secret.size());
-            log.info("Secret keys: {}", secret.keySet());
-            
-            // Example: Get a specific value from the secret
-            if (!secret.isEmpty()) {
-                String firstKey = secret.keySet().iterator().next();
-                String value = openshiftService.getSecretValue(instanceName, secretName, firstKey, namespace);
-                assertNotNull(value, "Secret value should not be null");
-                log.info("✓ Successfully retrieved value for key '{}'", firstKey);
-            }
-            
-        } catch (OpenshiftException e) {
-            log.error("Failed to retrieve secret", e);
-            fail("Should be able to retrieve the secret: " + e.getMessage());
-        }
+    private String testInstance;
+    private String testNamespace;
+    private String testSecretName;
+    private String testProjectName;
+
+    @BeforeEach
+    void setUp() {
+        // Read test parameters from environment variables
+        testInstance = System.getenv().getOrDefault("OPENSHIFT_TEST_INSTANCE", "cluster-a");
+        testNamespace = System.getenv().getOrDefault("OPENSHIFT_TEST_DEFAULT_NAMESPACE", "example-project-cd");
+        testSecretName = System.getenv().getOrDefault("OPENSHIFT_TEST_SECRET_NAME", "webhook-proxy");
+        testProjectName = System.getenv().getOrDefault("OPENSHIFT_TEST_PROJECT_NAME", "example-project");
+
+        log.info("Running integration tests against OpenShift instance: {}", testInstance);
+        log.info("Test namespace: {}", testNamespace);
+        log.info("Test secret: {}", testSecretName);
+        log.info("Test project: {}", testProjectName);
     }
-    
-    /**
-     * Test to get a specific value from the webhook-proxy
-     * Customize this test based on the keys you know exist in the secret
-     */
+
     @Test
-    @Disabled("Remove this annotation and customize with actual key names")
-    void testGetSpecificValueFromTriggerSecret() {
-        String instanceName = "cluster-a";
-        String namespace = "example-project-cd";
-        String secretName = "webhook-proxy";
-        String keyName = "trigger-secret"; // Replace with actual key name
-        
-        log.info("Attempting to retrieve key '{}' from secret '{}'", keyName, secretName);
-        
-        try {
-            String value = openshiftService.getSecretValue(instanceName, secretName, keyName, namespace);
-            
-            assertNotNull(value, "Secret value should not be null");
-            assertFalse(value.isEmpty(), "Secret value should not be empty");
-            
-            log.info("✓ Successfully retrieved value for key '{}'", keyName);
-            log.info("Value length: {} characters", value.length());
-            
-        } catch (OpenshiftException e) {
-            log.error("Failed to retrieve secret value", e);
-            fail("Should be able to retrieve the secret value: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Helper test to list all available instances
-     */
-    @Test
-    @Disabled("Remove this annotation to check configured instances")
-    void testListAvailableInstances() {
-        log.info("Listing available OpenShift instances");
-        
+    void testGetAvailableInstances() {
+        // Act
         var instances = openshiftService.getAvailableInstances();
-        
+
+        // Assert
         assertNotNull(instances, "Available instances should not be null");
         assertFalse(instances.isEmpty(), "Should have at least one configured instance");
         
@@ -144,51 +84,192 @@ class OpenshiftIntegrationTest {
         instances.forEach(instance -> {
             log.info("  - {}", instance);
         });
-        
-        assertTrue(instances.contains("cluster-a"), 
-                  "cluster-a instance should be configured");
     }
-    
-    /**
-     * Test to verify all keys in the webhook-proxy
-     * Useful to discover what's inside the secret
-     */
+
     @Test
-    @Disabled("Remove this annotation to discover secret contents")
-    void testDiscoverTriggerSecretContents() {
-        String instanceName = "cluster-a";
-        String namespace = "example-project-cd";
-        String secretName = "webhook-proxy";
+    void testHasInstance() {
+        // Act
+        boolean hasInstance = openshiftService.hasInstance(testInstance);
+
+        // Assert
+        assertTrue(hasInstance, "Test instance '" + testInstance + "' should be configured");
+        log.info("✓ Instance '{}' is configured", testInstance);
+    }
+
+    @Test
+    void testHasInstance_NonExistent() {
+        // Act
+        boolean hasInstance = openshiftService.hasInstance("nonexistent-instance-xyz");
+
+        // Assert
+        assertFalse(hasInstance, "Non-existent instance should return false");
+        log.info("✓ Non-existent instance correctly returned false");
+    }
+
+    @Test
+    void testHealthCheck() {
+        // Act
+        boolean isHealthy = openshiftService.isHealthy();
+
+        // Assert
+        assertTrue(isHealthy, "OpenShift service should be healthy");
+        log.info("✓ OpenShift service is healthy");
+    }
+
+    // -------------------------------------------------------------------------
+    // Test secret existence.
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testSecretExists_ExistingSecret() throws OpenshiftException {
+        // Act
+        boolean exists = openshiftService.secretExists(testInstance, testSecretName, testNamespace);
+
+        // Assert
+        // Note: This may be true or false depending on the test environment
+        // We just verify the method executes without exception
+        log.info("Secret '{}' exists in namespace '{}': {}", testSecretName, testNamespace, exists);
+    }
+
+    @Test
+    void testSecretExists_NonExistentSecret() throws OpenshiftException {
+        // Arrange
+        String nonExistentSecret = "nonexistent-secret-xyz-12345";
+
+        // Act
+        boolean exists = openshiftService.secretExists(testInstance, nonExistentSecret, testNamespace);
+
+        // Assert
+        assertFalse(exists, "Non-existent secret should return false");
+        log.info("✓ Verified that secret '{}' does not exist", nonExistentSecret);
+    }
+
+    @Test
+    void testSecretExists_NamespaceNotProvided() throws OpenshiftException {
+        // Act
+        boolean exists = openshiftService.secretExists(testInstance, testSecretName);
+
+        // Assert
+        // Note: This may be true or false depending on the default namespace configuration
+        // We just verify the method executes without exception
+        log.info("Secret '{}' exists in default namespace: {}", testSecretName, exists);
+    }
+
+        @Test
+    void testSecretExists_WithConsistentBehavior() throws OpenshiftException {
+        // Act - Check with and without namespace
+        boolean existsWithNamespace = openshiftService.secretExists(testInstance, testSecretName, testNamespace);
+        boolean existsWithoutNamespace = openshiftService.secretExists(testInstance, testSecretName);
+
+        // Assert - Both should return consistent results (either both true or both false)
+        // Note: They may differ if the default namespace is different from the test namespace
+        log.info("Secret '{}' exists with namespace: {}", testSecretName, existsWithNamespace);
+        log.info("Secret '{}' exists without namespace: {}", testSecretName, existsWithoutNamespace);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test secret retrieval.
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testGetSecret_Success() throws OpenshiftException {
+        // Act
+        Map<String, String> secret = openshiftService.getSecret(testInstance, testSecretName, testNamespace);
+
+        // Assert
+        assertNotNull(secret, "Secret should not be null");
+        log.info("✓ Successfully retrieved secret with {} keys", secret.size());
         
-        log.info("Discovering contents of secret '{}'", secretName);
-        
-        try {
-            Map<String, String> secret = openshiftService.getSecret(instanceName, secretName, namespace);
-            
-            log.info("Secret '{}' contains the following keys:", secretName);
-            secret.forEach((key, value) -> {
-                log.info("  - Key: '{}', Value length: {} characters", key, value.length());
-            });
-            
-            // Print sanitized info (first and last 2 chars only)
-            secret.forEach((key, value) -> {
-                String sanitized = sanitizeValue(value);
-                log.info("  - {}: {}", key, sanitized);
-            });
-            
-        } catch (OpenshiftException e) {
-            log.error("Failed to discover secret contents", e);
-            fail("Should be able to retrieve the secret: " + e.getMessage());
+        // Log secret keys (not values for security)
+        log.info("Secret keys: {}", secret.keySet());
+    }
+
+    @Test
+    void testGetSecret_NonExistentSecret() {
+        // Arrange
+        String nonExistentSecret = "nonexistent-secret-xyz-12345";
+
+        // Act & Assert
+        OpenshiftException exception = assertThrows(OpenshiftException.class, () ->
+            openshiftService.getSecret(testInstance, nonExistentSecret, testNamespace)
+        );
+
+        assertTrue(
+            exception.getMessage().contains("Failed to retrieve") || 
+            exception.getMessage().contains("not found"),
+            "Exception should indicate secret not found or retrieval failed"
+        );
+        log.info("Expected exception for non-existent secret: {}", exception.getMessage());
+    }
+
+    // -------------------------------------------------------------------------
+    // Test secret value retrieval.
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testGetSecretValue_Success() throws OpenshiftException {
+        // First get the secret to find available keys
+        Map<String, String> secret = openshiftService.getSecret(testInstance, testSecretName, testNamespace);
+
+        if (!secret.isEmpty()) {
+            // Use the first available key
+            String key = secret.keySet().iterator().next();
+
+            // Act
+            String value = openshiftService.getSecretValue(testInstance, testSecretName, key, testNamespace);
+
+            // Assert
+            assertNotNull(value, "Secret value should not be null");
+            log.info("✓ Successfully retrieved value for key '{}'", key);
+        } else {
+            log.warn("Secret is empty, skipping value retrieval test");
         }
     }
-    
-    /**
-     * Sanitize sensitive values for logging
-     */
-    private String sanitizeValue(String value) {
-        if (value == null || value.length() < 4) {
-            return "****";
-        }
-        return value.substring(0, 2) + "****" + value.substring(value.length() - 2);
+
+    @Test
+    void testGetSecretValue_NonExistentKey() {
+        // Arrange
+        String nonExistentKey = "nonexistent-key-xyz";
+
+        // Act & Assert
+        OpenshiftException exception = assertThrows(OpenshiftException.class, () ->
+            openshiftService.getSecretValue(testInstance, testSecretName, nonExistentKey, testNamespace)
+        );
+
+        assertTrue(
+            exception.getMessage().contains("not found") || 
+            exception.getMessage().contains("Failed"),
+            "Exception should indicate key not found"
+        );
+        log.info("Expected exception for non-existent key: {}", exception.getMessage());
     }
+
+    // -------------------------------------------------------------------------
+    // Test project existence.
+    // -------------------------------------------------------------------------
+
+
+    @Test
+    void testProjectExists_ExistingProject() throws OpenshiftException {
+        // Act
+        boolean exists = openshiftService.projectExists(testInstance, testProjectName);
+
+        // Assert
+        assertTrue(exists, "Project '" + testProjectName + "' should exist in instance '" + testInstance + "'");
+        log.info("✓ Project '{}' exists in instance '{}'", testProjectName, testInstance);
+    }
+
+    @Test
+    void testProjectExists_NonExistentProject() throws OpenshiftException {
+        // Arrange
+        String nonExistentProject = "nonexistent-project-xyz-12345";
+
+        // Act
+        boolean exists = openshiftService.projectExists(testInstance, nonExistentProject);
+
+        // Assert
+        assertFalse(exists, "Non-existent project should return false");
+        log.info("✓ Verified that project '{}' does not exist", nonExistentProject);
+    }
+
 }

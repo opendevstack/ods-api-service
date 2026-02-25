@@ -113,6 +113,18 @@ class JiraServiceIntegrationTest {
         log.info("Project '{}' exists on instance '{}': {}", testNonExistentProjectKey, testInstance, exists);
     }
 
+    @Test
+    void testProjectExists_nullInstanceName() {
+      // This should throw a JiraException
+        assertThrows(JiraException.class, () -> jiraService.projectExists(null, testProjectKey),
+                "Calling projectExists with null instance name should throw JiraException");
+        assertThrows(JiraException.class, () -> jiraService.projectExists("", testProjectKey),
+                "Calling projectExists with blank instance name should throw JiraException");
+        assertThrows(JiraException.class, () -> jiraService.projectExists("   ", testProjectKey),   
+                "Calling projectExists with whitespace instance name should throw JiraException");
+
+    }
+
     // -------------------------------------------------------------------------
     // Default-instance tests
     // -------------------------------------------------------------------------
@@ -147,13 +159,4 @@ class JiraServiceIntegrationTest {
         log.info("projectExists('{}') via default instance returned: {}", testNonExistentProjectKey, exists);
     }
 
-    @Test
-    void testProjectExists_NullInstance_SameAsDefaultInstance() throws JiraException {
-        // Passing null explicitly must produce the same result as the no-arg overload
-        boolean viaNull    = jiraService.projectExists(null, testProjectKey);
-        boolean viaDefault = jiraService.projectExists(testProjectKey);
-
-        assertEquals(viaDefault, viaNull,
-                "Passing null instanceName should behave identically to the default-instance overload");
-    }
 }
