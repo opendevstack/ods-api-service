@@ -130,6 +130,33 @@ public class BitbucketServiceImpl implements BitbucketService {
     }
 
     @Override
+    public boolean projectExists(String instanceName, String projectKey) throws BitbucketException {
+        log.debug("Checking if project '{}' exists in instance '{}'", projectKey, instanceName);
+
+        try {
+            BitbucketApiClient bitbucketClient = clientFactory.getClient(instanceName);
+            ApiClient apiClient = bitbucketClient.getApiClient();
+
+            ProjectApi projectApi = new ProjectApi(apiClient);
+            projectApi.getProject(projectKey);
+
+            log.debug("Project '{}' exists in instance '{}'", projectKey, instanceName);
+            return true;
+
+        } catch (HttpClientErrorException.NotFound e) {
+            log.debug("Project '{}' does not exist in instance '{}'", projectKey, instanceName);
+            return false;
+
+        } catch (RestClientException e) {
+            log.error("Error checking if project '{}' exists in instance '{}'", projectKey, instanceName, e);
+            throw new BitbucketException(
+                    String.format("Failed to check if project '%s' exists in instance '%s'",
+                            projectKey, instanceName),
+                    e);
+        }
+    }
+
+    @Override
     public Set<String> getAvailableInstances() {
         return clientFactory.getAvailableInstances();
     }

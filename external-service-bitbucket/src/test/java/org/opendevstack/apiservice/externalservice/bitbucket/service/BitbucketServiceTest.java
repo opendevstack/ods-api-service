@@ -6,6 +6,7 @@ import org.opendevstack.apiservice.externalservice.bitbucket.client.BitbucketApi
 import org.opendevstack.apiservice.externalservice.bitbucket.client.model.GetBranches200Response;
 import org.opendevstack.apiservice.externalservice.bitbucket.client.model.RestBranch;
 import org.opendevstack.apiservice.externalservice.bitbucket.client.model.RestMinimalRef;
+import org.opendevstack.apiservice.externalservice.bitbucket.client.model.RestProject;
 import org.opendevstack.apiservice.externalservice.bitbucket.exception.BitbucketException;
 import org.opendevstack.apiservice.externalservice.bitbucket.service.impl.BitbucketServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
 import java.util.Collections;
@@ -277,6 +279,96 @@ class BitbucketServiceTest {
         
         // Assert
         assertFalse(result);
+        verify(clientFactory).getClient(instanceName);
+        verify(bitbucketApiClient).getApiClient();
+    }
+
+    @Test
+    void testProjectExists_True() throws Exception {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+
+        when(clientFactory.getClient(instanceName)).thenReturn(bitbucketApiClient);
+        when(bitbucketApiClient.getApiClient()).thenReturn(apiClient);
+
+        // Mock invokeAPI to return a successful response (project found)
+        RestProject restProject = new RestProject();
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(ResponseEntity.ok(restProject));
+
+        // Act
+        boolean result = bitbucketService.projectExists(instanceName, projectKey);
+
+        // Assert
+        assertTrue(result);
+        verify(clientFactory).getClient(instanceName);
+        verify(bitbucketApiClient).getApiClient();
+    }
+
+    @Test
+    void testProjectExists_False_NotFound() throws Exception {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "NONEXISTENT";
+
+        when(clientFactory.getClient(instanceName)).thenReturn(bitbucketApiClient);
+        when(bitbucketApiClient.getApiClient()).thenReturn(apiClient);
+
+        // Mock invokeAPI to throw HttpClientErrorException.NotFound (404)
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenThrow(HttpClientErrorException.NotFound.create(
+                org.springframework.http.HttpStatus.NOT_FOUND, "Not Found",
+                org.springframework.http.HttpHeaders.EMPTY, new byte[0], null));
+
+        // Act
+        boolean result = bitbucketService.projectExists(instanceName, projectKey);
+
+        // Assert
+        assertFalse(result);
+        verify(clientFactory).getClient(instanceName);
+        verify(bitbucketApiClient).getApiClient();
+    }
+
+    @Test
+    void testProjectExists_InstanceNotConfigured() throws BitbucketException {
+        // Arrange
+        String instanceName = "nonexistent";
+        String projectKey = "PROJ";
+
+        when(clientFactory.getClient(instanceName))
+            .thenThrow(new BitbucketException("Instance not configured"));
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            bitbucketService.projectExists(instanceName, projectKey)
+        );
+
+        assertTrue(exception.getMessage().contains("Instance not configured"));
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testProjectExists_ThrowsExceptionOnNetworkError() throws BitbucketException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+
+        when(clientFactory.getClient(instanceName)).thenReturn(bitbucketApiClient);
+        when(bitbucketApiClient.getApiClient()).thenReturn(apiClient);
+
+        // Mock invokeAPI to throw RestClientException (network / infrastructure error)
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenThrow(new RestClientException("Connection refused"));
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            bitbucketService.projectExists(instanceName, projectKey)
+        );
+
+        assertTrue(exception.getMessage().contains("Failed to check if project"));
+        assertTrue(exception.getMessage().contains(projectKey));
+        assertNotNull(exception.getCause());
         verify(clientFactory).getClient(instanceName);
         verify(bitbucketApiClient).getApiClient();
     }

@@ -284,4 +284,57 @@ class BitbucketServiceIntegrationTest {
         
         log.info("Branch lookup works correctly for: {}", defaultBranch);
     }
+
+    @Test
+    void testProjectExists_ExistingProject() throws BitbucketException {
+        // Act - Use the same project key that is already known to exist (used by other tests)
+        boolean exists = bitbucketService.projectExists(testInstance, testProjectKey);
+
+        // Assert
+        assertTrue(exists, "Project '" + testProjectKey + "' should exist in instance '" + testInstance + "'");
+        log.info("Verified project exists: {}", testProjectKey);
+    }
+
+    @Test
+    void testProjectExists_NonExistentProject() throws BitbucketException {
+        // Arrange
+        String nonExistentProject = "ZZNONEXIST99";
+
+        // Act
+        boolean exists = bitbucketService.projectExists(testInstance, nonExistentProject);
+
+        // Assert
+        assertFalse(exists, "Non-existent project should return false");
+        log.info("Verified project does not exist: {}", nonExistentProject);
+    }
+
+    @Test
+    void testProjectExists_InvalidInstance() {
+        // Arrange
+        String invalidInstance = "invalid-instance";
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            bitbucketService.projectExists(invalidInstance, testProjectKey)
+        );
+
+        assertTrue(
+            exception.getMessage().contains("not configured") ||
+            exception.getMessage().contains("No Bitbucket instance"),
+            "Exception should indicate instance not configured"
+        );
+        log.info("Expected exception for invalid instance: {}", exception.getMessage());
+    }
+
+    @Test
+    void testProjectExists_ConsistentResults() throws BitbucketException {
+        // Act - Call the method multiple times
+        boolean exists1 = bitbucketService.projectExists(testInstance, testProjectKey);
+        boolean exists2 = bitbucketService.projectExists(testInstance, testProjectKey);
+
+        // Assert - Results should be consistent
+        assertEquals(exists1, exists2,
+            "projectExists should return consistent results across multiple calls");
+        log.info("Verified consistent projectExists result for '{}': {}", testProjectKey, exists1);
+    }
 }
