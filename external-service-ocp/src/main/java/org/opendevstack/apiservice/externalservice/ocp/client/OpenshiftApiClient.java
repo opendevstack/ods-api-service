@@ -125,7 +125,7 @@ public class OpenshiftApiClient {
      * @param secretName Name of the secret
      * @return true if the secret exists, false otherwise
      */
-    public boolean secretExists(String secretName) {
+    public boolean secretExists(String secretName) throws OpenshiftException {
         return secretExists(secretName, config.getNamespace());
     }
     
@@ -136,7 +136,7 @@ public class OpenshiftApiClient {
      * @param namespace Namespace where the secret might be located
      * @return true if the secret exists, false otherwise
      */
-    public boolean secretExists(String secretName, String namespace) {
+    public boolean secretExists(String secretName, String namespace) throws OpenshiftException {
         try {
             Secret secret = openShiftClient.secrets()
                     .inNamespace(namespace)
@@ -148,8 +148,15 @@ public class OpenshiftApiClient {
             }
             return exists;
         } catch (KubernetesClientException e) {
-            log.debug("Secret '{}' does not exist in namespace '{}'", secretName, namespace);
-            return false;
+            if (e.getCode() == 403) {
+                log.debug("Secret '{}' does not exist in namespace '{}' or you don't have access to it", secretName, namespace);
+                return false;
+            }
+            log.error("Error checking if secret '{}' exists in namespace '{}'", 
+                      secretName, namespace, namespace, e);
+            throw new OpenshiftException(
+                String.format("Failed to check if secret '%s' exists in OpenShift namespace '%s'", 
+                              secretName, namespace), e);
         }
     }
     
