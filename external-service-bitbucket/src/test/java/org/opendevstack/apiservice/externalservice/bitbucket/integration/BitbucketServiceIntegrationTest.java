@@ -16,10 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration test for BitbucketService.
- * 
  * This test runs against a real Bitbucket instance configured in application-local.yaml.
  * It requires actual Bitbucket connectivity and valid credentials.
- * 
  * To run these tests:
  * 1. Ensure application-local.yaml has valid Bitbucket configuration
  * 2. Set environment variable: BITBUCKET_INTEGRATION_TEST_ENABLED=true
@@ -28,14 +26,12 @@ import static org.junit.jupiter.api.Assertions.*;
  *    - BITBUCKET_TEST_PROJECT_KEY (e.g., "PROJ")
  *    - BITBUCKET_TEST_REPOSITORY_SLUG (e.g., "my-repo")
  *    - BITBUCKET_TEST_EXISTING_BRANCH (e.g., "develop")
- * 
  * Example:
  * export BITBUCKET_INTEGRATION_TEST_ENABLED=true
  * export BITBUCKET_TEST_INSTANCE=dev
  * export BITBUCKET_TEST_PROJECT_KEY=DEVSTACK
  * export BITBUCKET_TEST_REPOSITORY_SLUG=devstack-api-service
  * export BITBUCKET_TEST_EXISTING_BRANCH=develop
- * 
  * Then run: mvn test -Dtest=BitbucketServiceIntegrationTest
  */
 @SpringBootTest(classes = BitbucketIntegrationTestConfig.class)

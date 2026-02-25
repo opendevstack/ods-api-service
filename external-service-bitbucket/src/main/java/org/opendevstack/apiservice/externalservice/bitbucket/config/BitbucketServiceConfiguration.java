@@ -30,11 +30,11 @@ public class BitbucketServiceConfiguration {
      *   bitbucket:
      *     instances:
      *       dev:
-     *         base-url: https://bitbucket.dev.example.com
+     *         base-url: "https://bitbucket.dev.example.com"
      *         username: admin
      *         password: password123
      *       prod:
-     *         base-url: https://bitbucket.example.com
+     *         base-url: "https://bitbucket.example.com"
      *         username: admin
      *         password: secret
      */
@@ -46,7 +46,7 @@ public class BitbucketServiceConfiguration {
     @Data
     public static class BitbucketInstanceConfig {
         /**
-         * The base URL of the Bitbucket server (e.g., https://bitbucket.example.com)
+         * The base URL of the Bitbucket server (e.g., "https://bitbucket.example.com")
          */
         private String baseUrl;
         

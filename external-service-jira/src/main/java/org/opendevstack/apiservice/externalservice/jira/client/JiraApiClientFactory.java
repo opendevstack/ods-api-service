@@ -53,8 +53,7 @@ public class JiraApiClientFactory {
      *   <li>If no instances are configured at all, a {@link JiraException} is thrown.</li>
      * </ul>
      *
-     * @param instanceName Explicit instance name, or {@code null}/{@code ""} to use the default
-     * @return The resolved instance name (never {@code null}/blank)
+     * @return The resolved default instance name (never {@code null}/blank)
      * @throws JiraException if no Jira instances are configured
      */
     public String getDefaultInstanceName() throws JiraException {
@@ -154,39 +153,40 @@ public class JiraApiClientFactory {
     private RestTemplate createRestTemplate(JiraInstanceConfig config) {
         RestTemplate restTemplate = restTemplateBuilder.build();
 
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(config.getConnectionTimeout());
-        requestFactory.setReadTimeout(config.getReadTimeout());
-        restTemplate.setRequestFactory(requestFactory);
-
         if (config.isTrustAllCertificates()) {
             log.warn("Trust all certificates is enabled for Jira connection. "
                     + "This should only be used in development environments!");
-            configureTrustAllCertificates(restTemplate);
+            restTemplate.setRequestFactory(createTrustAllRequestFactory(config));
+        } else {
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(config.getConnectionTimeout());
+            requestFactory.setReadTimeout(config.getReadTimeout());
+            restTemplate.setRequestFactory(requestFactory);
         }
 
         return restTemplate;
     }
 
     /**
-     * Configure RestTemplate to trust all SSL certificates.
+     * Create a {@link SimpleClientHttpRequestFactory} that trusts all SSL certificates
+     * <b>only for this specific RestTemplate</b>, without modifying the JVM-wide defaults.
+     * <p>
      * WARNING: This should only be used in development environments.
      *
-     * @param restTemplate RestTemplate to configure
+     * @param config Instance configuration (for timeouts)
+     * @return A request factory whose connections skip SSL verification
      */
     @SuppressWarnings({"java:S4830", "java:S1186"})
-    private void configureTrustAllCertificates(RestTemplate restTemplate) {
+    private SimpleClientHttpRequestFactory createTrustAllRequestFactory(JiraInstanceConfig config) {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
                     public X509Certificate[] getAcceptedIssuers() {
                         return new X509Certificate[0];
                     }
-                    // Intentionally empty - trusting all certificates for development environments
                     public void checkClientTrusted(X509Certificate[] certs, String authType) {
                         // No validation performed - development only
                     }
-                    // Intentionally empty - trusting all certificates for development environments
                     public void checkServerTrusted(X509Certificate[] certs, String authType) {
                         // No validation performed - development only
                     }
@@ -196,12 +196,30 @@ public class JiraApiClientFactory {
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
 
-            HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-            // Intentionally disabling hostname verification for development environments
-            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+            final javax.net.ssl.SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+            final javax.net.ssl.HostnameVerifier trustAllHostnames = (hostname, session) -> true;
+
+            // Override prepareConnection so SSL settings apply only to this RestTemplate
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory() {
+                @Override
+                protected void prepareConnection(java.net.HttpURLConnection connection, String httpMethod) throws java.io.IOException {
+                    if (connection instanceof HttpsURLConnection httpsConnection) {
+                        httpsConnection.setSSLSocketFactory(sslSocketFactory);
+                        httpsConnection.setHostnameVerifier(trustAllHostnames);
+                    }
+                    super.prepareConnection(connection, httpMethod);
+                }
+            };
+            requestFactory.setConnectTimeout(config.getConnectionTimeout());
+            requestFactory.setReadTimeout(config.getReadTimeout());
+            return requestFactory;
 
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("Failed to configure SSL trust all certificates", e);
+            log.error("Failed to configure SSL trust all certificates, falling back to default factory", e);
+            SimpleClientHttpRequestFactory fallback = new SimpleClientHttpRequestFactory();
+            fallback.setConnectTimeout(config.getConnectionTimeout());
+            fallback.setReadTimeout(config.getReadTimeout());
+            return fallback;
         }
     }
 }
