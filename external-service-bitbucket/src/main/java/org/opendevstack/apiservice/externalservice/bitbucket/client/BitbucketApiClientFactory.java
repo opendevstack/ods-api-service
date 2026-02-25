@@ -1,127 +1,150 @@
 package org.opendevstack.apiservice.externalservice.bitbucket.client;
 
+import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.bitbucket.config.BitbucketServiceConfiguration;
 import org.opendevstack.apiservice.externalservice.bitbucket.config.BitbucketServiceConfiguration.BitbucketInstanceConfig;
 import org.opendevstack.apiservice.externalservice.bitbucket.exception.BitbucketException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import javax.net.ssl.*;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 
 /**
- * Factory for creating BitbucketApiClient instances.
+ * Factory for creating {@link BitbucketApiClient} instances.
  * Uses the factory pattern to provide configured clients for different Bitbucket instances.
  * Clients are cached and reused for efficiency.
  */
 @Component
 @Slf4j
 public class BitbucketApiClientFactory {
-    
+
     private final BitbucketServiceConfiguration configuration;
-    private final Map<String, BitbucketApiClient> clientCache;
     private final RestTemplateBuilder restTemplateBuilder;
-    
+
     /**
-     * Constructor with dependency injection
-     * 
-     * @param configuration Bitbucket service configuration
+     * Constructor with dependency injection.
+     *
+     * @param configuration      Bitbucket service configuration
      * @param restTemplateBuilder RestTemplate builder for creating HTTP clients
      */
-    public BitbucketApiClientFactory(BitbucketServiceConfiguration configuration, 
+    public BitbucketApiClientFactory(BitbucketServiceConfiguration configuration,
                                      RestTemplateBuilder restTemplateBuilder) {
         this.configuration = configuration;
         this.restTemplateBuilder = restTemplateBuilder;
-        this.clientCache = new ConcurrentHashMap<>();
-        
-        log.info("BitbucketApiClientFactory initialized with {} instance(s)", 
+
+        log.info("BitbucketApiClientFactory initialized with {} instance(s)",
                  configuration.getInstances().size());
     }
-    
+
     /**
-     * Get a BitbucketApiClient for a specific instance
-     * 
-     * @param instanceName Name of the Bitbucket instance
-     * @return Configured BitbucketApiClient
-     * @throws BitbucketException if the instance is not configured
+     * Resolve the effective instance name.
+     * <ul>
+     *   <li>If the default instance is configured via {@code externalservices.bitbucket.default-instance}, it is returned.</li>
+     *   <li>Otherwise the first entry of the instances map is returned (insertion order).</li>
+     *   <li>If no instances are configured at all, a {@link BitbucketException} is thrown.</li>
+     * </ul>
+     *
+     * @return The resolved default instance name (never {@code null}/blank)
+     * @throws BitbucketException if no Bitbucket instances are configured
      */
-    public BitbucketApiClient getClient(String instanceName) throws BitbucketException {
-        // Check cache first
-        if (clientCache.containsKey(instanceName)) {
-            log.debug("Returning cached client for instance '{}'", instanceName);
-            return clientCache.get(instanceName);
+    public String getDefaultInstanceName() throws BitbucketException {
+
+        String defaultInstance = configuration.getDefaultInstance();
+        if (defaultInstance != null && !defaultInstance.isBlank()) {
+            return defaultInstance;
         }
-        
-        // Create new client
-        BitbucketInstanceConfig instanceConfig = configuration.getInstances().get(instanceName);
-        
-        if (instanceConfig == null) {
-            throw new BitbucketException(
-                String.format("Bitbucket instance '%s' is not configured. Available instances: %s", 
-                              instanceName, configuration.getInstances().keySet())
-            );
-        }
-        
-        log.info("Creating new BitbucketApiClient for instance '{}'", instanceName);
-        
-        RestTemplate restTemplate = createRestTemplate(instanceConfig);
-        BitbucketApiClient client = new BitbucketApiClient(instanceName, instanceConfig, restTemplate);
-        
-        // Cache the client
-        clientCache.put(instanceName, client);
-        
-        return client;
-    }
-    
-    /**
-     * Get the default client (first configured instance)
-     * 
-     * @return BitbucketApiClient for the first configured instance
-     * @throws BitbucketException if no instances are configured
-     */
-    public BitbucketApiClient getDefaultClient() throws BitbucketException {
-        if (configuration.getInstances().isEmpty()) {
+
+        Map<String, ?> instances = configuration.getInstances();
+        if (instances == null || instances.isEmpty()) {
             throw new BitbucketException("No Bitbucket instances configured");
         }
-        
-        String firstInstanceName = configuration.getInstances().keySet().iterator().next();
-        log.debug("Using default instance: '{}'", firstInstanceName);
-        
-        return getClient(firstInstanceName);
+
+        return instances.keySet().iterator().next();
     }
-    
+
     /**
-     * Get all available instance names
-     * 
+     * Get a {@link BitbucketApiClient} for a specific instance.
+     * If {@code instanceName} is {@code null} or blank, a {@link BitbucketException} is thrown.
+     *
+     * @param instanceName Name of the Bitbucket instance
+     * @return Configured BitbucketApiClient
+     * @throws BitbucketException if the instance name is null/blank or not configured
+     */
+    @Cacheable(value = "bitbucketApiClients", key = "#instanceName")
+    public BitbucketApiClient getClient(String instanceName) throws BitbucketException {
+        if (instanceName == null || instanceName.isBlank()) {
+            throw new BitbucketException(
+                String.format("Provide instance name. Available instances: %s",
+                       configuration.getInstances().keySet()));
+        }
+
+        BitbucketInstanceConfig instanceConfig = configuration.getInstances().get(instanceName);
+
+        if (instanceConfig == null) {
+            throw new BitbucketException(
+                    String.format("Bitbucket instance '%s' is not configured. Available instances: %s",
+                                  instanceName, configuration.getInstances().keySet()));
+        }
+
+        log.info("Creating new BitbucketApiClient for instance '{}'", instanceName);
+
+        RestTemplate restTemplate = createRestTemplate(instanceConfig);
+        return new BitbucketApiClient(instanceName, instanceConfig, restTemplate);
+    }
+
+    /**
+     * Get the default client, as determined by {@code externalservices.bitbucket.default-instance}.
+     * Falls back to the first configured instance when {@code default-instance} is not set.
+     *
+     * @return BitbucketApiClient for the default instance
+     * @throws BitbucketException if no instances are configured
+     */
+    @Cacheable(value = "bitbucketApiClients", key = "'default'")
+    public BitbucketApiClient getClient() throws BitbucketException {
+        String defaultInstanceName = getDefaultInstanceName();
+        BitbucketInstanceConfig instanceConfig = configuration.getInstances().get(defaultInstanceName);
+        RestTemplate restTemplate = createRestTemplate(instanceConfig);
+
+        return new BitbucketApiClient(defaultInstanceName, instanceConfig, restTemplate);
+    }
+
+    /**
+     * Get all available instance names.
+     *
      * @return Set of configured instance names
      */
-    public java.util.Set<String> getAvailableInstances() {
+    public Set<String> getAvailableInstances() {
         return configuration.getInstances().keySet();
     }
-    
+
     /**
-     * Check if an instance is configured
-     * 
+     * Check if an instance is configured.
+     *
      * @param instanceName Name of the instance to check
      * @return true if configured, false otherwise
      */
     public boolean hasInstance(String instanceName) {
         return configuration.getInstances().containsKey(instanceName);
     }
-    
+
     /**
-     * Clear the client cache (useful for testing or when configuration changes)
+     * Clear the client cache (useful for testing or when configuration changes).
      */
+    @CacheEvict(value = "bitbucketApiClients", allEntries = true)
     public void clearCache() {
         log.info("Clearing BitbucketApiClient cache");
-        clientCache.clear();
     }
     
     /**

@@ -17,6 +17,13 @@ import java.util.Map;
 public class BitbucketServiceConfiguration {
     
     /**
+     * Optional name of the default Bitbucket instance.
+     * When set, {@code BitbucketApiClientFactory#getClient()} will use this instance.
+     * If not set, the first entry in the instances map is used as default.
+     */
+    private String defaultInstance;
+
+    /**
      * Map of Bitbucket instances with instance name as key and configuration as value.
      * Example:
      * externalservice:
