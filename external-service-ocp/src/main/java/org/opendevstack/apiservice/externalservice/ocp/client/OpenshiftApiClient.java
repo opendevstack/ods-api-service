@@ -2,19 +2,22 @@ package org.opendevstack.apiservice.externalservice.ocp.client;
 
 import org.opendevstack.apiservice.externalservice.ocp.config.OpenshiftServiceConfiguration.OpenshiftInstanceConfig;
 import org.opendevstack.apiservice.externalservice.ocp.exception.OpenshiftException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.authorization.v1.SelfSubjectAccessReview;
+import io.fabric8.kubernetes.api.model.authorization.v1.SelfSubjectAccessReviewBuilder;
+import io.fabric8.kubernetes.api.model.authorization.v1.ResourceAttributes;
+import io.fabric8.kubernetes.api.model.authorization.v1.ResourceAttributesBuilder;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.openshift.api.model.Project;
+import io.fabric8.openshift.client.OpenShiftClient;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Client for interacting with OpenShift API.
+ * Client for interacting with OpenShift API using Fabric8 OpenShift Client.
  * Provides methods to retrieve secrets and other resources from an OpenShift cluster.
  */
 @Slf4j
@@ -22,21 +25,19 @@ public class OpenshiftApiClient {
     
     private final String instanceName;
     private final OpenshiftInstanceConfig config;
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
+    private final OpenShiftClient openShiftClient;
     
     /**
      * Constructor for OpenshiftApiClient
      * 
      * @param instanceName Name of the OpenShift instance
      * @param config Configuration for this instance
-     * @param restTemplate RestTemplate configured with appropriate timeouts and SSL settings
+     * @param openShiftClient Fabric8 OpenShift client configured for this instance
      */
-    public OpenshiftApiClient(String instanceName, OpenshiftInstanceConfig config, RestTemplate restTemplate) {
+    public OpenshiftApiClient(String instanceName, OpenshiftInstanceConfig config, OpenShiftClient openShiftClient) {
         this.instanceName = instanceName;
         this.config = config;
-        this.restTemplate = restTemplate;
-        this.objectMapper = new ObjectMapper();
+        this.openShiftClient = openShiftClient;
     }
     
     /**
@@ -62,36 +63,25 @@ public class OpenshiftApiClient {
         log.debug("Retrieving secret '{}' from namespace '{}' in OpenShift instance '{}'", 
                   secretName, namespace, instanceName);
         
-        String url = String.format("%s/api/v1/namespaces/%s/secrets/%s", 
-                                   config.getApiUrl(), namespace, secretName);
-        
         try {
-            HttpHeaders headers = createHeaders();
-            HttpEntity<String> entity = new HttpEntity<>(headers);
+            Secret secret = openShiftClient.secrets()
+                    .inNamespace(namespace)
+                    .withName(secretName)
+                    .get();
             
-            ResponseEntity<String> response = restTemplate.exchange(
-                url, 
-                HttpMethod.GET, 
-                entity, 
-                String.class
-            );
-            
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                return parseSecretData(response.getBody());
-            } else {
+            if (secret == null) {
                 throw new OpenshiftException(
-                    String.format("Failed to retrieve secret '%s' from namespace '%s'. Status: %s", 
-                                  secretName, namespace, response.getStatusCode())
+                    String.format("Failed to retrieve secret '%s' from namespace '%s'. Secret not found.", 
+                                  secretName, namespace)
                 );
             }
             
-        } catch (RestClientException e) {
+            return decodeSecretData(secret);
+            
+        } catch (KubernetesClientException e) {
             log.error("Error retrieving secret '{}' from OpenShift instance '{}'", secretName, instanceName, e);
             throw new OpenshiftException(
-                String.format("Failed to retrieve secret '%s' from OpenShift instance '%s'", 
-                              secretName, instanceName), 
-                e
-            );
+                String.format("Failed to retrieve secret '%s' from OpenShift instance '%s'", secretName, instanceName), e);
         }
     }
     
@@ -148,55 +138,78 @@ public class OpenshiftApiClient {
      */
     public boolean secretExists(String secretName, String namespace) {
         try {
-            getSecret(secretName, namespace);
-            return true;
-        } catch (OpenshiftException e) {
+            Secret secret = openShiftClient.secrets()
+                    .inNamespace(namespace)
+                    .withName(secretName)
+                    .get();
+            boolean exists = secret != null;
+            if (!exists) {
+                log.debug("Secret '{}' does not exist in namespace '{}'", secretName, namespace);
+            }
+            return exists;
+        } catch (KubernetesClientException e) {
             log.debug("Secret '{}' does not exist in namespace '{}'", secretName, namespace);
             return false;
         }
     }
     
     /**
-     * Create HTTP headers with authentication token
+     * Check if a project exists in the OpenShift cluster
      * 
-     * @return HttpHeaders with authorization and content type
+     * @param projectName Name of the project
+     * @return true if the project exists, false if not found
+     * @throws OpenshiftException if any other error occurs
      */
-    private HttpHeaders createHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(config.getToken());
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        return headers;
+    public boolean projectExists(String projectName) throws OpenshiftException {
+        try {
+            log.debug("Checking if project '{}' exists in OpenShift instance '{}'", projectName, instanceName);
+            
+            Project project = openShiftClient.projects()
+                    .withName(projectName)
+                    .get();
+            
+            if (project != null) {
+                log.debug("Project '{}' exists in instance '{}'", projectName, instanceName);
+                return true;
+            } else {
+                log.debug("Project '{}' does not exist in instance '{}'", projectName, instanceName);
+                return false;
+            }
+            
+        } catch (KubernetesClientException e) {
+            if (e.getCode() == 403) {
+                log.debug("Project '{}' does not exist in instance '{}' or you don't have access to it", projectName, instanceName);
+                return false;
+            }
+            log.error("Error checking if project '{}' exists in instance '{}': {}", 
+                     projectName, instanceName, e.getMessage(), e);
+            throw new OpenshiftException(
+                String.format("Failed to check if project '%s' exists in OpenShift instance '%s'", 
+                              projectName, instanceName),
+                e
+            );
+        }
     }
     
     /**
-     * Parse secret data from the API response and decode base64 values
+     * Decode secret data from a Fabric8 Secret object, decoding base64 values
      * 
-     * @param jsonResponse JSON response from OpenShift API
+     * @param secret The Fabric8 Secret object
      * @return Map with decoded secret values
-     * @throws OpenshiftException if parsing fails
      */
-    private Map<String, String> parseSecretData(String jsonResponse) throws OpenshiftException {
-        try {
-            JsonNode root = objectMapper.readTree(jsonResponse);
-            JsonNode dataNode = root.get("data");
-            
-            Map<String, String> secretData = new HashMap<>();
-            
-            if (dataNode != null && dataNode.isObject()) {
-                dataNode.fieldNames().forEachRemaining(key -> {
-                    String base64Value = dataNode.get(key).asText();
-                    String decodedValue = decodeBase64(base64Value);
-                    secretData.put(key, decodedValue);
-                });
-            }
-            
-            log.debug("Successfully parsed secret data with {} keys", secretData.size());
-            return secretData;
-            
-        } catch (Exception e) {
-            log.error("Error parsing secret data", e);
-            throw new OpenshiftException("Failed to parse secret data from OpenShift response", e);
+    private Map<String, String> decodeSecretData(Secret secret) {
+        Map<String, String> secretData = new HashMap<>();
+        Map<String, String> data = secret.getData();
+        
+        if (data != null) {
+            data.forEach((key, base64Value) -> {
+                String decodedValue = decodeBase64(base64Value);
+                secretData.put(key, decodedValue);
+            });
         }
+        
+        log.debug("Successfully parsed secret data with {} keys", secretData.size());
+        return secretData;
     }
     
     /**
@@ -231,6 +244,78 @@ public class OpenshiftApiClient {
      */
     public String getDefaultNamespace() {
         return config.getNamespace();
+    }
+    
+    /**
+     * Check if the current service account has permission to get secrets in the given namespace.
+     * Uses a SelfSubjectAccessReview to verify RBAC permissions.
+     *
+     * @param namespace Namespace to check permissions in
+     * @return true if the account can get secrets, false otherwise
+     */
+    public boolean canGetSecrets(String namespace) {
+        return canGetSecrets(namespace, null);
+    }
+
+    /**
+     * Check if the current service account has permission to get a specific secret (or secrets in general)
+     * in the given namespace. Uses a SelfSubjectAccessReview to verify RBAC permissions.
+     *
+     * @param namespace Namespace to check permissions in
+     * @param secretName Optional specific secret name; if null, checks general access to secrets
+     * @return true if the account can get secrets, false otherwise
+     */
+    public boolean canGetSecrets(String namespace, String secretName) {
+        try {
+            log.debug("Checking 'get' permission on secrets in namespace '{}' for instance '{}'",
+                      namespace, instanceName);
+
+            ResourceAttributesBuilder raBuilder = new ResourceAttributesBuilder()
+                    .withNamespace(namespace)
+                    .withVerb("get")
+                    .withResource("secrets");
+
+            if (secretName != null && !secretName.isEmpty()) {
+                raBuilder.withName(secretName);
+            }
+
+            SelfSubjectAccessReview review = new SelfSubjectAccessReviewBuilder()
+                    .withNewSpec()
+                        .withResourceAttributes(raBuilder.build())
+                    .endSpec()
+                    .build();
+
+            SelfSubjectAccessReview result = openShiftClient.authorization().v1()
+                    .selfSubjectAccessReview()
+                    .create(review);
+
+            boolean allowed = result.getStatus() != null && Boolean.TRUE.equals(result.getStatus().getAllowed());
+
+            if (!allowed) {
+                String reason = result.getStatus() != null ? result.getStatus().getReason() : "unknown";
+                log.warn("Permission denied: cannot 'get' secrets in namespace '{}' on instance '{}'. Reason: {}",
+                         namespace, instanceName, reason);
+            } else {
+                log.debug("Permission granted: can 'get' secrets in namespace '{}' on instance '{}'",
+                          namespace, instanceName);
+            }
+
+            return allowed;
+
+        } catch (KubernetesClientException e) {
+            log.error("Error checking secret access permissions in namespace '{}' on instance '{}'",
+                      namespace, instanceName, e);
+            return false;
+        }
+    }
+
+    /**
+     * Close the underlying OpenShift client
+     */
+    public void close() {
+        if (openShiftClient != null) {
+            openShiftClient.close();
+        }
     }
 }
 
