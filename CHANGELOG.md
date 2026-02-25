@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### External Service Jira (`exterla-service-jira`)
+- **New module** for checking project existance in Jira (Server)
+
 #### External Service API Module (`external-service-api`)
 - **New module** for standardizing external service integrations
 - `ExternalService` interface providing common contract for all external services
