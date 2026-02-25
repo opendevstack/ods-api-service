@@ -77,6 +77,7 @@ public class OpenshiftServiceImpl implements OpenshiftService {
     @Override
     public boolean secretExists(String instanceName, String secretName, String namespace) {
         try {
+            
             log.debug("Checking if secret '{}' exists in namespace '{}' in instance '{}'", 
                       secretName, namespace, instanceName);
             OpenshiftApiClient client = clientFactory.getClient(instanceName);
@@ -85,6 +86,13 @@ public class OpenshiftServiceImpl implements OpenshiftService {
             log.error("Error checking if secret exists", e);
             return false;
         }
+    }
+    
+    @Override
+    public boolean projectExists(String instanceName, String projectName) throws OpenshiftException {
+        log.debug("Checking if project '{}' exists in instance '{}'", projectName, instanceName);
+        OpenshiftApiClient client = clientFactory.getClient(instanceName);
+        return client.projectExists(projectName);
     }
     
     @Override
