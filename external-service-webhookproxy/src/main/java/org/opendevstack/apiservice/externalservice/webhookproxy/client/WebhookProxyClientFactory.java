@@ -36,12 +36,12 @@ public class WebhookProxyClientFactory {
 
     /**
      * Constructor with dependency injection
-     * 
+     *
      * @param configuration       Webhook proxy configuration
      * @param restTemplateBuilder RestTemplate builder for creating HTTP clients
      */
     public WebhookProxyClientFactory(WebhookProxyConfiguration configuration,
-            RestTemplateBuilder restTemplateBuilder) {
+                                     RestTemplateBuilder restTemplateBuilder) {
         this.configuration = configuration;
         this.restTemplateBuilder = restTemplateBuilder;
         this.clientCache = new ConcurrentHashMap<>();
@@ -52,7 +52,7 @@ public class WebhookProxyClientFactory {
 
     /**
      * Get a WebhookProxyClient for a specific cluster and project
-     * 
+     *
      * @param clusterName Name of the cluster (e.g., "cluster-a", "cluster-b")
      * @param projectKey  Project key (e.g., "example-project")
      * @return Configured WebhookProxyClient
@@ -97,7 +97,7 @@ public class WebhookProxyClientFactory {
 
     /**
      * Get all available cluster names
-     * 
+     *
      * @return Set of configured cluster names
      */
     public Set<String> getAvailableClusters() {
@@ -106,7 +106,7 @@ public class WebhookProxyClientFactory {
 
     /**
      * Check if a cluster is configured
-     * 
+     *
      * @param clusterName Name of the cluster to check
      * @return true if configured, false otherwise
      */
@@ -115,7 +115,7 @@ public class WebhookProxyClientFactory {
     }
 
     /**
-     * Create a RestTemplate configured for a specific cluster.
+     * Create a RestTemplate configured for a specific cluster
      *
      * @param config Cluster configuration
      * @return Configured RestTemplate
@@ -123,73 +123,56 @@ public class WebhookProxyClientFactory {
     private RestTemplate createRestTemplate(ClusterConfig config) {
         RestTemplate restTemplate = restTemplateBuilder.build();
 
+        // Set timeouts using SimpleClientHttpRequestFactory
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(config.getConnectionTimeout());
+        requestFactory.setReadTimeout(config.getReadTimeout());
+        restTemplate.setRequestFactory(requestFactory);
+
         if (config.isTrustAllCertificates()) {
             log.warn("Creating RestTemplate with SSL certificate verification DISABLED for webhook proxy - " +
                     "this should only be used in development environments");
-            restTemplate.setRequestFactory(createTrustAllRequestFactory(config));
-        } else {
-            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-            requestFactory.setConnectTimeout(config.getConnectionTimeout());
-            requestFactory.setReadTimeout(config.getReadTimeout());
-            restTemplate.setRequestFactory(requestFactory);
+            configureTrustAllCertificates(restTemplate);
+
         }
 
         return restTemplate;
     }
 
     /**
-     * Create a {@link SimpleClientHttpRequestFactory} that trusts all SSL certificates
-     * <b>only for this specific RestTemplate</b>, without modifying the JVM-wide defaults.
-     * <p>
-     * WARNING: This should only be used in development environments.
+     * Configure RestTemplate to trust all SSL certificates
+     * WARNING: This should only be used in development environments
      *
-     * @param config Cluster configuration (for timeouts)
-     * @return A request factory whose connections skip SSL verification
+     * @param restTemplate RestTemplate to configure
      */
     @SuppressWarnings({"java:S4830", "java:S1186"}) // Intentionally disabling SSL validation for development
-    private SimpleClientHttpRequestFactory createTrustAllRequestFactory(ClusterConfig config) {
+    private void configureTrustAllCertificates(RestTemplate restTemplate) {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[0];
+                    new X509TrustManager() {
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return new X509Certificate[0];
+                        }
+                        // Intentionally empty - trusting all certificates for development environments
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                            // No validation performed - development only
+                        }
+                        // Intentionally empty - trusting all certificates for development environments
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                            // No validation performed - development only
+                        }
                     }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                        // No validation performed - development only
-                    }
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                        // No validation performed - development only
-                    }
-                }
             };
 
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
 
-            final javax.net.ssl.SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-            final javax.net.ssl.HostnameVerifier trustAllHostnames = (hostname, session) -> true;
-
-            // Override prepareConnection so SSL settings apply only to this RestTemplate
-            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory() {
-                @Override
-                protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
-                    if (connection instanceof HttpsURLConnection httpsConnection) {
-                        httpsConnection.setSSLSocketFactory(sslSocketFactory);
-                        httpsConnection.setHostnameVerifier(trustAllHostnames);
-                    }
-                    super.prepareConnection(connection, httpMethod);
-                }
-            };
-            requestFactory.setConnectTimeout(config.getConnectionTimeout());
-            requestFactory.setReadTimeout(config.getReadTimeout());
-            return requestFactory;
+            HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+            // Intentionally disabling hostname verification for development environments
+            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
 
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("Failed to configure SSL trust all certificates, falling back to default factory", e);
-            SimpleClientHttpRequestFactory fallback = new SimpleClientHttpRequestFactory();
-            fallback.setConnectTimeout(config.getConnectionTimeout());
-            fallback.setReadTimeout(config.getReadTimeout());
-            return fallback;
+            log.error("Failed to configure SSL trust all certificates", e);
         }
     }
 }
