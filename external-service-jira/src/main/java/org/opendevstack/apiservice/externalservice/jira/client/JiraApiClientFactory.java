@@ -84,8 +84,8 @@ public class JiraApiClientFactory {
     public JiraApiClient getClient(String instanceName) throws JiraException {
         if (instanceName == null || instanceName.isBlank()) {
             throw new JiraException(
-                    String.format("Provide instance name. Available instances: %s",
-                            configuration.getInstances().keySet()));
+                String.format("Provide instance name. Available instances: %s",
+                       configuration.getInstances().keySet()));
         }
 
         JiraInstanceConfig instanceConfig = configuration.getInstances().get(instanceName);
@@ -178,19 +178,19 @@ public class JiraApiClientFactory {
     private void configureTrustAllCertificates(RestTemplate restTemplate) {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
-                        public X509Certificate[] getAcceptedIssuers() {
-                            return new X509Certificate[0];
-                        }
-                        // Intentionally empty - trusting all certificates for development environments
-                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                            // No validation performed - development only
-                        }
-                        // Intentionally empty - trusting all certificates for development environments
-                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                            // No validation performed - development only
-                        }
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
                     }
+                    // Intentionally empty - trusting all certificates for development environments
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                        // No validation performed - development only
+                    }
+                    // Intentionally empty - trusting all certificates for development environments
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                        // No validation performed - development only
+                    }
+                }
             };
 
             SSLContext sslContext = SSLContext.getInstance("TLS");

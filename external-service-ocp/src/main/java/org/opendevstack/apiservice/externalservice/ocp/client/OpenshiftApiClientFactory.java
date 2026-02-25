@@ -43,7 +43,7 @@ public class OpenshiftApiClientFactory {
         this.clientCache = new ConcurrentHashMap<>();
 
         log.info("OpenshiftApiClientFactory initialized with {} instance(s)",
-                configuration.getInstances().size());
+                 configuration.getInstances().size());
     }
 
     /**
@@ -65,8 +65,8 @@ public class OpenshiftApiClientFactory {
 
         if (instanceConfig == null) {
             throw new OpenshiftException(
-                    String.format("OpenShift instance '%s' is not configured. Available instances: %s",
-                            instanceName, configuration.getInstances().keySet())
+                String.format("OpenShift instance '%s' is not configured. Available instances: %s",
+                              instanceName, configuration.getInstances().keySet())
             );
         }
 
@@ -160,19 +160,19 @@ public class OpenshiftApiClientFactory {
     private void configureTrustAllCertificates(RestTemplate restTemplate) {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
-                        public X509Certificate[] getAcceptedIssuers() {
-                            return new X509Certificate[0];
-                        }
-                        // Intentionally empty - trusting all certificates for development environments
-                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                            // No validation performed - development only
-                        }
-                        // Intentionally empty - trusting all certificates for development environments
-                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                            // No validation performed - development only
-                        }
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
                     }
+                    // Intentionally empty - trusting all certificates for development environments
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                        // No validation performed - development only
+                    }
+                    // Intentionally empty - trusting all certificates for development environments
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                        // No validation performed - development only
+                    }
+                }
             };
 
             SSLContext sslContext = SSLContext.getInstance("TLS");
@@ -187,3 +187,4 @@ public class OpenshiftApiClientFactory {
         }
     }
 }
+

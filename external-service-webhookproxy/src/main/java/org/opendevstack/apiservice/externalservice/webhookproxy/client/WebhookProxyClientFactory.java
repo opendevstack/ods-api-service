@@ -41,7 +41,7 @@ public class WebhookProxyClientFactory {
      * @param restTemplateBuilder RestTemplate builder for creating HTTP clients
      */
     public WebhookProxyClientFactory(WebhookProxyConfiguration configuration,
-                                     RestTemplateBuilder restTemplateBuilder) {
+            RestTemplateBuilder restTemplateBuilder) {
         this.configuration = configuration;
         this.restTemplateBuilder = restTemplateBuilder;
         this.clientCache = new ConcurrentHashMap<>();
@@ -149,19 +149,19 @@ public class WebhookProxyClientFactory {
     private void configureTrustAllCertificates(RestTemplate restTemplate) {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
-                        public X509Certificate[] getAcceptedIssuers() {
-                            return new X509Certificate[0];
-                        }
-                        // Intentionally empty - trusting all certificates for development environments
-                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                            // No validation performed - development only
-                        }
-                        // Intentionally empty - trusting all certificates for development environments
-                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                            // No validation performed - development only
-                        }
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
                     }
+                    // Intentionally empty - trusting all certificates for development environments
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                        // No validation performed - development only
+                    }
+                    // Intentionally empty - trusting all certificates for development environments
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                        // No validation performed - development only
+                    }
+                }
             };
 
             SSLContext sslContext = SSLContext.getInstance("TLS");
