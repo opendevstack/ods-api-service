@@ -25,30 +25,30 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 @Slf4j
 public class OpenshiftApiClientFactory {
-
+    
     private final OpenshiftServiceConfiguration configuration;
     private final Map<String, OpenshiftApiClient> clientCache;
     private final RestTemplateBuilder restTemplateBuilder;
-
+    
     /**
      * Constructor with dependency injection
-     *
+     * 
      * @param configuration OpenShift service configuration
      * @param restTemplateBuilder RestTemplate builder for creating HTTP clients
      */
-    public OpenshiftApiClientFactory(OpenshiftServiceConfiguration configuration,
+    public OpenshiftApiClientFactory(OpenshiftServiceConfiguration configuration, 
                                      RestTemplateBuilder restTemplateBuilder) {
         this.configuration = configuration;
         this.restTemplateBuilder = restTemplateBuilder;
         this.clientCache = new ConcurrentHashMap<>();
-
-        log.info("OpenshiftApiClientFactory initialized with {} instance(s)",
+        
+        log.info("OpenshiftApiClientFactory initialized with {} instance(s)", 
                  configuration.getInstances().size());
     }
-
+    
     /**
      * Get an OpenshiftApiClient for a specific instance
-     *
+     * 
      * @param instanceName Name of the OpenShift instance
      * @return Configured OpenshiftApiClient
      * @throws OpenshiftException if the instance is not configured
@@ -59,31 +59,31 @@ public class OpenshiftApiClientFactory {
             log.debug("Returning cached client for instance '{}'", instanceName);
             return clientCache.get(instanceName);
         }
-
+        
         // Create new client
         OpenshiftInstanceConfig instanceConfig = configuration.getInstances().get(instanceName);
-
+        
         if (instanceConfig == null) {
             throw new OpenshiftException(
-                String.format("OpenShift instance '%s' is not configured. Available instances: %s",
+                String.format("OpenShift instance '%s' is not configured. Available instances: %s", 
                               instanceName, configuration.getInstances().keySet())
             );
         }
-
+        
         log.info("Creating new OpenshiftApiClient for instance '{}'", instanceName);
-
+        
         RestTemplate restTemplate = createRestTemplate(instanceConfig);
         OpenshiftApiClient client = new OpenshiftApiClient(instanceName, instanceConfig, restTemplate);
-
+        
         // Cache the client
         clientCache.put(instanceName, client);
-
+        
         return client;
     }
-
+    
     /**
      * Get the default client (first configured instance)
-     *
+     * 
      * @return OpenshiftApiClient for the first configured instance
      * @throws OpenshiftException if no instances are configured
      */
@@ -91,32 +91,32 @@ public class OpenshiftApiClientFactory {
         if (configuration.getInstances().isEmpty()) {
             throw new OpenshiftException("No OpenShift instances configured");
         }
-
+        
         String firstInstanceName = configuration.getInstances().keySet().iterator().next();
         log.debug("Using default instance: '{}'", firstInstanceName);
-
+        
         return getClient(firstInstanceName);
     }
-
+    
     /**
      * Get all available instance names
-     *
+     * 
      * @return Set of configured instance names
      */
     public java.util.Set<String> getAvailableInstances() {
         return configuration.getInstances().keySet();
     }
-
+    
     /**
      * Check if an instance is configured
-     *
+     * 
      * @param instanceName Name of the instance to check
      * @return true if configured, false otherwise
      */
     public boolean hasInstance(String instanceName) {
         return configuration.getInstances().containsKey(instanceName);
     }
-
+    
     /**
      * Clear the client cache (useful for testing or when configuration changes)
      */
@@ -124,10 +124,10 @@ public class OpenshiftApiClientFactory {
         log.info("Clearing OpenshiftApiClient cache");
         clientCache.clear();
     }
-
+    
     /**
      * Create a configured RestTemplate for an OpenShift instance
-     *
+     * 
      * @param config Configuration for the instance
      * @return Configured RestTemplate
      */
@@ -149,11 +149,11 @@ public class OpenshiftApiClientFactory {
 
         return restTemplate;
     }
-
+    
     /**
      * Configure RestTemplate to trust all SSL certificates
      * WARNING: This should only be used in development environments
-     *
+     * 
      * @param restTemplate RestTemplate to configure
      */
     @SuppressWarnings({"java:S4830", "java:S1186"}) // Intentionally disabling SSL validation for development
@@ -174,14 +174,14 @@ public class OpenshiftApiClientFactory {
                     }
                 }
             };
-
+            
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-
+            
             HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
             // Intentionally disabling hostname verification for development environments
             HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-
+            
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
             log.error("Failed to configure SSL trust all certificates", e);
         }

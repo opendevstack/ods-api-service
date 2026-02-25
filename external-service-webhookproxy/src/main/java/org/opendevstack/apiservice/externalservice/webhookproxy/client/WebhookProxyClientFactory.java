@@ -36,7 +36,7 @@ public class WebhookProxyClientFactory {
 
     /**
      * Constructor with dependency injection
-     *
+     * 
      * @param configuration       Webhook proxy configuration
      * @param restTemplateBuilder RestTemplate builder for creating HTTP clients
      */
@@ -52,7 +52,7 @@ public class WebhookProxyClientFactory {
 
     /**
      * Get a WebhookProxyClient for a specific cluster and project
-     *
+     * 
      * @param clusterName Name of the cluster (e.g., "cluster-a", "cluster-b")
      * @param projectKey  Project key (e.g., "example-project")
      * @return Configured WebhookProxyClient
@@ -97,7 +97,7 @@ public class WebhookProxyClientFactory {
 
     /**
      * Get all available cluster names
-     *
+     * 
      * @return Set of configured cluster names
      */
     public Set<String> getAvailableClusters() {
@@ -106,7 +106,7 @@ public class WebhookProxyClientFactory {
 
     /**
      * Check if a cluster is configured
-     *
+     * 
      * @param clusterName Name of the cluster to check
      * @return true if configured, false otherwise
      */
@@ -116,7 +116,7 @@ public class WebhookProxyClientFactory {
 
     /**
      * Create a RestTemplate configured for a specific cluster
-     *
+     * 
      * @param config Cluster configuration
      * @return Configured RestTemplate
      */
@@ -142,7 +142,7 @@ public class WebhookProxyClientFactory {
     /**
      * Configure RestTemplate to trust all SSL certificates
      * WARNING: This should only be used in development environments
-     *
+     * 
      * @param restTemplate RestTemplate to configure
      */
     @SuppressWarnings({"java:S4830", "java:S1186"}) // Intentionally disabling SSL validation for development
@@ -163,14 +163,14 @@ public class WebhookProxyClientFactory {
                     }
                 }
             };
-
+            
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-
+            
             HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
             // Intentionally disabling hostname verification for development environments
             HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-
+            
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
             log.error("Failed to configure SSL trust all certificates", e);
         }
