@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-### External Service Jira (`exterla-service-jira`)
+### External Service Jira (`external-service-jira`)
 - **New module** for checking project existance in Jira (Server)
+- Caching for the client
 
 #### External Service API Module (`external-service-api`)
 - **New module** for standardizing external service integrations
@@ -24,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated all external service implementations to extend `ExternalService` interface
 - Use of lombok.extern.slf4j.Slf4j to remove boilerplate code.
+- Use **io.fabric8** in the `external-service-ocp`
+- Add caching to `external-service-ocp` client factory.
 
 ### Dependencies
 - Updated Spring Boot version
@@ -140,12 +143,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Stack
 
 #### Frameworks & Libraries
-- **Spring Boot**: 3.5.7
+- **Spring Boot**: 3.5.11
 - **Spring Security**: OAuth2 Resource Server
 - **SpringDoc OpenAPI**: 2.8.13
 - **OpenTelemetry**: 2.20.1
 - **Lombok**: 1.18.42
 - **Jackson Databind Nullable**: 0.2.7
+- **io.Fabric8**: 7.5.2
 
 #### Build Tools
 - **Maven**: 3.x
@@ -171,11 +175,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This is the initial release of the DevStack API Service - a stateless, microservices-based platform for managing DevStack project lifecycles. The service provides RESTful APIs for third-party applications and CLI tools, with minimal server-side data storage and integration with external identity providers.
 
 ### Key Highlights
-- ✅ Production-ready Spring Boot 3.5.7 application
+- ✅ Production-ready Spring Boot 3.5.11 application
 - ✅ Complete API documentation with OpenAPI/Swagger
 - ✅ Multiple deployment options (JAR, Native Binary, Docker)
 - ✅ Comprehensive external service integrations
-- ✅ CI/CD pipeline with automated releases
 - ✅ Observable with OpenTelemetry support
 - ✅ Secure with OAuth2 authentication
 
