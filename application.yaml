@@ -1,3 +1,29 @@
+spring:
+  datasource:
+    url: ${AUDIT_DB_URL:jdbc:postgresql://localhost:5432/audit}
+    username: ${AUDIT_DB_USERNAME:audit}
+    password: ${AUDIT_DB_PASSWORD:audit}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 25
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+app:
+  audit:
+    enabled: ${AUDIT_ENABLED:true}
+    url-patterns:
+      - /api/v1/**
+    log-request-body: ${AUDIT_LOG_REQUEST_BODY:true}
+    max-body-size: ${AUDIT_MAX_BODY_SIZE:10240}
+
 logging:
   level:
     org.springframework: INFO
@@ -58,7 +84,7 @@ otel:
         attributes: service.name=devstack-api-service,service.version=0.0.2-SNAPSHOT,deployment.environment=development
     instrumentation:
         jdbc:
-            enabled: false
+            enabled: true
         logback-appender:
             enabled: true
 
