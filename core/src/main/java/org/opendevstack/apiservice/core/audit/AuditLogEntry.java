@@ -1,14 +1,9 @@
 package org.opendevstack.apiservice.core.audit;
 
 import java.time.Instant;
-import java.util.UUID;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,55 +11,60 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * JPA entity representing an API audit log entry persisted to PostgreSQL.
+ * Plain POJO representing an API audit log entry. Serialized to JSON and emitted via a
+ * dedicated SLF4J logger ({@code AUDIT}) instead of being persisted to a database.
+ *
+ * <p>
+ * This approach eliminates the dependency on a datasource for audit, ensuring that:
+ * <ul>
+ *   <li>Audit logging never blocks the JDBC connection pool.</li>
+ *   <li>The application starts and runs normally even if no database is available.</li>
+ * </ul>
+ * Log aggregation tools (ELK, Loki, Splunk, OpenTelemetry) consume the structured JSON
+ * lines for querying and alerting.
+ * </p>
  */
-@Entity
-@Table(name = "audit_log")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuditLogEntry {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
-	private UUID id;
-
-	@Column(nullable = false)
 	private Instant timestamp;
 
-	@Column(name = "http_method", nullable = false, length = 10)
+	@JsonProperty("http_method")
 	private String httpMethod;
 
-	@Column(name = "request_uri", nullable = false, length = 2048)
+	@JsonProperty("request_uri")
 	private String requestUri;
 
-	@Column(name = "query_string", length = 4096)
+	@JsonProperty("query_string")
 	private String queryString;
 
-	@Column(name = "request_body", columnDefinition = "TEXT")
+	@JsonProperty("request_body")
 	private String requestBody;
 
-	@Column(name = "client_id")
+	@JsonProperty("client_id")
 	private String clientId;
 
-	@Column(name = "user_id")
+	@JsonProperty("user_id")
 	private String userId;
 
-	@Column(name = "source_ip", length = 45)
+	@JsonProperty("source_ip")
 	private String sourceIp;
 
-	@Column(name = "response_status", nullable = false)
+	@JsonProperty("response_status")
 	private int responseStatus;
 
-	@Column(name = "duration_ms", nullable = false)
+	@JsonProperty("duration_ms")
 	private long durationMs;
 
-	@Column(name = "trace_id", length = 32)
+	@JsonProperty("trace_id")
 	private String traceId;
 
-	@Column(name = "user_agent", length = 512)
+	@JsonProperty("user_agent")
 	private String userAgent;
 
 }

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Import Spring Boot's default logging configuration (console pattern, colors, etc.) -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!--
+        AUDIT appender: writes raw messages (single-line JSON) to stdout.
+        No timestamp/level prefix — the JSON payload already contains timestamp, traceId, etc.
+    -->
+    <appender name="AUDIT_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        Async wrapper for the AUDIT appender.
+        - queueSize: buffer up to 1024 entries before back-pressure.
+        - discardingThreshold: 0 = never silently discard entries based on level.
+        - neverBlock: true = if queue is full, drop the entry rather than block the caller thread.
+          This guarantees audit logging can NEVER slow down an API response.
+    -->
+    <appender name="ASYNC_AUDIT" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="AUDIT_CONSOLE"/>
+    </appender>
+
+    <!--
+        Dedicated AUDIT logger.
+        - additivity="false": audit JSON lines are NOT duplicated into the root/application log.
+        - Only the ASYNC_AUDIT appender receives these messages.
+    -->
+    <logger name="AUDIT" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_AUDIT"/>
+    </logger>
+
+    <!-- Root logger: Spring Boot default console output -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

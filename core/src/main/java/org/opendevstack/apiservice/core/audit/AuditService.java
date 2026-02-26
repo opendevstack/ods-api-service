@@ -1,35 +1,51 @@
 package org.opendevstack.apiservice.core.audit;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Service responsible for persisting audit log entries asynchronously. Uses a dedicated
- * thread pool ({@code auditTaskExecutor}) to avoid blocking the HTTP request thread.
+ * Service responsible for emitting audit log entries as structured JSON via a dedicated
+ * SLF4J logger ({@code AUDIT}). This replaces the previous JPA/PostgreSQL persistence
+ * approach, eliminating the database dependency for audit and ensuring:
+ * <ul>
+ *   <li>Audit never blocks the JDBC connection pool.</li>
+ *   <li>The application remains healthy even if no database is available.</li>
+ * </ul>
+ *
+ * <p>
+ * The {@code AUDIT} logger is configured in {@code logback-spring.xml} with an
+ * {@code AsyncAppender} and {@code neverBlock=true}, so logging calls return immediately
+ * and can never slow down API responses.
+ * </p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuditService {
 
-	private final AuditLogRepository auditLogRepository;
+	private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
+
+	private final ObjectMapper objectMapper;
 
 	/**
-	 * Persist an audit log entry asynchronously. Any persistence failure is logged but
-	 * never propagated — audit must not break API responses.
-	 * @param entry the audit log entry to save
+	 * Emit an audit log entry as a single-line JSON message on the {@code AUDIT} logger.
+	 * Any serialization failure is logged on the class logger but never propagated —
+	 * audit must not break API responses.
+	 * @param entry the audit log entry to log
 	 */
-	@Async("auditTaskExecutor")
 	public void saveAuditLog(AuditLogEntry entry) {
 		try {
-			auditLogRepository.save(entry);
-			log.debug("Audit log saved: {} {} -> {}", entry.getHttpMethod(), entry.getRequestUri(),
+			String json = objectMapper.writeValueAsString(entry);
+			AUDIT_LOG.info(json);
+			log.debug("Audit log emitted: {} {} -> {}", entry.getHttpMethod(), entry.getRequestUri(),
 					entry.getResponseStatus());
 		}
 		catch (Exception ex) {
-			log.error("Failed to persist audit log entry for {} {}: {}", entry.getHttpMethod(),
+			log.error("Failed to serialize audit log entry for {} {}: {}", entry.getHttpMethod(),
 					entry.getRequestUri(), ex.getMessage(), ex);
 		}
 	}
