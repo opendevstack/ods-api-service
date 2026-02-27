@@ -1,5 +1,9 @@
 package org.opendevstack.apiservice.externalservice.bitbucket.integration;
 
+import org.opendevstack.apiservice.externalservice.bitbucket.client.BitbucketApiClientFactory;
+import org.opendevstack.apiservice.externalservice.bitbucket.config.BitbucketServiceConfiguration;
+import org.opendevstack.apiservice.externalservice.bitbucket.config.BitbucketServiceConfiguration.BitbucketInstanceConfig;
+import org.opendevstack.apiservice.externalservice.bitbucket.service.impl.BitbucketServiceImpl;
 import org.opendevstack.apiservice.externalservice.bitbucket.exception.BitbucketException;
 import org.opendevstack.apiservice.externalservice.bitbucket.service.BitbucketService;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.Set;
 
@@ -16,10 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration test for BitbucketService.
- * 
  * This test runs against a real Bitbucket instance configured in application-local.yaml.
  * It requires actual Bitbucket connectivity and valid credentials.
- * 
  * To run these tests:
  * 1. Ensure application-local.yaml has valid Bitbucket configuration
  * 2. Set environment variable: BITBUCKET_INTEGRATION_TEST_ENABLED=true
@@ -28,14 +32,12 @@ import static org.junit.jupiter.api.Assertions.*;
  *    - BITBUCKET_TEST_PROJECT_KEY (e.g., "PROJ")
  *    - BITBUCKET_TEST_REPOSITORY_SLUG (e.g., "my-repo")
  *    - BITBUCKET_TEST_EXISTING_BRANCH (e.g., "develop")
- * 
  * Example:
  * export BITBUCKET_INTEGRATION_TEST_ENABLED=true
  * export BITBUCKET_TEST_INSTANCE=dev
  * export BITBUCKET_TEST_PROJECT_KEY=DEVSTACK
  * export BITBUCKET_TEST_REPOSITORY_SLUG=devstack-api-service
  * export BITBUCKET_TEST_EXISTING_BRANCH=develop
- * 
  * Then run: mvn test -Dtest=BitbucketServiceIntegrationTest
  */
 @SpringBootTest(classes = BitbucketIntegrationTestConfig.class)
@@ -46,6 +48,12 @@ class BitbucketServiceIntegrationTest {
 
     @Autowired
     private BitbucketService bitbucketService;
+
+    @Autowired
+    private BitbucketServiceConfiguration bitbucketConfiguration;
+
+    @Autowired
+    private RestTemplateBuilder restTemplateBuilder;
 
     private String testInstance;
     private String testProjectKey;
@@ -283,5 +291,138 @@ class BitbucketServiceIntegrationTest {
             "Branch should exist when queried without refs/heads/ prefix");
         
         log.info("Branch lookup works correctly for: {}", defaultBranch);
+    }
+
+    @Test
+    void testProjectExists_ExistingProject() throws BitbucketException {
+        // Act - Use the same project key that is already known to exist (used by other tests)
+        boolean exists = bitbucketService.projectExists(testInstance, testProjectKey);
+
+        // Assert
+        assertTrue(exists, "Project '" + testProjectKey + "' should exist in instance '" + testInstance + "'");
+        log.info("Verified project exists: {}", testProjectKey);
+    }
+
+    @Test
+    void testProjectExists_NonExistentProject() throws BitbucketException {
+        // Arrange
+        String nonExistentProject = "ZZNONEXIST99";
+
+        // Act
+        boolean exists = bitbucketService.projectExists(testInstance, nonExistentProject);
+
+        // Assert
+        assertFalse(exists, "Non-existent project should return false");
+        log.info("Verified project does not exist: {}", nonExistentProject);
+    }
+
+    @Test
+    void testProjectExists_InvalidInstance() {
+        // Arrange
+        String invalidInstance = "invalid-instance";
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            bitbucketService.projectExists(invalidInstance, testProjectKey)
+        );
+
+        assertTrue(
+            exception.getMessage().contains("not configured") ||
+            exception.getMessage().contains("No Bitbucket instance"),
+            "Exception should indicate instance not configured"
+        );
+        log.info("Expected exception for invalid instance: {}", exception.getMessage());
+    }
+
+    @Test
+    void testProjectExists_ConsistentResults() throws BitbucketException {
+        // Act - Call the method multiple times
+        boolean exists1 = bitbucketService.projectExists(testInstance, testProjectKey);
+        boolean exists2 = bitbucketService.projectExists(testInstance, testProjectKey);
+
+        // Assert - Results should be consistent
+        assertEquals(exists1, exists2,
+            "projectExists should return consistent results across multiple calls");
+        log.info("Verified consistent projectExists result for '{}': {}", testProjectKey, exists1);
+    }
+    
+    /**
+     * Helper method that creates a BitbucketService backed by a client factory
+     * configured with the same base URL as the real test instance but with an
+     * intentionally wrong password, so that every call returns 401 Unauthorized.
+     */
+    private BitbucketService createUnauthorizedBitbucketService() {
+        // Take the real instance config and clone it with a wrong password
+        BitbucketInstanceConfig realConfig = bitbucketConfiguration.getInstances().get(testInstance);
+        assertNotNull(realConfig, "Real instance config for '" + testInstance + "' should exist");
+
+        BitbucketInstanceConfig badConfig = new BitbucketInstanceConfig();
+        badConfig.setBaseUrl(realConfig.getBaseUrl());
+        badConfig.setUsername("invalid-user-unauthorized-test");
+        badConfig.setPassword("wrong-password-12345");
+        badConfig.setBearerToken(null); // force basic auth with bad credentials
+        badConfig.setConnectionTimeout(realConfig.getConnectionTimeout());
+        badConfig.setReadTimeout(realConfig.getReadTimeout());
+        badConfig.setTrustAllCertificates(realConfig.isTrustAllCertificates());
+
+        BitbucketServiceConfiguration badConfiguration = new BitbucketServiceConfiguration();
+        badConfiguration.setInstances(java.util.Map.of("unauthorized", badConfig));
+
+        BitbucketApiClientFactory badFactory = new BitbucketApiClientFactory(badConfiguration, restTemplateBuilder);
+        return new BitbucketServiceImpl(badFactory);
+    }
+
+    @Test
+    void testGetDefaultBranch_Unauthorized() {
+        // Arrange – service with wrong password
+        BitbucketService unauthorizedService = createUnauthorizedBitbucketService();
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            unauthorizedService.getDefaultBranch("unauthorized", testProjectKey, testRepositorySlug)
+        );
+
+        assertNotNull(exception.getCause(), "Exception should have a cause");
+        assertInstanceOf(HttpClientErrorException.Unauthorized.class, exception.getCause(),
+            "Cause should be 401 Unauthorized, but was: " + exception.getCause().getClass().getSimpleName());
+        assertTrue(exception.getMessage().contains("Authentication failed (401 Unauthorized)"),
+            "Exception message should indicate authentication failure, but was: " + exception.getMessage());
+        log.info("getDefaultBranch correctly failed with Unauthorized: {}", exception.getMessage());
+    }
+
+    @Test
+    void testBranchExists_Unauthorized() {
+        // Arrange – service with wrong password
+        BitbucketService unauthorizedService = createUnauthorizedBitbucketService();
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            unauthorizedService.branchExists("unauthorized", testProjectKey, testRepositorySlug, "main")
+        );
+
+        assertNotNull(exception.getCause(), "Exception should have a cause");
+        assertInstanceOf(HttpClientErrorException.Unauthorized.class, exception.getCause(),
+            "Cause should be 401 Unauthorized, but was: " + exception.getCause().getClass().getSimpleName());
+        assertTrue(exception.getMessage().contains("Authentication failed (401 Unauthorized)"),
+            "Exception message should indicate authentication failure, but was: " + exception.getMessage());
+        log.info("branchExists correctly failed with Unauthorized: {}", exception.getMessage());
+    }
+
+    @Test
+    void testProjectExists_Unauthorized() {
+        // Arrange – service with wrong password
+        BitbucketService unauthorizedService = createUnauthorizedBitbucketService();
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            unauthorizedService.projectExists("unauthorized", testProjectKey)
+        );
+
+        assertNotNull(exception.getCause(), "Exception should have a cause");
+        assertInstanceOf(HttpClientErrorException.Unauthorized.class, exception.getCause(),
+            "Cause should be 401 Unauthorized, but was: " + exception.getCause().getClass().getSimpleName());
+        assertTrue(exception.getMessage().contains("Authentication failed (401 Unauthorized)"),
+            "Exception message should indicate authentication failure, but was: " + exception.getMessage());
+        log.info("projectExists correctly failed with Unauthorized: {}", exception.getMessage());
     }
 }

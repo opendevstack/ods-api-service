@@ -35,6 +35,18 @@ public interface BitbucketService extends ExternalService {
     boolean branchExists(String instanceName, String projectKey, String repositorySlug, String branchName) throws BitbucketException;
     
     /**
+     * Check if a project exists in a specific Bitbucket instance.
+     *
+     * @param instanceName Name of the Bitbucket instance
+     * @param projectKey Project key (e.g., "PROJ")
+     * @return true if the project exists, false if it does not exist
+     * @throws BitbucketException if the check fails due to a non-functional error
+     *         (e.g., Bitbucket unreachable, bad credentials, network errors).
+     *         A non-existent project is NOT surfaced as an exception — it returns false.
+     */
+    boolean projectExists(String instanceName, String projectKey) throws BitbucketException;
+
+    /**
      * Get all available Bitbucket instance names
      * 
      * @return Set of configured instance names
