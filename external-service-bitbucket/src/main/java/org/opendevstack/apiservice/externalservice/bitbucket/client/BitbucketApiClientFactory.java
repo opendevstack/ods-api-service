@@ -82,7 +82,8 @@ public class BitbucketApiClientFactory {
      * @return Configured BitbucketApiClient
      * @throws BitbucketException if the instance name is null/blank or not configured
      */
-    @Cacheable(value = "bitbucketApiClients", key = "#instanceName")
+    @Cacheable(value = "bitbucketApiClients", key = "#instanceName", 
+            condition = "#instanceName != null && !#instanceName.isBlank()")
     public BitbucketApiClient getClient(String instanceName) throws BitbucketException {
         if (instanceName == null || instanceName.isBlank()) {
             throw new BitbucketException(

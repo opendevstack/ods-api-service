@@ -60,6 +60,13 @@ public class BitbucketServiceImpl implements BitbucketService {
             throw new BitbucketException(
                     String.format("No default branch found for repository '%s/%s'", projectKey, repositorySlug));
 
+        } catch (HttpClientErrorException.Unauthorized e) {
+            log.error("Authentication failed for instance '{}' while retrieving default branch for '{}/{}'",
+                    instanceName, projectKey, repositorySlug);
+            throw new BitbucketException(
+                    String.format("Authentication failed (401 Unauthorized) for instance '%s'. "
+                            + "Check your credentials (username/password or bearer token).", instanceName),
+                    e);
         } catch (HttpClientErrorException.NotFound e) {
             throw new BitbucketException(
                     String.format("Repository '%s/%s' not found or has no default branch", projectKey, repositorySlug),
@@ -115,6 +122,13 @@ public class BitbucketServiceImpl implements BitbucketService {
 
             return false;
 
+        } catch (HttpClientErrorException.Unauthorized e) {
+            log.error("Authentication failed for instance '{}' while checking branch '{}' in '{}/{}'",
+                    instanceName, branchName, projectKey, repositorySlug);
+            throw new BitbucketException(
+                    String.format("Authentication failed (401 Unauthorized) for instance '%s'. "
+                            + "Check your credentials (username/password or bearer token).", instanceName),
+                    e);
         } catch (HttpClientErrorException.NotFound e) {
             // Repository not found
             log.debug("Repository '{}/{}' not found", projectKey, repositorySlug);
@@ -143,6 +157,13 @@ public class BitbucketServiceImpl implements BitbucketService {
             log.debug("Project '{}' exists in instance '{}'", projectKey, instanceName);
             return true;
 
+        } catch (HttpClientErrorException.Unauthorized e) {
+            log.error("Authentication failed for instance '{}' while checking project '{}'",
+                    instanceName, projectKey);
+            throw new BitbucketException(
+                    String.format("Authentication failed (401 Unauthorized) for instance '%s'. "
+                            + "Check your credentials (username/password or bearer token).", instanceName),
+                    e);
         } catch (HttpClientErrorException.NotFound e) {
             log.debug("Project '{}' does not exist in instance '{}'", projectKey, instanceName);
             return false;

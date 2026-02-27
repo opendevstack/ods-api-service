@@ -372,4 +372,98 @@ class BitbucketServiceTest {
         verify(clientFactory).getClient(instanceName);
         verify(bitbucketApiClient).getApiClient();
     }
+    
+    @Test
+    void testGetDefaultBranch_Unauthorized() throws BitbucketException {
+        // Arrange – simulate a Bitbucket client configured with wrong password
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String repositorySlug = "my-repo";
+
+        when(clientFactory.getClient(instanceName)).thenReturn(bitbucketApiClient);
+        when(bitbucketApiClient.getApiClient()).thenReturn(apiClient);
+
+        // Mock invokeAPI to throw HttpClientErrorException.Unauthorized (401) – wrong password
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenThrow(HttpClientErrorException.Unauthorized.create(
+                org.springframework.http.HttpStatus.UNAUTHORIZED, "Unauthorized",
+                org.springframework.http.HttpHeaders.EMPTY, new byte[0], null));
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            bitbucketService.getDefaultBranch(instanceName, projectKey, repositorySlug)
+        );
+
+        assertNotNull(exception.getCause());
+        assertInstanceOf(HttpClientErrorException.Unauthorized.class, exception.getCause(),
+            "Cause should be HttpClientErrorException.Unauthorized");
+        assertTrue(exception.getMessage().contains("Authentication failed (401 Unauthorized)"),
+            "Exception message should indicate authentication failure, but was: " + exception.getMessage());
+        verify(clientFactory).getClient(instanceName);
+        verify(bitbucketApiClient).getApiClient();
+    }
+
+    @Test
+    void testBranchExists_Unauthorized() throws BitbucketException {
+        // Arrange – simulate a Bitbucket client configured with wrong password
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String repositorySlug = "my-repo";
+        String branchName = "feature/test";
+
+        when(clientFactory.getClient(instanceName)).thenReturn(bitbucketApiClient);
+        when(bitbucketApiClient.getApiClient()).thenReturn(apiClient);
+
+        // Mock the parameterToMultiValueMap method to return empty map instead of null
+        when(apiClient.parameterToMultiValueMap(any(), anyString(), any()))
+            .thenReturn(new LinkedMultiValueMap<>());
+
+        // Mock invokeAPI to throw HttpClientErrorException.Unauthorized (401) – wrong password
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenThrow(HttpClientErrorException.Unauthorized.create(
+                org.springframework.http.HttpStatus.UNAUTHORIZED, "Unauthorized",
+                org.springframework.http.HttpHeaders.EMPTY, new byte[0], null));
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            bitbucketService.branchExists(instanceName, projectKey, repositorySlug, branchName)
+        );
+
+        assertNotNull(exception.getCause());
+        assertInstanceOf(HttpClientErrorException.Unauthorized.class, exception.getCause(),
+            "Cause should be HttpClientErrorException.Unauthorized");
+        assertTrue(exception.getMessage().contains("Authentication failed (401 Unauthorized)"),
+            "Exception message should indicate authentication failure, but was: " + exception.getMessage());
+        verify(clientFactory).getClient(instanceName);
+        verify(bitbucketApiClient).getApiClient();
+    }
+
+    @Test
+    void testProjectExists_Unauthorized() throws BitbucketException {
+        // Arrange – simulate a Bitbucket client configured with wrong password
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+
+        when(clientFactory.getClient(instanceName)).thenReturn(bitbucketApiClient);
+        when(bitbucketApiClient.getApiClient()).thenReturn(apiClient);
+
+        // Mock invokeAPI to throw HttpClientErrorException.Unauthorized (401) – wrong password
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenThrow(HttpClientErrorException.Unauthorized.create(
+                org.springframework.http.HttpStatus.UNAUTHORIZED, "Unauthorized",
+                org.springframework.http.HttpHeaders.EMPTY, new byte[0], null));
+
+        // Act & Assert
+        BitbucketException exception = assertThrows(BitbucketException.class, () ->
+            bitbucketService.projectExists(instanceName, projectKey)
+        );
+
+        assertNotNull(exception.getCause());
+        assertInstanceOf(HttpClientErrorException.Unauthorized.class, exception.getCause(),
+            "Cause should be HttpClientErrorException.Unauthorized");
+        assertTrue(exception.getMessage().contains("Authentication failed (401 Unauthorized)"),
+            "Exception message should indicate authentication failure, but was: " + exception.getMessage());
+        verify(clientFactory).getClient(instanceName);
+        verify(bitbucketApiClient).getApiClient();
+    }
 }
