@@ -17,17 +17,24 @@ import java.util.Map;
 public class BitbucketServiceConfiguration {
     
     /**
+     * Optional name of the default Bitbucket instance.
+     * When set, {@code BitbucketApiClientFactory#getClient()} will use this instance.
+     * If not set, the first entry in the instances map is used as default.
+     */
+    private String defaultInstance;
+
+    /**
      * Map of Bitbucket instances with instance name as key and configuration as value.
      * Example:
      * externalservice:
      *   bitbucket:
      *     instances:
      *       dev:
-     *         base-url: https://bitbucket.dev.example.com
+     *         base-url: "https://bitbucket.dev.example.com"
      *         username: admin
      *         password: password123
      *       prod:
-     *         base-url: https://bitbucket.example.com
+     *         base-url: "https://bitbucket.example.com"
      *         username: admin
      *         password: secret
      */
@@ -39,7 +46,7 @@ public class BitbucketServiceConfiguration {
     @Data
     public static class BitbucketInstanceConfig {
         /**
-         * The base URL of the Bitbucket server (e.g., https://bitbucket.example.com)
+         * The base URL of the Bitbucket server (e.g., "https://bitbucket.example.com")
          */
         private String baseUrl;
         
