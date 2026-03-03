@@ -3,7 +3,43 @@ logging:
     org.springframework: INFO
     org.springframework.security: TRACE
     org.opendevstack.apiservice.externalservice: DEBUG
-        
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Persistence — PostgreSQL datasource + JPA / Hibernate
+#
+# Schema is managed externally via Liquibase (database module / Makefile).
+# Hibernate is set to `validate` so it only checks that entities match the
+# existing schema at boot — it never creates or alters tables.
+#
+# Required env vars (no defaults — must be explicitly set per environment):
+#   DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD
+# ──────────────────────────────────────────────────────────────────────────────
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:devstack}
+    username: ${DB_USERNAME:devstack}
+    password: ${DB_PASSWORD:devstack}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Pool sizing — tune per environment
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      # NEVER auto-create/alter — Liquibase owns the schema
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # Log slow queries (> 500 ms) via Hibernate statistics
+        generate_statistics: false
+    # Avoid lazy-loading pitfalls: keep Session scoped to Service, not Request
+    open-in-view: false
+    show-sql: false
+
 management:
   endpoints:
     web:
@@ -44,7 +80,7 @@ openapi:
 otel:
     service:
         name: devstack-api-service-dev
-        version: 0.0.2
+        version: 0.0.3-SNAPSHOT-SNAPSHOT-SNAPSHOT
     exporter:
         otlp:
             endpoint: http://opentelemetry.example.com
@@ -55,7 +91,7 @@ otel:
     metrics:
         exporter: none
     resource:
-        attributes: service.name=devstack-api-service,service.version=0.0.2,deployment.environment=development
+        attributes: service.name=devstack-api-service,service.version=0.0.3-SNAPSHOT,deployment.environment=development
     instrumentation:
         jdbc:
             enabled: false

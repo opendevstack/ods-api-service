@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Health Monitoring & Observability
 - **Spring Boot Actuator** health indicators for all external services:
 
+#### Persistance to keep project lifecycle
+
 ### Changed
 - Updated all external service implementations to extend `ExternalService` interface
 - Use of lombok.extern.slf4j.Slf4j to remove boilerplate code.
@@ -32,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Spring Boot version
 - Added health indicator dependencies across external service modules
 
-## [0.0.2] - 2026-03-03
+## [0.0.3-SNAPSHOT] - 2026-03-03
 
 ### Changed
 ##### Projects Info Service

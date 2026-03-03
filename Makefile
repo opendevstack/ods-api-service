@@ -3,7 +3,7 @@
 
 # Project variables
 PROJECT_NAME := devstack-api-service
-VERSION := 0.0.2
+VERSION := 0.0.3-SNAPSHOT
 JAVA_VERSION := 21
 MAIN_CLASS := org.opendevstack.apiservice.core.DevstackApiServiceApplication
 
@@ -44,7 +44,8 @@ YELLOW := \033[1;33m
 BLUE := \033[0;34m
 NC := \033[0m # No Color
 
-.PHONY: help clean compile test package jar native docker docker-native run-jar run-native run-docker run-docker-native install verify lint format check-java check-maven check-config
+.PHONY: help clean compile test package jar native docker docker-native run-jar run-native run-docker run-docker-native install verify lint format check-java check-maven check-config \
+        db-check-env db-validate db-status db-migrate db-rollback db-tag db-port-forward
 
 # Default target
 .DEFAULT_GOAL := help
@@ -269,6 +270,127 @@ all: jar docker
 
 ## Quick start for development
 quick-start: jar run-jar
+
+# =============================================================================
+# Database targets (Liquibase / PostgreSQL)
+#
+# Required environment variables (export them or source persistence/.env):
+#   ODS_API_SERVICE_DB_HOST      PostgreSQL hostname or IP
+#   ODS_API_SERVICE_DB_PORT      PostgreSQL port            (default: 5432)
+#   ODS_API_SERVICE_DB_NAME      Database name              (ods_api_service)
+#   ODS_API_SERVICE_DB_USER      Application user           (ods_api_service)
+#   ODS_API_SERVICE_DB_PASSWORD  Application user password
+#
+# Quick start:
+#   cp persistence/liquibase.properties.example persistence/.env
+#   # edit persistence/.env with real values
+#   source persistence/.env && make db-migrate
+#
+# Port-forward variables (can be overridden on the command line):
+#   NAMESPACE          Kubernetes/OpenShift namespace where PostgreSQL runs (REQUIRED)
+#   DB_K8S_SERVICE     Name of the PostgreSQL Service in the cluster      (default: ods-api-service-postgresql)
+#   DB_PF_LOCAL_PORT   Local port to bind on the developer machine         (default: 5432)
+#   DB_PF_REMOTE_PORT  PostgreSQL port exposed by the Service in-cluster   (default: 5432)
+#
+# Example:
+#   make db-port-forward NAMESPACE=ods-dev
+#   make db-port-forward NAMESPACE=ods-prod DB_K8S_SERVICE=postgresql DB_PF_LOCAL_PORT=15432
+# =============================================================================
+
+# Build the JDBC URL from individual host/port/name parts.
+# ODS_API_SERVICE_DB_PORT defaults to 5432 when not set.
+DB_PORT          ?= $(or $(ODS_API_SERVICE_DB_PORT),5432)
+DB_JDBC_URL       = jdbc:postgresql://$(ODS_API_SERVICE_DB_HOST):$(DB_PORT)/$(ODS_API_SERVICE_DB_NAME)
+
+# Kubernetes port-forward defaults (all overridable on the command line)
+DB_K8S_SERVICE    ?= ods-api-service-postgresql
+DB_PF_LOCAL_PORT  ?= 5432
+DB_PF_REMOTE_PORT ?= 5432
+
+DB_MAVEN_ARGS  = -pl persistence \
+                 -Dliquibase.url=$(DB_JDBC_URL) \
+                 -Dliquibase.username=$(ODS_API_SERVICE_DB_USER) \
+                 -Dliquibase.password=$(ODS_API_SERVICE_DB_PASSWORD)
+
+## [DB] Verify required DB environment variables are set
+db-check-env:
+	@missing=; \
+	 for var in ODS_API_SERVICE_DB_HOST ODS_API_SERVICE_DB_NAME ODS_API_SERVICE_DB_USER ODS_API_SERVICE_DB_PASSWORD; do \
+	   if [ -z "$$(eval echo \$$$$var)" ]; then missing="$$missing $$var"; fi; \
+	 done; \
+	 if [ -n "$$missing" ]; then \
+	   echo "$(RED)Error: the following required environment variables are not set:$(NC)"; \
+	   for v in $$missing; do echo "  $$v"; done; \
+	   echo ""; \
+	   echo "$(YELLOW)Hint: copy persistence/liquibase.properties.example to persistence/.env,"; \
+	   echo "      fill in the values, then run: source persistence/.env$(NC)"; \
+	   exit 1; \
+	 fi
+	@echo "$(GREEN)✓ DB environment variables OK$(NC)"
+
+## [DB] Validate the Liquibase changelog syntax (no DB connection required)
+db-validate: check-maven
+	@echo "$(BLUE)Validating Liquibase changelog...$(NC)"
+	$(MAVEN_WRAPPER) -pl persistence liquibase:validate
+	@echo "$(GREEN)✓ Changelog validation complete$(NC)"
+
+## [DB] Show pending changesets that have not yet been applied
+db-status: db-check-env check-maven
+	@echo "$(BLUE)Checking pending Liquibase changesets...$(NC)"
+	@echo "$(YELLOW)Target: $(DB_JDBC_URL)$(NC)"
+	$(MAVEN_WRAPPER) $(DB_MAVEN_ARGS) liquibase:status
+
+## [DB] Apply all pending changesets to the database
+db-migrate: db-check-env check-maven
+	@echo "$(BLUE)Running Liquibase migrations...$(NC)"
+	@echo "$(YELLOW)Target: $(DB_JDBC_URL)$(NC)"
+	$(MAVEN_WRAPPER) $(DB_MAVEN_ARGS) liquibase:update
+	@echo "$(GREEN)✓ Migrations applied$(NC)"
+
+## [DB] Roll back the last applied changeset  (usage: make db-rollback)
+db-rollback: db-check-env check-maven
+	@echo "$(YELLOW)Rolling back last changeset on: $(DB_JDBC_URL)$(NC)"
+	$(MAVEN_WRAPPER) $(DB_MAVEN_ARGS) liquibase:rollback -Dliquibase.rollbackCount=1
+	@echo "$(GREEN)✓ Rollback complete$(NC)"
+
+## [DB] Tag the current database state  (usage: make db-tag TAG=v1.0.0)
+db-tag: db-check-env check-maven
+	@if [ -z "$(TAG)" ]; then \
+	  echo "$(RED)Error: TAG is required. Usage: make db-tag TAG=v1.0.0$(NC)"; \
+	  exit 1; \
+	fi
+	@echo "$(BLUE)Tagging database state as '$(TAG)'...$(NC)"
+	$(MAVEN_WRAPPER) $(DB_MAVEN_ARGS) liquibase:tag -Dliquibase.tag=$(TAG)
+	@echo "$(GREEN)✓ Database tagged as '$(TAG)'$(NC)"
+
+## [DB] Port-forward the cluster PostgreSQL Service to localhost  (usage: make db-port-forward NAMESPACE=<ns>)
+db-port-forward:
+	@if [ -z "$(NAMESPACE)" ]; then \
+	  echo "$(RED)Error: NAMESPACE is required.$(NC)"; \
+	  echo "$(YELLOW)Usage:  make db-port-forward NAMESPACE=<namespace>$(NC)"; \
+	  echo "$(YELLOW)Optionally override DB_K8S_SERVICE (default: $(DB_K8S_SERVICE)),$(NC)"; \
+	  echo "$(YELLOW)  DB_PF_LOCAL_PORT (default: $(DB_PF_LOCAL_PORT)) or DB_PF_REMOTE_PORT (default: $(DB_PF_REMOTE_PORT)).$(NC)"; \
+	  exit 1; \
+	fi
+	@if ! command -v kubectl >/dev/null 2>&1; then \
+	  echo "$(RED)Error: kubectl not found in PATH$(NC)"; \
+	  exit 1; \
+	fi
+	@echo "$(BLUE)Port-forwarding PostgreSQL service...$(NC)"
+	@echo "$(YELLOW)  Namespace : $(NAMESPACE)$(NC)"
+	@echo "$(YELLOW)  Service   : $(DB_K8S_SERVICE)$(NC)"
+	@echo "$(YELLOW)  Mapping   : localhost:$(DB_PF_LOCAL_PORT) → $(DB_K8S_SERVICE):$(DB_PF_REMOTE_PORT)$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Once forwarding is active, connect with:$(NC)"
+	@echo "  psql -h localhost -p $(DB_PF_LOCAL_PORT) -U \$$ODS_API_SERVICE_DB_USER \$$ODS_API_SERVICE_DB_NAME"
+	@echo "  # or run migrations against the forwarded port:"
+	@echo "  ODS_API_SERVICE_DB_HOST=localhost ODS_API_SERVICE_DB_PORT=$(DB_PF_LOCAL_PORT) make db-migrate"
+	@echo ""
+	@echo "$(YELLOW)Press Ctrl+C to stop the tunnel$(NC)"
+	kubectl port-forward \
+	  --namespace $(NAMESPACE) \
+	  service/$(DB_K8S_SERVICE) \
+	  $(DB_PF_LOCAL_PORT):$(DB_PF_REMOTE_PORT)
 
 ## Clean everything including Docker images
 clean-all: clean
