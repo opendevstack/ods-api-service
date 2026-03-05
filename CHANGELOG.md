@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Created **New module** external service projects to manage EDP Projects.
+
 ### External Service Jira (`external-service-jira`)
 - **New module** for checking project existance in Jira (Server)
 - Caching for the client
