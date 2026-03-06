@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>service-projects</artifactId>
-    <name>External Service Projects</name>
+    <name>Service Projects</name>
     <description>Service module for project operations: key generation and project existence checks</description>
 
     <dependencies>
@@ -33,6 +33,12 @@
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
             <version>${jackson-databind-nullable.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>external-service-api</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

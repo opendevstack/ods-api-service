@@ -56,6 +56,7 @@
         <module>service-projects</module>
         <module>api-project-users</module>
         <module>api-project-platform</module>
+        <module>api-project</module>
     </modules>
 
     <dependencyManagement>
@@ -174,6 +175,9 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
+                    <systemPropertyVariables>
+                        <spring.config.location>${SPRING_CONFIG_DIR}</spring.config.location>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>

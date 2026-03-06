@@ -60,8 +60,12 @@ class GenerateProjectKeyServiceImplTest {
     @Test
     void generateProjectKey_whenFirstCandidateExists_thenRetryUntilUnique() throws Exception {
         when(random.nextInt(1_000_000)).thenReturn(1, 2);
-        when(bitbucketService.projectExists(anyString(), anyString())).thenReturn(true, false);
-        when(jiraService.projectExists(anyString(), anyString())).thenReturn(true, false);
+        
+        when(bitbucketService.projectExists("dev", "SS000001")).thenReturn(true);
+        when(jiraService.projectExists("default", "SS000001")).thenReturn(false);
+        
+        when(bitbucketService.projectExists("dev", "SS000002")).thenReturn(false);
+        when(jiraService.projectExists("default", "SS000002")).thenReturn(false);
 
         String result = tested.generateProjectKey("SS%06d");
 
@@ -70,8 +74,10 @@ class GenerateProjectKeyServiceImplTest {
 
     @Test
     void generateProjectKey_whenNoUniqueKeyAfterMaxRetries_thenThrowException() throws Exception {
-        when(random.nextInt(1_000_000)).thenReturn(1);
-        when(bitbucketService.projectExists(anyString(), anyString())).thenReturn(true);
+        when(random.nextInt(1_000_000)).thenReturn(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+        
+        when(bitbucketService.projectExists(anyString(), anyString())).thenReturn(false);
+        
         when(jiraService.projectExists(anyString(), anyString())).thenReturn(true);
 
         assertThatThrownBy(() -> tested.generateProjectKey("SS%06d"))
