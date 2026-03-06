@@ -14,7 +14,7 @@
     <groupId>org.opendevstack.apiservice</groupId>
     <artifactId>devstack-api-service</artifactId>
     <name>Devstack API Service</name>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
 
     <properties>
         <java.version>21</java.version>
@@ -52,8 +52,10 @@
         <module>external-service-bitbucket</module>
         <module>external-service-jira</module>
         <module>external-service-webhookproxy</module>
+        <module>service-projects</module>
         <module>api-project-users</module>
         <module>api-project-platform</module>
+        <module>api-project</module>
     </modules>
 
     <dependencyManagement>
@@ -173,8 +175,7 @@
                         <include>**/*Test.java</include>
                     </includes>
                     <systemPropertyVariables>
-                        <spring.config.location>
-                            ../application.yaml</spring.config.location>
+                        <spring.config.location>${SPRING_CONFIG_DIR}</spring.config.location>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
