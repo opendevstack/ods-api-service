@@ -58,6 +58,14 @@ dependency-reduced-pom.xml
 *.swp
 *.bak
 *.tmp
+
+# Persistence module — local database credentials (never commit real passwords)
+persistence/liquibase.properties
+persistence/.env
+
+# Legacy: Database module references (migrated to persistence/)
+database/liquibase.properties
+database/.env
 *.orig
 *.rej
 

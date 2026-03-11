@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opendevstack.apiservice</groupId>
         <artifactId>devstack-api-service</artifactId>
-        <version>0.0.2</version>
+        <version>0.0.3</version>
     </parent>
 
     <artifactId>core</artifactId>
@@ -111,6 +111,20 @@
             <groupId>org.opendevstack.apiservice</groupId>
             <artifactId>api-project-platform</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <!-- Persistence module: JPA entities and Spring Data repositories -->
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>persistence</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- PostgreSQL JDBC driver (runtime) -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- OpenTelemetry for observability -->
