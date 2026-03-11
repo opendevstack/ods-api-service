@@ -80,7 +80,7 @@ openapi:
 otel:
     service:
         name: devstack-api-service-dev
-        version: 0.0.3-SNAPSHOT-SNAPSHOT-SNAPSHOT
+        version: 0.0.3-SNAPSHOT
     exporter:
         otlp:
             endpoint: http://opentelemetry.example.com
