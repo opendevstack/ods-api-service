@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Spring Boot version
 - Added health indicator dependencies across external service modules
 
-## [0.0.3-SNAPSHOT] - 2026-03-03
+## [0.0.3] - 2026-03-03
 
 ### Changed
 ##### Projects Info Service
