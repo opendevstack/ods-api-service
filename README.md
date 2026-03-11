@@ -19,7 +19,7 @@ The system will expose RESTful APIs for third-party client applications and futu
 Before using the Makefile, ensure you have the following installed:
 
 ### Required
-- **Java 17+** - The project uses Java 21
+- **Java 21+** - The project uses Java 21
 - **Maven** - Maven wrapper (`mvnw`) is included in the project
 - **Make** - For running Makefile commands
 

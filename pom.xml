@@ -173,10 +173,6 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
-                    <systemPropertyVariables>
-                        <spring.config.location>
-                            ../application.yaml</spring.config.location>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>

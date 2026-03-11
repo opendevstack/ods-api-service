@@ -2,7 +2,7 @@
 # Supports building Spring Boot JAR and Native applications
 
 # Project variables
-PROJECT_NAME := devstack-api-service
+PROJECT_NAME := opendevstack-api-service
 VERSION := 0.0.3-SNAPSHOT
 JAVA_VERSION := 21
 MAIN_CLASS := org.opendevstack.apiservice.core.DevstackApiServiceApplication
@@ -45,7 +45,7 @@ BLUE := \033[0;34m
 NC := \033[0m # No Color
 
 .PHONY: help clean compile test package jar native docker docker-native run-jar run-native run-docker run-docker-native install verify lint format check-java check-maven check-config \
-        db-check-env db-validate db-status db-migrate db-rollback db-tag db-port-forward
+        db-check-env db-validate db-status db-migrate db-rollback db-tag db-port-forward db-docker-build-db
 
 # Default target
 .DEFAULT_GOAL := help
@@ -391,6 +391,23 @@ db-port-forward:
 	  --namespace $(NAMESPACE) \
 	  service/$(DB_K8S_SERVICE) \
 	  $(DB_PF_LOCAL_PORT):$(DB_PF_REMOTE_PORT)
+
+db-docker-build-db:
+	@echo "$(BLUE)Building Docker image for database...$(NC)"
+	@docker build --file ../../ods-core/ods-api-service/docker/Dockerfile.database --tag $(PROJECT_NAME)-db:18 ../../ods-core/ods-api-service/docker/ 	
+	@echo "$(GREEN)✓ Database Docker image built: $(PROJECT_NAME)-db:$(DOCKER_TAG)$(NC)"
+
+db-docker-run-db: db-docker-build-db
+	@echo "$(BLUE)Running PostgreSQL database in Docker...$(NC)"
+	@echo "$(YELLOW)Access the database at: localhost:5432$(NC)"
+	@echo "$(YELLOW)PostgreSQL credentials: user=ods_api_service, db=ods_api_service$(NC)"
+	@echo "$(YELLOW)Press Ctrl+C to stop$(NC)"	 
+	docker run -p 5432:5432 \
+	  -e POSTGRES_USER=ods_api_service \
+	  -e POSTGRES_PASSWORD=ods_api_service \
+	  -e POSTGRES_DB=ods_api_service \
+	  $(PROJECT_NAME)-db:18
+
 
 ## Clean everything including Docker images
 clean-all: clean
