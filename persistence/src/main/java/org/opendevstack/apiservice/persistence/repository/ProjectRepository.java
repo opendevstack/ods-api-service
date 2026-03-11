@@ -2,6 +2,7 @@ package org.opendevstack.apiservice.persistence.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.opendevstack.apiservice.persistence.entity.ProjectEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Repository;
  * </p>
  */
 @Repository
-public interface ProjectRepository extends JpaRepository<ProjectEntity, Long> {
+public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
 
 	/**
 	 * Finds a project by its unique business key regardless of soft-delete status. Use

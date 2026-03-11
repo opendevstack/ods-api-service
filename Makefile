@@ -394,7 +394,7 @@ db-port-forward:
 
 db-docker-build-db:
 	@echo "$(BLUE)Building Docker image for database...$(NC)"
-	@docker build --file ../../ods-core/ods-api-service/docker/Dockerfile.database --tag $(PROJECT_NAME)-db:18 ../../ods-core/ods-api-service/docker/ 	
+	@docker build --file ../ods-core/ods-api-service/docker/Dockerfile.database --tag $(PROJECT_NAME)-db:18 ../ods-core/ods-api-service/docker/ 	
 	@echo "$(GREEN)✓ Database Docker image built: $(PROJECT_NAME)-db:$(DOCKER_TAG)$(NC)"
 
 db-docker-run-db: db-docker-build-db

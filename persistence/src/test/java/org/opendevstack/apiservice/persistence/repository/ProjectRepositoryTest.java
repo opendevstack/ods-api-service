@@ -37,7 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class ProjectRepositoryTest {
 
 	@Container
-	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine")
 		.withDatabaseName("devstack_test")
 		.withUsername("test")
 		.withPassword("test");
@@ -47,8 +47,11 @@ class ProjectRepositoryTest {
 		registry.add("spring.datasource.url", postgres::getJdbcUrl);
 		registry.add("spring.datasource.username", postgres::getUsername);
 		registry.add("spring.datasource.password", postgres::getPassword);
-		// Override ddl-auto for tests: let Hibernate create the schema from entities
-		registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+		registry.add("spring.datasource.hikari.maximum-pool-size", () -> "2");
+		registry.add("spring.datasource.hikari.minimum-idle", () -> "0");
+		// Let Hibernate create the schema once for the container lifecycle and avoid
+		// delayed drop-on-close work during JVM shutdown.
+		registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
 	}
 
 	@Autowired

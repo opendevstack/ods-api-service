@@ -4,8 +4,10 @@
 -- Description: Creates the `projects` table, which is the central entity of the
 --   ods-api-service.  Each row represents a managed project identified by
 --   a unique, Atlassian project key (e.g. "MY-PROJECT").
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS projects (
-    id                      BIGSERIAL       PRIMARY KEY,
+    id                      UUID            NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     project_key             VARCHAR(100)    NOT NULL,
     project_name            VARCHAR(255),
     description             VARCHAR(255),

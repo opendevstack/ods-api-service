@@ -3,8 +3,10 @@
 --changeset ods:002-create-client-apps
 -- Description: Creates the `client_apps` table, representing registered Azure AD
 --   clients that are authorised to call the service APIs.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS client_apps (
-    id          BIGSERIAL       PRIMARY KEY,
+    id          UUID            NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     client_id   VARCHAR(36)     NOT NULL,
     client_name VARCHAR(255),
     permissions TEXT[]          NOT NULL DEFAULT '{}',
@@ -32,8 +34,8 @@ COMMENT ON COLUMN client_apps.enabled     IS 'When FALSE the client is denied ac
 -- Description: Each API client can be configured with one or more project flavors
 --   that control how projects are created (key pattern, template, owner, etc.).
 CREATE TABLE IF NOT EXISTS client_app_project_flavors (
-    id                   BIGSERIAL       PRIMARY KEY,
-    client_app_id        BIGINT          NOT NULL,
+    id                   UUID            NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    client_app_id        UUID            NOT NULL,
     name                 VARCHAR(50)     NOT NULL,
     project_key_pattern  VARCHAR(100)    NOT NULL,
     template_id          INT,
@@ -53,7 +55,7 @@ CREATE INDEX IF NOT EXISTS idx_client_app_project_flavors_client_app_id
     ON client_app_project_flavors (client_app_id);
 
 COMMENT ON TABLE  client_app_project_flavors                      IS 'Project flavor configurations per API client';
-COMMENT ON COLUMN client_app_project_flavors.client_app_id        IS 'FK to client_apps.id';
+COMMENT ON COLUMN client_app_project_flavors.client_app_id        IS 'FK to client_apps.id (UUID)';
 COMMENT ON COLUMN client_app_project_flavors.name                 IS 'Flavor name (e.g. DLSS, AMP)';
 COMMENT ON COLUMN client_app_project_flavors.project_key_pattern  IS 'printf-style pattern used to generate the project key (e.g. DLSS%06d)';
 COMMENT ON COLUMN client_app_project_flavors.template_id          IS 'ODS/Jira template identifier';
