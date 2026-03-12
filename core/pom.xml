@@ -127,6 +127,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Service Projects module: project creation and key generation -->
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>service-projects</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Persistence module: JPA entities and Spring Data repositories -->
         <dependency>
             <groupId>org.opendevstack.apiservice</groupId>
