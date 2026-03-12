@@ -6,7 +6,7 @@ info:
     name: ODS Team
   version: v0.0.1
 servers:
-  - url: http://{baseurl}/api/v0
+  - url: http://{baseurl}/api/pub/v0
     variables:
       baseurl:
         default: localhost:8080

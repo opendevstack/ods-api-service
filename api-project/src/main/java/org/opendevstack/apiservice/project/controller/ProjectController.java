@@ -19,10 +19,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v0/projects")
+@RequestMapping(ProjectController.API_BASE_PATH)
 @AllArgsConstructor
 @Slf4j
 public class ProjectController implements ProjectsApi {
+    
+    public static final String API_BASE_PATH = "/api/pub/v0/projects";
 
     private final ProjectsFacade projectsFacade;
     
