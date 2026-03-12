@@ -36,6 +36,18 @@
         </dependency>
 
         <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>persistence</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.opendevstack.apiservice</groupId>
             <artifactId>external-service-api</artifactId>
             <version>${project.version}</version>

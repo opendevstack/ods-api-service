@@ -50,7 +50,7 @@ class ProjectControllerIntegrationTest {
             }
             """;
 
-        mockMvc.perform(post("/api/v0/projects")
+        mockMvc.perform(post("/api/pub/v0/projects")
                 .contentType("application/json")
                 .content(payload == null ? "" : payload))
                 .andExpect(status().isOk())
@@ -65,7 +65,7 @@ class ProjectControllerIntegrationTest {
     void getProject_whenNotFound_returns404() throws Exception {
         when(facade.getProject("UNKNOWN")).thenReturn(null);
 
-        mockMvc.perform(get("/api/v0/projects/UNKNOWN"))
+        mockMvc.perform(get("/api/pub/v0/projects/UNKNOWN"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.errorKey").value("PROJECT_NOT_FOUND"))
