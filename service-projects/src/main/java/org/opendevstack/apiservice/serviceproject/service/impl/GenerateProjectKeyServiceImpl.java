@@ -81,11 +81,7 @@ public class GenerateProjectKeyServiceImpl implements GenerateProjectKeyService 
                 return true;
             }
 
-            if (existsInAnyOpenshift(projectKey)) {
-                return true;
-            }
-
-            return false;
+            return existsInAnyOpenshift(projectKey);
         } catch (BitbucketException e) {
             throw new ProjectKeyGenerationException(
                     String.format("Failed to check project '%s' in Bitbucket", projectKey), e);

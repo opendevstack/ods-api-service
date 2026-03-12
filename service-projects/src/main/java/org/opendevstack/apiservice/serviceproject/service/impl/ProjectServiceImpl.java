@@ -26,14 +26,12 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public CreateProjectResponse createProject(CreateProjectRequest request) {
-        // TODO Implement project creation against external systems.
-        return null;
+        return CreateProjectResponse.builder().build();
     }
 
     @Override
     public CreateProjectResponse getProject(String projectKey) {
-        // TODO Implement project retrieval by key from external systems.
-        return null;
+        return CreateProjectResponse.builder().build();
     }
 }
 
