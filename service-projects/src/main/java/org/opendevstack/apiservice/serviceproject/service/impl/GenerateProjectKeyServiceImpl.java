@@ -12,6 +12,7 @@ import org.opendevstack.apiservice.serviceproject.service.GenerateProjectKeyServ
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.Comparator;
 import java.util.Random;
 import java.util.Set;
@@ -33,7 +34,7 @@ public class GenerateProjectKeyServiceImpl implements GenerateProjectKeyService 
     @Autowired
     public GenerateProjectKeyServiceImpl(BitbucketService bitbucketService, JiraService jiraService, 
                                          OpenshiftService openshiftService) {
-        this(bitbucketService, jiraService, openshiftService, new Random());
+        this(bitbucketService, jiraService, openshiftService, new SecureRandom());
     }
     
     GenerateProjectKeyServiceImpl(BitbucketService bitbucketService, JiraService jiraService, 
