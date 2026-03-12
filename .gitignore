@@ -93,6 +93,7 @@ api-project-users/src/main/java/org/opendevstack/apiservice/projectusers/api
 api-project-users/src/main/java/org/opendevstack/apiservice/projectusers/model
 api-project-platform/src/main/java/org/opendevstack/apiservice/projectplatform/api
 api-project-platform/src/main/java/org/opendevstack/apiservice/projectplatform/model
-api-project-users/.openapi-generator
-/api-project-platform/.openapi-generator/
+api-project/src/main/java/org/opendevstack/apiservice/project/api
+api-project/src/main/java/org/opendevstack/apiservice/project/model
+**/.openapi-generator
 
