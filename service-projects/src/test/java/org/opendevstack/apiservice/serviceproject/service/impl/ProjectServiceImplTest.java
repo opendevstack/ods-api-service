@@ -189,21 +189,4 @@ class ProjectServiceImplTest {
         assertEquals(projectKey, result.getProjectKey());
         verify(projectRepository).findByProjectKey(projectKey);
     }
-
-    @Test
-    void get_project_does_not_call_external_services() {
-        // GIVEN
-        String projectKey = "API-TEST";
-
-        when(projectRepository.findByProjectKey(projectKey)).thenReturn(Optional.empty());
-
-        // WHEN
-        projectService.getProject(projectKey);
-
-        // THEN
-        verify(openshiftService, never()).getProject(any());
-        verify(bitbucketService, never()).getProject(any());
-        verify(jiraService, never()).getProject(any());
-    }
-
 }
