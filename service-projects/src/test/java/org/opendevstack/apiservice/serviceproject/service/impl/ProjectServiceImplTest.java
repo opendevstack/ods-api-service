@@ -9,9 +9,9 @@ import org.opendevstack.apiservice.externalservice.jira.service.JiraService;
 import org.opendevstack.apiservice.externalservice.ocp.service.OpenshiftService;
 import org.opendevstack.apiservice.persistence.entity.ProjectEntity;
 import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
-import org.opendevstack.apiservice.serviceproject.mapper.CreateProjectResponseMapper;
-import org.opendevstack.apiservice.serviceproject.model.CreateProjectRequest;
-import org.opendevstack.apiservice.serviceproject.model.CreateProjectResponse;
+import org.opendevstack.apiservice.serviceproject.mapper.ProjectResponseMapper;
+import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
+import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
 import org.opendevstack.apiservice.serviceproject.service.GenerateProjectKeyService;
 
 import java.util.Optional;
@@ -44,7 +44,7 @@ class ProjectServiceImplTest {
     private ProjectRepository projectRepository;
 
     @Mock
-    private CreateProjectResponseMapper createProjectResponseMapper;
+    private ProjectResponseMapper projectResponseMapper;
 
     private ProjectServiceImpl projectService;
 
@@ -57,7 +57,7 @@ class ProjectServiceImplTest {
                 jiraService,
                 generateProjectKeyService,
                 projectRepository,
-                createProjectResponseMapper
+                projectResponseMapper
         );
     }
 
@@ -81,23 +81,23 @@ class ProjectServiceImplTest {
                 .ldapGroupTeam("cn=my-project-team,ou=groups,dc=example,dc=com")
                 .build();
 
-        CreateProjectResponse expectedResponse = CreateProjectResponse.builder()
+        ProjectResponse expectedResponse = ProjectResponse.builder()
                 .projectKey(projectKey)
                 .status("Completed")
                 .build();
 
         when(projectRepository.findByProjectKey(projectKey)).thenReturn(Optional.of(projectEntity));
-        when(createProjectResponseMapper.toCreateProjectResponse(projectEntity)).thenReturn(expectedResponse);
+        when(projectResponseMapper.toCreateProjectResponse(projectEntity)).thenReturn(expectedResponse);
 
         // WHEN
-        CreateProjectResponse result = projectService.getProject(projectKey);
+        ProjectResponse result = projectService.getProject(projectKey);
 
         // THEN
         assertNotNull(result);
         assertEquals(projectKey, result.getProjectKey());
         assertEquals("Completed", result.getStatus());
         verify(projectRepository).findByProjectKey(projectKey);
-        verify(createProjectResponseMapper).toCreateProjectResponse(projectEntity);
+        verify(projectResponseMapper).toCreateProjectResponse(projectEntity);
     }
 
     @Test
@@ -108,25 +108,25 @@ class ProjectServiceImplTest {
         when(projectRepository.findByProjectKey(projectKey)).thenReturn(Optional.empty());
 
         // WHEN
-        CreateProjectResponse result = projectService.getProject(projectKey);
+        ProjectResponse result = projectService.getProject(projectKey);
 
         // THEN
         assertNull(result);
         verify(projectRepository).findByProjectKey(projectKey);
-        verify(createProjectResponseMapper, never()).toCreateProjectResponse(any());
+        verify(projectResponseMapper, never()).toCreateProjectResponse(any());
     }
 
     @Test
     void create_project_returns_empty_response() {
         // GIVEN
-        CreateProjectRequest request = new CreateProjectRequest();
+        ProjectRequest request = new ProjectRequest();
         request.setProjectKey("NEW-PROJECT");
         request.setProjectKeyPattern("NEW%06d");
         request.setProjectName("New Project");
         request.setProjectDescription("New test project");
 
         // WHEN
-        CreateProjectResponse result = projectService.createProject(request);
+        ProjectResponse result = projectService.createProject(request);
 
         // THEN
         assertNotNull(result);
@@ -152,7 +152,7 @@ class ProjectServiceImplTest {
         when(projectRepository.findByProjectKey(null)).thenReturn(Optional.empty());
 
         // WHEN
-        CreateProjectResponse result = projectService.getProject(null);
+        ProjectResponse result = projectService.getProject(null);
 
         // THEN
         assertNull(result);
@@ -173,16 +173,16 @@ class ProjectServiceImplTest {
                 .deleted(true)
                 .build();
 
-        CreateProjectResponse expectedResponse = CreateProjectResponse.builder()
+        ProjectResponse expectedResponse = ProjectResponse.builder()
                 .projectKey(projectKey)
                 .status("Deleted")
                 .build();
 
         when(projectRepository.findByProjectKey(projectKey)).thenReturn(Optional.of(deletedEntity));
-        when(createProjectResponseMapper.toCreateProjectResponse(deletedEntity)).thenReturn(expectedResponse);
+        when(projectResponseMapper.toCreateProjectResponse(deletedEntity)).thenReturn(expectedResponse);
 
         // WHEN
-        CreateProjectResponse result = projectService.getProject(projectKey);
+        ProjectResponse result = projectService.getProject(projectKey);
 
         // THEN
         assertNotNull(result);

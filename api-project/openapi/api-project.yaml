@@ -150,3 +150,5 @@ components:
           type: string
         errorDescription:
           type: string
+        location:
+          type: string
