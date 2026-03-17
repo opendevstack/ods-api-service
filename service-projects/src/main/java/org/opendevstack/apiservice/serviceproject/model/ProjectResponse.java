@@ -13,5 +13,7 @@ public class ProjectResponse {
     
     private String projectKey;
     
-    private String status;
+    private Status status;
+    
+    private String projectFlavor;
 }

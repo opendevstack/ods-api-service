@@ -58,6 +58,10 @@ public class ProjectController implements ProjectsApi {
             log.error("Error retrieving project '{}': {}", projectKey, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProjectResponseFactory.internalError());
+        } catch (Exception e) {
+            log.error("Unexpected error retrieving project '{}': {}", projectKey, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ProjectResponseFactory.internalError());
         }
     }
 }

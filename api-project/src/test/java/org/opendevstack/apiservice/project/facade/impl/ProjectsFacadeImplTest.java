@@ -11,6 +11,7 @@ import org.opendevstack.apiservice.project.model.CreateProjectRequest;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
 import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
+import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,7 +41,7 @@ class ProjectsFacadeImplTest {
         ProjectResponse serviceResponse =
                 new ProjectResponse();
         serviceResponse.setProjectKey("PROJ01");
-        serviceResponse.setStatus("Initiated");
+        serviceResponse.setStatus(Status.PENDING);
 
         when(projectService.createProject(org.mockito.ArgumentMatchers.any(
                 ProjectRequest.class)))
@@ -50,7 +51,7 @@ class ProjectsFacadeImplTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getProjectKey()).isEqualTo("PROJ01");
-        assertThat(response.getStatus()).isEqualTo("Initiated");
+        assertThat(response.getStatus()).isEqualTo("Pending");
         verify(projectService).createProject(org.mockito.ArgumentMatchers.any(
                 ProjectRequest.class));
     }
@@ -72,7 +73,7 @@ class ProjectsFacadeImplTest {
         ProjectResponse serviceResponse =
                 new ProjectResponse();
         serviceResponse.setProjectKey("PROJ01");
-        serviceResponse.setStatus("Found");
+        serviceResponse.setStatus(Status.RUNNING);
 
         when(projectService.getProject("PROJ01")).thenReturn(serviceResponse);
 
@@ -80,7 +81,7 @@ class ProjectsFacadeImplTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getProjectKey()).isEqualTo("PROJ01");
-        assertThat(response.getStatus()).isEqualTo("Found");
+        assertThat(response.getStatus()).isEqualTo("Running");
     }
 
     @Test

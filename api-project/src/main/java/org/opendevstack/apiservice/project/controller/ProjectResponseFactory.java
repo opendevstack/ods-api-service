@@ -32,7 +32,7 @@ public final class ProjectResponseFactory {
         CreateProjectResponse response = new CreateProjectResponse();
         response.setError(error);
         response.setErrorKey(errorKey);
-        response.setMessage(message);
+        response.setErrorDescription(message);
         return response;
     }
 }

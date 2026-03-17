@@ -12,6 +12,7 @@ import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
 import org.opendevstack.apiservice.serviceproject.mapper.ProjectResponseMapper;
 import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
+import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.GenerateProjectKeyService;
 
 import java.util.Optional;
@@ -63,7 +64,7 @@ class ProjectServiceImplTest {
 
     @Test
     void get_project_returns_response_when_project_exists() {
-        // GIVEN
+        
         String projectKey = "MY-PROJECT";
         UUID projectId = UUID.randomUUID();
 
@@ -83,85 +84,84 @@ class ProjectServiceImplTest {
 
         ProjectResponse expectedResponse = ProjectResponse.builder()
                 .projectKey(projectKey)
-                .status("Completed")
+                .status(Status.RUNNING)
                 .build();
 
-        when(projectRepository.findByProjectKey(projectKey)).thenReturn(Optional.of(projectEntity));
+        when(projectRepository.findByProjectKeyIgnoreCase(projectKey)).thenReturn(Optional.of(projectEntity));
         when(projectResponseMapper.toCreateProjectResponse(projectEntity)).thenReturn(expectedResponse);
 
-        // WHEN
+        
         ProjectResponse result = projectService.getProject(projectKey);
 
-        // THEN
+        
         assertNotNull(result);
         assertEquals(projectKey, result.getProjectKey());
-        assertEquals("Completed", result.getStatus());
-        verify(projectRepository).findByProjectKey(projectKey);
+        assertEquals(Status.RUNNING, result.getStatus());
+        verify(projectRepository).findByProjectKeyIgnoreCase(projectKey);
         verify(projectResponseMapper).toCreateProjectResponse(projectEntity);
     }
 
     @Test
     void get_project_returns_null_when_project_does_not_exist() {
-        // GIVEN
+        
         String projectKey = "NON-EXISTING";
 
-        when(projectRepository.findByProjectKey(projectKey)).thenReturn(Optional.empty());
+        when(projectRepository.findByProjectKeyIgnoreCase(projectKey)).thenReturn(Optional.empty());
 
-        // WHEN
+        
         ProjectResponse result = projectService.getProject(projectKey);
 
-        // THEN
+        
         assertNull(result);
-        verify(projectRepository).findByProjectKey(projectKey);
+        verify(projectRepository).findByProjectKeyIgnoreCase(projectKey);
         verify(projectResponseMapper, never()).toCreateProjectResponse(any());
     }
 
     @Test
     void create_project_returns_empty_response() {
-        // GIVEN
+        
         ProjectRequest request = new ProjectRequest();
         request.setProjectKey("NEW-PROJECT");
         request.setProjectKeyPattern("NEW%06d");
         request.setProjectName("New Project");
         request.setProjectDescription("New test project");
 
-        // WHEN
+        
         ProjectResponse result = projectService.createProject(request);
 
-        // THEN
+        
         assertNotNull(result);
         assertNull(result.getProjectKey());
     }
 
     @Test
     void get_project_propagates_repository_exception() {
-        // GIVEN
+        
         String projectKey = "ERROR-PROJECT";
 
-        when(projectRepository.findByProjectKey(projectKey))
+        when(projectRepository.findByProjectKeyIgnoreCase(projectKey))
                 .thenThrow(new RuntimeException("Database connection error"));
 
-        // WHEN / THEN
         assertThrows(RuntimeException.class, () -> projectService.getProject(projectKey));
-        verify(projectRepository).findByProjectKey(projectKey);
+        verify(projectRepository).findByProjectKeyIgnoreCase(projectKey);
     }
 
     @Test
     void get_project_returns_null_when_project_key_is_null() {
-        // GIVEN
-        when(projectRepository.findByProjectKey(null)).thenReturn(Optional.empty());
+        
+        when(projectRepository.findByProjectKeyIgnoreCase(null)).thenReturn(Optional.empty());
 
-        // WHEN
+        
         ProjectResponse result = projectService.getProject(null);
 
-        // THEN
+        
         assertNull(result);
-        verify(projectRepository).findByProjectKey(null);
+        verify(projectRepository).findByProjectKeyIgnoreCase(null);
     }
 
     @Test
     void get_project_returns_response_for_soft_deleted_project() {
-        // GIVEN
+        
         String projectKey = "DELETED-PROJECT";
 
         ProjectEntity deletedEntity = ProjectEntity.builder()
@@ -175,18 +175,18 @@ class ProjectServiceImplTest {
 
         ProjectResponse expectedResponse = ProjectResponse.builder()
                 .projectKey(projectKey)
-                .status("Deleted")
+                .status(Status.RUNNING)
                 .build();
 
-        when(projectRepository.findByProjectKey(projectKey)).thenReturn(Optional.of(deletedEntity));
+        when(projectRepository.findByProjectKeyIgnoreCase(projectKey)).thenReturn(Optional.of(deletedEntity));
         when(projectResponseMapper.toCreateProjectResponse(deletedEntity)).thenReturn(expectedResponse);
 
-        // WHEN
+        
         ProjectResponse result = projectService.getProject(projectKey);
 
-        // THEN
+        
         assertNotNull(result);
         assertEquals(projectKey, result.getProjectKey());
-        verify(projectRepository).findByProjectKey(projectKey);
+        verify(projectRepository).findByProjectKeyIgnoreCase(projectKey);
     }
 }

@@ -40,7 +40,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectResponse getProject(String projectKey) {
-        Optional<ProjectEntity> project = projectRepository.findByProjectKey(projectKey);
+        Optional<ProjectEntity> project = projectRepository.findByProjectKeyIgnoreCase(projectKey);
         
         if (project.isPresent()) {
             return projectResponseMapper.toCreateProjectResponse(project.get());

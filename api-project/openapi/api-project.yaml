@@ -142,6 +142,8 @@ components:
           type: string
         status:
           type: string
+        projectFlavor:
+          type: string
         message:
           type: string
         error:
