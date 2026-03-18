@@ -142,8 +142,6 @@ components:
           type: string
         status:
           type: string
-        projectFlavor:
-          type: string
         message:
           type: string
         error:
@@ -151,6 +149,4 @@ components:
         errorKey:
           type: string
         errorDescription:
-          type: string
-        location:
           type: string

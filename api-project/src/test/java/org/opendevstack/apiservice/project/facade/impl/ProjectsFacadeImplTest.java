@@ -9,9 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.apiservice.project.mapper.ProjectMapper;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
-import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
-import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
-import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,29 +35,29 @@ class ProjectsFacadeImplTest {
         CreateProjectRequest request = new CreateProjectRequest("My Project");
         request.setProjectKey("PROJ01");
 
-        ProjectResponse serviceResponse =
-                new ProjectResponse();
+        org.opendevstack.apiservice.serviceproject.model.CreateProjectResponse serviceResponse =
+                new org.opendevstack.apiservice.serviceproject.model.CreateProjectResponse();
         serviceResponse.setProjectKey("PROJ01");
-        serviceResponse.setStatus(Status.PENDING);
+        serviceResponse.setStatus("Initiated");
 
         when(projectService.createProject(org.mockito.ArgumentMatchers.any(
-                ProjectRequest.class)))
+                org.opendevstack.apiservice.serviceproject.model.CreateProjectRequest.class)))
                 .thenReturn(serviceResponse);
 
         CreateProjectResponse response = sut.createProject(request);
 
         assertThat(response).isNotNull();
         assertThat(response.getProjectKey()).isEqualTo("PROJ01");
-        assertThat(response.getStatus()).isEqualTo("Pending");
+        assertThat(response.getStatus()).isEqualTo("Initiated");
         verify(projectService).createProject(org.mockito.ArgumentMatchers.any(
-                ProjectRequest.class));
+                org.opendevstack.apiservice.serviceproject.model.CreateProjectRequest.class));
     }
 
     @Test
     void createProject_whenServiceReturnsNull_thenReturnNull() throws Exception {
         CreateProjectRequest request = new CreateProjectRequest("My Project");
         when(projectService.createProject(org.mockito.ArgumentMatchers.any(
-                ProjectRequest.class)))
+                org.opendevstack.apiservice.serviceproject.model.CreateProjectRequest.class)))
                 .thenReturn(null);
 
         CreateProjectResponse response = sut.createProject(request);
@@ -70,10 +67,10 @@ class ProjectsFacadeImplTest {
 
     @Test
     void getProject_whenServiceReturnsValue_thenMapToApiModel() throws Exception {
-        ProjectResponse serviceResponse =
-                new ProjectResponse();
+        org.opendevstack.apiservice.serviceproject.model.CreateProjectResponse serviceResponse =
+                new org.opendevstack.apiservice.serviceproject.model.CreateProjectResponse();
         serviceResponse.setProjectKey("PROJ01");
-        serviceResponse.setStatus(Status.RUNNING);
+        serviceResponse.setStatus("Found");
 
         when(projectService.getProject("PROJ01")).thenReturn(serviceResponse);
 
@@ -81,7 +78,7 @@ class ProjectsFacadeImplTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getProjectKey()).isEqualTo("PROJ01");
-        assertThat(response.getStatus()).isEqualTo("Running");
+        assertThat(response.getStatus()).isEqualTo("Found");
     }
 
     @Test

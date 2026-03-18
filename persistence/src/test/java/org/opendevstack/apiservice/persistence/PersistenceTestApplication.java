@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 @SpringBootConfiguration
 @EnableAutoConfiguration
+@EntityScan(basePackages = "org.opendevstack.apiservice.persistence.entity")
+@EnableJpaRepositories(basePackages = "org.opendevstack.apiservice.persistence.repository")
 public class PersistenceTestApplication {
 
 }

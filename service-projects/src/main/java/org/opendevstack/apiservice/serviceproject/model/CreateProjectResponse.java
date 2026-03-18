@@ -1,19 +1,25 @@
 package org.opendevstack.apiservice.serviceproject.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProjectRequest {
+@Builder
+public class CreateProjectResponse {
     
     private String projectKey;
     
-    private String projectKeyPattern;
+    private String status;
     
-    private String projectName;
+    private String message;
     
-    private String projectDescription;
+    private String error;
+    
+    private String errorKey;
+    
+    private String errorDescription;
 }

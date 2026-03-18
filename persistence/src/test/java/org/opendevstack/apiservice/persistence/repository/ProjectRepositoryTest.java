@@ -123,22 +123,24 @@ class ProjectRepositoryTest {
 		}
 
 	}
-	
+
+	// ── findByProjectKey ──────────────────────────────────────────────────────
+
 	@Nested
-	@DisplayName("findByProjectKeyIgnoreCase")
-	class findByProjectKeyIgnoreCase {
+	@DisplayName("findByProjectKey")
+	class FindByProjectKey {
 
 		@Test
 		@DisplayName("returns project regardless of deleted flag")
 		void returnsProjectRegardlessOfDeletedFlag() {
-			assertThat(repository.findByProjectKeyIgnoreCase("ACTIVE-01")).isPresent();
-			assertThat(repository.findByProjectKeyIgnoreCase("DELETED-01")).isPresent();
+			assertThat(repository.findByProjectKey("ACTIVE-01")).isPresent();
+			assertThat(repository.findByProjectKey("DELETED-01")).isPresent();
 		}
 
 		@Test
 		@DisplayName("returns empty for unknown key")
 		void returnsEmptyForUnknownKey() {
-			assertThat(repository.findByProjectKeyIgnoreCase("UNKNOWN")).isEmpty();
+			assertThat(repository.findByProjectKey("UNKNOWN")).isEmpty();
 		}
 
 	}

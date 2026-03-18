@@ -1,12 +1,12 @@
 package org.opendevstack.apiservice.serviceproject.service;
 
-import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
-import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
+import org.opendevstack.apiservice.serviceproject.model.CreateProjectRequest;
+import org.opendevstack.apiservice.serviceproject.model.CreateProjectResponse;
 
 public interface ProjectService {
 
-    ProjectResponse createProject(ProjectRequest request);
+    CreateProjectResponse createProject(CreateProjectRequest request);
 
-    ProjectResponse getProject(String projectKey);
+    CreateProjectResponse getProject(String projectKey);
 }
 
