@@ -173,4 +173,35 @@ class ProjectMapperTest {
         assertEquals("PROJ03", result.getProjectKey());
         assertNull(result.getProjectFlavor());
     }
+
+    @Test
+    void to_api_response_sets_error_description_when_status_is_failed() {
+        ProjectResponse serviceResponse = ProjectResponse.builder()
+                .projectKey("FAIL01")
+                .status(Status.FAILED)
+                .build();
+        
+        CreateProjectResponse result = projectMapper.toApiResponse(serviceResponse);
+        
+        assertNotNull(result);
+        assertEquals(
+                "There was an error when creating the project FAIL01.\n\n " +
+                        "The error has been reported to our Support team as an incident. " +
+                        "You will be informed about the incident via email.",
+                result.getErrorDescription()
+        );
+    }
+
+    @Test
+    void to_api_response_sets_null_error_description_when_status_is_not_failed() {
+        ProjectResponse serviceResponse = ProjectResponse.builder()
+                .projectKey("PROJ01")
+                .status(Status.RUNNING)
+                .build();
+        
+        CreateProjectResponse result = projectMapper.toApiResponse(serviceResponse);
+        
+        assertNotNull(result);
+        assertNull(result.getErrorDescription());
+    }    
 }

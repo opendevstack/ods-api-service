@@ -9,6 +9,8 @@ import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
 import org.opendevstack.apiservice.serviceproject.model.Status;
 
+import java.text.MessageFormat;
+
 @Mapper(componentModel = "spring")
 public interface ProjectMapper {
 
@@ -16,6 +18,7 @@ public interface ProjectMapper {
 
     @Mapping(source = "status", target = "status", qualifiedByName = "mapStatus")
     @Mapping(source = "projectKey", target = "location", qualifiedByName = "mapLocation")
+    @Mapping(source = ".", target = "errorDescription", qualifiedByName = "mapErrorDescription")
     CreateProjectResponse toApiResponse(ProjectResponse serviceResponse);
 
     @Named("mapStatus")
@@ -24,6 +27,16 @@ public interface ProjectMapper {
             return null;
         }
         return status.getDbValue();
+    }
+
+    @Named("mapErrorDescription")
+    default String mapErrorDescription(ProjectResponse serviceResponse) {
+        return (serviceResponse.getStatus() == Status.FAILED) 
+                ? MessageFormat.format(
+                "There was an error when creating the project {0}.\n\n " +
+                        "The error has been reported to our Support team as an incident. " +
+                        "You will be informed about the incident via email.", serviceResponse.getProjectKey()) 
+                : null;
     }
 
     @Named("mapLocation")
