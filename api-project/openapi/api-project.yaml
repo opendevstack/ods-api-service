@@ -133,8 +133,15 @@ components:
         projectDescription:
           type: string
           description: Description of the project.
-      required:
-        - projectName
+        projectFlavor:
+          type: string
+          description: Flavor of the project. Either projectFlavor or configurationItem must be provided.
+        configurationItem:
+          type: string
+          description: Configuration item for the project. Either projectFlavor or configurationItem must be provided.
+        location:
+          type: string
+          description: Location of the project.
     CreateProjectResponse:
       type: object
       properties:

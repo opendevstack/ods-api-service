@@ -1,39 +1,46 @@
-package org.opendevstack.apiservice.projectusers.exception;
+package org.opendevstack.apiservice.projectusers.controller.advice;
 
-import org.opendevstack.apiservice.projectusers.model.ValidationErrorResponse;
-import org.opendevstack.apiservice.projectusers.model.BaseApiResponse;
-import org.opendevstack.apiservice.projectusers.model.FieldError;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-
+import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
+import org.opendevstack.apiservice.projectusers.controller.ProjectUserController;
+import org.opendevstack.apiservice.projectusers.exception.ErrorCodes;
+import org.opendevstack.apiservice.projectusers.exception.ErrorMessages;
+import org.opendevstack.apiservice.projectusers.exception.InvalidRoleException;
+import org.opendevstack.apiservice.projectusers.exception.ProjectNotFoundException;
+import org.opendevstack.apiservice.projectusers.exception.ProjectUserException;
+import org.opendevstack.apiservice.projectusers.exception.UserNotAuthenticatedException;
+import org.opendevstack.apiservice.projectusers.exception.UserNotAuthorizedException;
+import org.opendevstack.apiservice.projectusers.exception.UserNotFoundException;
+import org.opendevstack.apiservice.projectusers.model.BaseApiResponse;
+import org.opendevstack.apiservice.projectusers.model.FieldError;
+import org.opendevstack.apiservice.projectusers.model.ValidationErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
 /**
- * Global exception handler for the Project Users API.
+ * Exception handler for the Project Users API.
  * Provides comprehensive error handling with detailed validation error
  * messages.
  */
 @Slf4j
-@ControllerAdvice
-public class GlobalExceptionHandler {
+@RestControllerAdvice(assignableTypes = ProjectUserController.class)
+public class ProjectUserExceptionHandler {
 
     /**
      * Handles validation errors from @Valid annotations on request bodies.
@@ -46,7 +53,6 @@ public class GlobalExceptionHandler {
 
         List<FieldError> fieldErrors = new ArrayList<>();
 
-        // Field validation errors
         for (org.springframework.validation.FieldError error : ex.getBindingResult().getFieldErrors()) {
             String fieldName = error.getField();
             String errorMessage = error.getDefaultMessage();
@@ -61,7 +67,6 @@ public class GlobalExceptionHandler {
             fieldErrors.add(fieldError);
         }
 
-        // Global validation errors
         ex.getBindingResult().getGlobalErrors().forEach(error -> {
             FieldError fieldError = new FieldError();
             fieldError.setField("object");
@@ -69,17 +74,17 @@ public class GlobalExceptionHandler {
             fieldErrors.add(fieldError);
         });
 
-    String errorMessage = String.format(
-        ErrorMessages.REQUEST_VALIDATION_FAILED,
-        fieldErrors.size());
+        String errorMessage = String.format(
+                ErrorMessages.REQUEST_VALIDATION_FAILED,
+                fieldErrors.size());
 
-    ValidationErrorResponse errorResponse = new ValidationErrorResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(errorMessage);
-    errorResponse.setErrorCode(ErrorCodes.PROJECT_USER_ERROR);
-    errorResponse.setFieldErrors(fieldErrors);
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        ValidationErrorResponse errorResponse = new ValidationErrorResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(errorMessage);
+        errorResponse.setErrorCode(ErrorCodes.PROJECT_USER_ERROR);
+        errorResponse.setFieldErrors(fieldErrors);
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     /**
@@ -96,13 +101,13 @@ public class GlobalExceptionHandler {
                 .map(this::formatConstraintViolation)
                 .toList();
 
-    String errorMessage = String.format(ErrorMessages.PARAMETER_VALIDATION_FAILED, String.join("; ", errors));
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(errorMessage);
-    errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        String errorMessage = String.format(ErrorMessages.PARAMETER_VALIDATION_FAILED, String.join("; ", errors));
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(errorMessage);
+        errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     /**
@@ -115,8 +120,8 @@ public class GlobalExceptionHandler {
 
         log.warn("Invalid request body: {}", ex.getMessage());
 
-    String errorMessage = ErrorMessages.INVALID_REQUEST_BODY;
-    String errorCode = ErrorCodes.PROJECT_USER_ERROR;
+        String errorMessage = ErrorMessages.INVALID_REQUEST_BODY;
+        String errorCode = ErrorCodes.PROJECT_USER_ERROR;
 
         Throwable cause = ex.getCause();
 
@@ -172,15 +177,15 @@ public class GlobalExceptionHandler {
 
         log.warn("Missing path variable: {}", ex.getMessage());
 
-    String errorMessage = String.format(
-        ErrorMessages.REQUIRED_PATH_PARAMETER_MISSING,
-        ex.getVariableName());
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(errorMessage);
-    errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        String errorMessage = String.format(
+                ErrorMessages.REQUIRED_PATH_PARAMETER_MISSING,
+                ex.getVariableName());
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(errorMessage);
+        errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     /**
@@ -192,15 +197,15 @@ public class GlobalExceptionHandler {
 
         log.warn("Missing request parameter: {}", ex.getMessage());
 
-    String errorMessage = String.format(
-        ErrorMessages.REQUIRED_REQUEST_PARAMETER_MISSING,
-        ex.getParameterName(), ex.getParameterType());
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(errorMessage);
-    errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        String errorMessage = String.format(
+                ErrorMessages.REQUIRED_REQUEST_PARAMETER_MISSING,
+                ex.getParameterName(), ex.getParameterType());
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(errorMessage);
+        errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     /**
@@ -212,17 +217,17 @@ public class GlobalExceptionHandler {
 
         log.warn("Method argument type mismatch: {}", ex.getMessage());
 
-    String errorMessage = String.format(
-        ErrorMessages.PARAMETER_TYPE_CONVERSION_FAILED,
-        ex.getName(),
-        ex.getValue(),
-        ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown");
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(errorMessage);
-    errorResponse.setError(ErrorCodes.INVALID_ROLE);
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        String errorMessage = String.format(
+                ErrorMessages.PARAMETER_TYPE_CONVERSION_FAILED,
+                ex.getName(),
+                ex.getValue(),
+                ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown");
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(errorMessage);
+        errorResponse.setError(ErrorCodes.INVALID_ROLE);
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     /**
@@ -233,11 +238,11 @@ public class GlobalExceptionHandler {
             ProjectNotFoundException ex) {
 
         log.warn("Project not found: {}", ex.getMessage());
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(ex.getMessage());
-    errorResponse.setError(ex.getErrorCode());
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setError(ex.getErrorCode());
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
@@ -249,11 +254,11 @@ public class GlobalExceptionHandler {
             UserNotFoundException ex) {
 
         log.warn("User not found: {}", ex.getMessage());
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(ex.getMessage());
-    errorResponse.setError(ex.getErrorCode());
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setError(ex.getErrorCode());
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
@@ -297,11 +302,11 @@ public class GlobalExceptionHandler {
             InvalidRoleException ex) {
 
         log.warn("Invalid role: {}", ex.getMessage());
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(ex.getMessage());
-    errorResponse.setError(ex.getErrorCode());
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setError(ex.getErrorCode());
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
@@ -313,12 +318,12 @@ public class GlobalExceptionHandler {
             AutomationPlatformException ex) {
 
         log.error("Automation platform error: {}", ex.getMessage(), ex);
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(String.format(ErrorMessages.EXTERNAL_SERVICE_ERROR, ex.getMessage()));
-    errorResponse.setError(ex.getErrorCode());
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
-    return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(errorResponse);
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(String.format(ErrorMessages.EXTERNAL_SERVICE_ERROR, ex.getMessage()));
+        errorResponse.setError(ex.getErrorCode());
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(errorResponse);
     }
 
     /**
@@ -327,12 +332,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ProjectUserException.class)
     public ResponseEntity<BaseApiResponse> handleProjectUserException(ProjectUserException ex) {
         log.error("Project user operation failed: {}", ex.getMessage(), ex);
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(String.format(ErrorMessages.OPERATION_FAILED, ex.getMessage()));
-    errorResponse.setError(ex.getErrorCode());
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(String.format(ErrorMessages.OPERATION_FAILED, ex.getMessage()));
+        errorResponse.setError(ex.getErrorCode());
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
     /**
@@ -341,12 +346,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<BaseApiResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
-    BaseApiResponse errorResponse = new BaseApiResponse();
-    errorResponse.setSuccess(false);
-    errorResponse.setMessage(ErrorMessages.UNEXPECTED_ERROR);
-    errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
-    errorResponse.setTimestamp(java.time.OffsetDateTime.now());
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        BaseApiResponse errorResponse = new BaseApiResponse();
+        errorResponse.setSuccess(false);
+        errorResponse.setMessage(ErrorMessages.UNEXPECTED_ERROR);
+        errorResponse.setError(ErrorCodes.PROJECT_USER_ERROR);
+        errorResponse.setTimestamp(java.time.OffsetDateTime.now());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
     /**
@@ -377,3 +382,4 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining("."));
     }
 }
+
