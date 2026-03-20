@@ -46,7 +46,7 @@ class ComponentsServiceTest {
                 .thenReturn(null);
 
         Component retrievedComponent = componentsService.getProjectComponent("testId", "testId");
-        assertThat(retrievedComponent).isEqualTo(null);
+        assertThat(retrievedComponent).isNull();
     }
 
     @Test
@@ -70,6 +70,6 @@ class ComponentsServiceTest {
                 .thenReturn(null);
 
         Component retrievedComponent = componentsService.createProjectComponent("testId", testRequest);
-        assertThat(retrievedComponent).isEqualTo(null);
+        assertThat(retrievedComponent).isNull();
     }
 }

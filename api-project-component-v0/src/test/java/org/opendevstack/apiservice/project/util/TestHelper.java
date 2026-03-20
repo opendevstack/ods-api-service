@@ -24,17 +24,17 @@ public class TestHelper {
         return request;
     }
 
-    public static CreateComponentResponse buildTestCreateComponentResponseSuccess() {
+    public static CreateComponentResponse buildTestCreateComponentResponseSuccess(String componentName, String projectId) {
         CreateComponentResponse response = new CreateComponentResponse();
         response.setErrorCode(HttpStatus.CREATED.value());
-        response.setMessage("success");
+        response.setMessage(componentName + " component created successfully in project " + projectId);
         return response;
     }
 
-    public static CreateComponentResponse buildTestCreateComponentResponseFailure() {
+    public static CreateComponentResponse buildTestCreateComponentResponseFailure(String projectId) {
         CreateComponentResponse response = new CreateComponentResponse();
         response.setErrorCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.setMessage("failure");
+        response.setMessage("Failed to create component for project '" + projectId + "'");
         return response;
     }
 }

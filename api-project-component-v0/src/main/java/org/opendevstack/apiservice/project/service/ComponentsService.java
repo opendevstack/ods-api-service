@@ -32,10 +32,12 @@ public class ComponentsService {
         }
 
         public Component getProjectComponent(String projectId, String componentId) {
+            log.info("Get component with id '" + componentId + "' for project '" + projectId + "'");
             return null;
         }
 
         public Component createProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
+            log.info("Creating component for project '" + projectId + "'" + " with request: " + createComponentRequest);
             return null;
         }
     }

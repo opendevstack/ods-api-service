@@ -12,7 +12,7 @@ public class ComponentsResponseFactory {
     public static CreateComponentResponse error(String projectId) {
         CreateComponentResponse response = new CreateComponentResponse();
         response.setErrorCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.setMessage("Failed to create component for project '" + projectId);
+        response.setMessage("Failed to create component for project '" + projectId + "'");
         return response;
     }
 
@@ -23,7 +23,7 @@ public class ComponentsResponseFactory {
         return response;
     }
 
-    public static ResponseEntity toResponseEntity(CreateComponentResponse response) {
-        return new ResponseEntity(response, HttpStatus.valueOf(response.getErrorCode()));
+    public static ResponseEntity<CreateComponentResponse> toResponseEntity(CreateComponentResponse response) {
+        return new ResponseEntity<>(response, HttpStatus.valueOf(response.getErrorCode()));
     }
 }

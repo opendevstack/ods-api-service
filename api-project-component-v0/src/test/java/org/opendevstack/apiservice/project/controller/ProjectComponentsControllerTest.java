@@ -34,34 +34,37 @@ class ProjectComponentsControllerTest {
     @Test
     void testCreateProjectComponent_whenSuccess_thenReturnOk() throws Exception {
         Component testComponent = buildTestComponent();
+        String testProjectId = "testProjectId";
         CreateComponentRequest testCreateComponentRequest = buildTestCreateComponentRequest();
-        CreateComponentResponse testServiceResponseSuccess = buildTestCreateComponentResponseSuccess();
+        CreateComponentResponse testServiceResponseSuccess = buildTestCreateComponentResponseSuccess(testComponent.getName(),
+                testProjectId);
 
         when(componentsService.createProjectComponent(anyString(), any(CreateComponentRequest.class)))
                 .thenReturn(testComponent);
 
-        ResponseEntity<CreateComponentResponse> response = projectComponentsController.createProjectComponent("testId",
+        ResponseEntity<CreateComponentResponse> response = projectComponentsController.createProjectComponent(testProjectId,
                 testCreateComponentRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().equals(testServiceResponseSuccess));
+        assertThat(response.getBody()).isEqualTo(testServiceResponseSuccess);
     }
 
     @Test
     void testCreateProjectComponent_whenFailure_thenReturnErrorResponse() throws Exception {
         CreateComponentRequest testCreateComponentRequest = buildTestCreateComponentRequest();
-        CreateComponentResponse testServiceResponseFailure = buildTestCreateComponentResponseFailure();
+        String testProjectId = "testProjectId";
+        CreateComponentResponse testServiceResponseFailure = buildTestCreateComponentResponseFailure(testProjectId);
 
         when(componentsService.createProjectComponent(anyString(), any(CreateComponentRequest.class)))
                 .thenReturn(null);
 
-        ResponseEntity<CreateComponentResponse> response = projectComponentsController.createProjectComponent("projectId",
+        ResponseEntity<CreateComponentResponse> response = projectComponentsController.createProjectComponent(testProjectId,
                 testCreateComponentRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().equals(testServiceResponseFailure));
+        assertThat(response.getBody()).isEqualTo(testServiceResponseFailure);
     }
 
     @Test
@@ -76,7 +79,7 @@ class ProjectComponentsControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().equals(testComponent));
+        assertThat(response.getBody()).isEqualTo(testComponent);
     }
 
     @Test
