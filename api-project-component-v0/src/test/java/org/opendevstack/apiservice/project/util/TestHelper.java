@@ -4,9 +4,11 @@ import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 import org.opendevstack.apiservice.project.model.CreateComponentResponse;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 
 public class TestHelper {
+
+    private TestHelper() {
+    }
 
     public static Component buildTestComponent() {
         Component component = new Component();
