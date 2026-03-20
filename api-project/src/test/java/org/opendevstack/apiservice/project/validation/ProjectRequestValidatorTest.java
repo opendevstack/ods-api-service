@@ -2,6 +2,8 @@ package org.opendevstack.apiservice.project.validation;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
@@ -49,32 +51,17 @@ class ProjectRequestValidatorTest {
         assertEquals(ErrorKey.BAD_REQUEST_FLAVOR_CONFIG_ITEM, exception.getErrorKey());
     }
 
-    @Test
-    void validate_succeeds_when_project_flavor_provided() {
+    @ParameterizedTest
+    @CsvSource({
+        "STANDARD, null",
+        "null, JIRA",
+        "STANDARD, JIRA"
+    })
+    void validate_succeeds_when_flavor_or_config_item_provided(String projectFlavor, String configurationItem) {
         CreateProjectRequest request = new CreateProjectRequest();
         request.setProjectName("Valid Name");
-        request.setProjectFlavor("STANDARD");
-        request.setConfigurationItem(null);
-
-        assertDoesNotThrow(() -> sut.validate(request));
-    }
-
-    @Test
-    void validate_succeeds_when_config_item_provided() {
-        CreateProjectRequest request = new CreateProjectRequest();
-        request.setProjectName("Valid Name");
-        request.setProjectFlavor(null);
-        request.setConfigurationItem("JIRA");
-
-        assertDoesNotThrow(() -> sut.validate(request));
-    }
-
-    @Test
-    void validate_succeeds_when_both_flavor_and_config_item_provided() {
-        CreateProjectRequest request = new CreateProjectRequest();
-        request.setProjectName("Valid Name");
-        request.setProjectFlavor("STANDARD");
-        request.setConfigurationItem("JIRA");
+        request.setProjectFlavor("null".equals(projectFlavor) ? null : projectFlavor);
+        request.setConfigurationItem("null".equals(configurationItem) ? null : configurationItem);
 
         assertDoesNotThrow(() -> sut.validate(request));
     }
