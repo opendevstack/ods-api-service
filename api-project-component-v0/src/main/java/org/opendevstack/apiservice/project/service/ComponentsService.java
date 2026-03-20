@@ -22,7 +22,6 @@ public class ComponentsService {
         return marketplaceExternalService.createProjectComponent(projectId, createComponentRequest);
     }
 
-    //TODO replace this with actual external service implementations and remove the placeholder
     @Service
     class MarketplaceExternalServicePlaceholder implements ExternalService {
 

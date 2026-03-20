@@ -18,7 +18,6 @@ import static org.opendevstack.apiservice.project.util.TestHelper.buildTestCreat
 @ExtendWith(MockitoExtension.class)
 class ComponentsServiceTest {
 
-    //TODO update this with actual marketplace service mocks once implemented and remove the placeholder
     @Mock
     private ComponentsService.MarketplaceExternalServicePlaceholder marketPlaceExternalServicePlaceholder;
 

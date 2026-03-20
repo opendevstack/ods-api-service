@@ -39,11 +39,13 @@ public class ProjectComponentsController implements ProjectComponentsApi {
     public ResponseEntity<Component> getProjectComponent(String projectId, String componentId) {
         try {
             Component component = componentsService.getProjectComponent(projectId, componentId);
-            return component != null ?
-                    ResponseEntity.ok(component) : ResponseEntity.notFound().build();
+            if (component == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(component);
         } catch (Exception e) {
             log.error("Error retrieving component '{}' for project '{}': {}", componentId, projectId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
