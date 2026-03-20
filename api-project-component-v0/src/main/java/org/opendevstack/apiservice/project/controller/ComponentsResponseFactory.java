@@ -22,8 +22,4 @@ public class ComponentsResponseFactory {
         response.setMessage(componentName + " component created successfully in project " + projectId);
         return response;
     }
-
-    public static ResponseEntity<CreateComponentResponse> toResponseEntity(CreateComponentResponse response) {
-        return new ResponseEntity<>(response, HttpStatus.valueOf(response.getErrorCode()));
-    }
 }

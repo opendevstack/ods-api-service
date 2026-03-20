@@ -3,8 +3,10 @@ package org.opendevstack.apiservice.project.controller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.apiservice.project.mapper.ComponentResponseMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 import org.opendevstack.apiservice.project.model.CreateComponentResponse;
@@ -24,11 +26,13 @@ class ProjectComponentsControllerTest {
     @Mock
     private ComponentsService componentsService;
 
+    private final ComponentResponseMapper componentResponseMapper = Mappers.getMapper(ComponentResponseMapper.class);
+
     private ProjectComponentsController projectComponentsController;
 
     @BeforeEach
     void setup() {
-        projectComponentsController = new ProjectComponentsController(componentsService);
+        projectComponentsController = new ProjectComponentsController(componentsService, componentResponseMapper);
     }
 
     @Test
