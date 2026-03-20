@@ -1,46 +1,40 @@
-package org.opendevstack.apiservice.projectusers.controller.advice;
+package org.opendevstack.apiservice.projectusers.exception;
 
+import org.opendevstack.apiservice.projectusers.controller.ProjectUserController;
+import org.opendevstack.apiservice.projectusers.model.ValidationErrorResponse;
+import org.opendevstack.apiservice.projectusers.model.BaseApiResponse;
+import org.opendevstack.apiservice.projectusers.model.FieldError;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
-import org.opendevstack.apiservice.projectusers.controller.ProjectUserController;
-import org.opendevstack.apiservice.projectusers.exception.ErrorCodes;
-import org.opendevstack.apiservice.projectusers.exception.ErrorMessages;
-import org.opendevstack.apiservice.projectusers.exception.InvalidRoleException;
-import org.opendevstack.apiservice.projectusers.exception.ProjectNotFoundException;
-import org.opendevstack.apiservice.projectusers.exception.ProjectUserException;
-import org.opendevstack.apiservice.projectusers.exception.UserNotAuthenticatedException;
-import org.opendevstack.apiservice.projectusers.exception.UserNotAuthorizedException;
-import org.opendevstack.apiservice.projectusers.exception.UserNotFoundException;
-import org.opendevstack.apiservice.projectusers.model.BaseApiResponse;
-import org.opendevstack.apiservice.projectusers.model.FieldError;
-import org.opendevstack.apiservice.projectusers.model.ValidationErrorResponse;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 /**
- * Exception handler for the Project Users API.
+ * Global exception handler for the Project Users API.
  * Provides comprehensive error handling with detailed validation error
  * messages.
  */
 @Slf4j
-@RestControllerAdvice(assignableTypes = ProjectUserController.class)
-public class ProjectUserExceptionHandler {
+@ControllerAdvice(assignableTypes = ProjectUserController.class)
+public class GlobalExceptionHandler {
 
     /**
      * Handles validation errors from @Valid annotations on request bodies.
@@ -53,6 +47,7 @@ public class ProjectUserExceptionHandler {
 
         List<FieldError> fieldErrors = new ArrayList<>();
 
+        // Field validation errors
         for (org.springframework.validation.FieldError error : ex.getBindingResult().getFieldErrors()) {
             String fieldName = error.getField();
             String errorMessage = error.getDefaultMessage();
@@ -67,6 +62,7 @@ public class ProjectUserExceptionHandler {
             fieldErrors.add(fieldError);
         }
 
+        // Global validation errors
         ex.getBindingResult().getGlobalErrors().forEach(error -> {
             FieldError fieldError = new FieldError();
             fieldError.setField("object");
@@ -382,4 +378,3 @@ public class ProjectUserExceptionHandler {
                 .collect(Collectors.joining("."));
     }
 }
-

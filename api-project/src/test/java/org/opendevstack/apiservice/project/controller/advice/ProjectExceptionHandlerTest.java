@@ -90,7 +90,6 @@ class ProjectExceptionHandlerTest {
 
     @Test
     void handle_method_argument_not_valid_exception_returns_bad_request_response_for_request_body_validation_errors() {
-        // GIVEN
         CreateProjectRequest target = new CreateProjectRequest();
         BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "createProjectRequest");
         bindingResult.addError(new FieldError("createProjectRequest", "projectName", null, false, null, null,
@@ -108,10 +107,8 @@ class ProjectExceptionHandlerTest {
 
         MethodArgumentNotValidException exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
 
-        // WHEN
         ResponseEntity<CreateProjectResponse> result = sut.handleMethodArgumentNotValidException(exception);
 
-        // THEN
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
         assertNotNull(result.getBody());
         assertEquals(ProjectController.API_BASE_PATH, result.getBody().getLocation());

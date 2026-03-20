@@ -1,44 +1,42 @@
-package org.opendevstack.apiservice.projectusers.controller.advice;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockitoAnnotations;
+package org.opendevstack.apiservice.projectusers.exception;
+
 import org.opendevstack.apiservice.projectusers.controller.ProjectUserController;
 import org.opendevstack.apiservice.projectusers.model.AddUserToProjectRequest;
 import org.opendevstack.apiservice.projectusers.model.ValidationErrorResponse;
-import org.springframework.core.MethodParameter;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.core.MethodParameter;
+
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 /**
- * Unit test class for the ProjectUserExceptionHandler to verify improved validation
+ * Unit test class for the GlobalExceptionHandler to verify improved validation
  * error messages.
  */
-class ProjectUserExceptionHandlerTest {
-    private ProjectUserExceptionHandler sut;
-    private AutoCloseable mocks;
+class GlobalExceptionHandlerTest {
+
+    private GlobalExceptionHandler exceptionHandler;
+
     @BeforeEach
     void setUp() {
-        mocks = MockitoAnnotations.openMocks(this);
-        sut = new ProjectUserExceptionHandler();
+        exceptionHandler = new GlobalExceptionHandler();
     }
-    @AfterEach
-    void tearDown() throws Exception {
-        mocks.close();
-    }
+
     @Test
-    void handle_method_argument_not_valid_exception_returns_bad_request_with_field_errors() {
-        // GIVEN
+    void testValidationErrorHandling() {
+        // Create a mock MethodArgumentNotValidException with validation errors
+        // Target object representing the @RequestBody argument
         AddUserToProjectRequest target = new AddUserToProjectRequest();
         BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "addUserToProjectRequest");
+
+        // Add field errors for required fields
         bindingResult.addError(new FieldError("addUserToProjectRequest", "environment", null, false, null, null,
                 "Environment cannot be blank"));
         bindingResult.addError(
@@ -47,32 +45,45 @@ class ProjectUserExceptionHandlerTest {
                 "Account cannot be blank"));
         bindingResult.addError(
                 new FieldError("addUserToProjectRequest", "role", null, false, null, null, "Role cannot be null"));
+
+        // Create a MethodParameter referencing the controller method's @RequestBody
+        // parameter
         MethodParameter methodParameter;
         try {
             methodParameter = new MethodParameter(
                     ProjectUserController.class.getMethod(
                             "triggerMembershipRequest", String.class, AddUserToProjectRequest.class),
-                    1);
+                    1 // index of AddUserToProjectRequest parameter
+            );
         } catch (NoSuchMethodException e) {
             fail("Failed to reflect controller method for test: " + e.getMessage());
-            return;
+            return; // unreachable, but required for compilation
         }
+
         MethodArgumentNotValidException exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
-        // WHEN
-        ResponseEntity<ValidationErrorResponse> response = sut.handleMethodArgumentNotValidException(exception);
-        // THEN
+
+        // Test the exception handler
+        ResponseEntity<ValidationErrorResponse> response = exceptionHandler
+                .handleMethodArgumentNotValidException(exception);
+
+        // Verify response
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertNotNull(response.getBody());
+
         ValidationErrorResponse errorResponse = response.getBody();
         assertFalse(errorResponse.getSuccess());
         assertEquals("PROJECT_USER_ERROR", errorResponse.getErrorCode());
         assertNotNull(errorResponse.getFieldErrors());
         assertEquals(4, errorResponse.getFieldErrors().size());
+
+        // Check specific field errors
         List<org.opendevstack.apiservice.projectusers.model.FieldError> fieldErrors = errorResponse.getFieldErrors();
         assertTrue(fieldErrors.stream().anyMatch(error -> "environment".equals(error.getField())));
         assertTrue(fieldErrors.stream().anyMatch(error -> "user".equals(error.getField())));
         assertTrue(fieldErrors.stream().anyMatch(error -> "account".equals(error.getField())));
         assertTrue(fieldErrors.stream().anyMatch(error -> "role".equals(error.getField())));
+
+        // Verify expected format is provided for each field
         fieldErrors.forEach(fieldError -> {
             assertNotNull(fieldError.getField());
             assertNotNull(fieldError.getMessage());
@@ -82,13 +93,14 @@ class ProjectUserExceptionHandlerTest {
             }
         });
     }
+
     @Test
-    void handle_generic_exception_returns_internal_server_error() {
-        // GIVEN
+    void testGenericExceptionHandling() {
+        // Test generic exception handling
         Exception exception = new RuntimeException("Unexpected error");
-        // WHEN
-        ResponseEntity<?> response = sut.handleGenericException(exception);
-        // THEN
+
+        ResponseEntity<?> response = exceptionHandler.handleGenericException(exception);
+
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(response.getBody());
     }
