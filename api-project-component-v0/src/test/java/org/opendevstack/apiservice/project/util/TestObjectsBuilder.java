@@ -5,9 +5,9 @@ import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 import org.opendevstack.apiservice.project.model.CreateComponentResponse;
 import org.springframework.http.HttpStatus;
 
-public class TestHelper {
+public class TestObjectsBuilder {
 
-    private TestHelper() {
+    private TestObjectsBuilder() {
     }
 
     public static Component buildTestComponent() {

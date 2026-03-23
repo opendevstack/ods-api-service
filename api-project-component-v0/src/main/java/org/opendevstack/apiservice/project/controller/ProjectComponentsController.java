@@ -7,7 +7,7 @@ import org.opendevstack.apiservice.project.mapper.ComponentResponseMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 import org.opendevstack.apiservice.project.model.CreateComponentResponse;
-import org.opendevstack.apiservice.project.service.ComponentsService;
+import org.opendevstack.apiservice.project.facade.ComponentsFacade;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,14 +17,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class ProjectComponentsController implements ProjectComponentsApi {
 
-    private final ComponentsService componentsService;
+    private final ComponentsFacade componentsFacade;
 
     private final ComponentResponseMapper componentResponseMapper;
 
     @Override
     public ResponseEntity<CreateComponentResponse> createProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
         try {
-            Component component = componentsService.createProjectComponent(projectId, createComponentRequest);
+            Component component = componentsFacade.createProjectComponent(projectId, createComponentRequest);
             if (component == null) {
                 log.error("Failed to create component for project '{}'", projectId);
                 return componentResponseMapper.toResponseEntity(ComponentsResponseFactory.error(projectId));
@@ -39,7 +39,7 @@ public class ProjectComponentsController implements ProjectComponentsApi {
     @Override
     public ResponseEntity<Component> getProjectComponent(String projectId, String componentId) {
         try {
-            Component component = componentsService.getProjectComponent(projectId, componentId);
+            Component component = componentsFacade.getProjectComponent(projectId, componentId);
             if (component == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }

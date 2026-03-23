@@ -1,4 +1,4 @@
-package org.opendevstack.apiservice.project.service;
+package org.opendevstack.apiservice.project.facade;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,20 +12,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.opendevstack.apiservice.project.util.TestHelper.buildTestComponent;
-import static org.opendevstack.apiservice.project.util.TestHelper.buildTestCreateComponentRequest;
+import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestComponent;
+import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestCreateComponentRequest;
 
 @ExtendWith(MockitoExtension.class)
 class ComponentsServiceTest {
 
     @Mock
-    private ComponentsService.MarketplaceExternalServicePlaceholder marketPlaceExternalServicePlaceholder;
+    private ComponentsFacade.MarketplaceExternalServicePlaceholder marketPlaceExternalServicePlaceholder;
 
-    private ComponentsService componentsService;
+    private ComponentsFacade componentsFacade;
 
     @BeforeEach
     void setup() {
-        componentsService = new ComponentsService(marketPlaceExternalServicePlaceholder);
+        componentsFacade = new ComponentsFacade(marketPlaceExternalServicePlaceholder);
     }
 
     @Test
@@ -35,7 +35,7 @@ class ComponentsServiceTest {
         when(marketPlaceExternalServicePlaceholder.getProjectComponent(anyString(), eq("testId")))
                 .thenReturn(testComponent);
 
-        Component retrievedComponent = componentsService.getProjectComponent("testId", "testId");
+        Component retrievedComponent = componentsFacade.getProjectComponent("testId", "testId");
         assertThat(retrievedComponent).isEqualTo(testComponent);
     }
 
@@ -44,7 +44,7 @@ class ComponentsServiceTest {
         when(marketPlaceExternalServicePlaceholder.getProjectComponent(anyString(), eq("testId")))
                 .thenReturn(null);
 
-        Component retrievedComponent = componentsService.getProjectComponent("testId", "testId");
+        Component retrievedComponent = componentsFacade.getProjectComponent("testId", "testId");
         assertThat(retrievedComponent).isNull();
     }
 
@@ -56,7 +56,7 @@ class ComponentsServiceTest {
         when(marketPlaceExternalServicePlaceholder.createProjectComponent(anyString(), eq(testRequest)))
                 .thenReturn(testComponent);
 
-        Component retrievedComponent = componentsService.createProjectComponent("testId", testRequest);
+        Component retrievedComponent = componentsFacade.createProjectComponent("testId", testRequest);
         assertThat(retrievedComponent).isEqualTo(testComponent);
     }
 
@@ -68,7 +68,7 @@ class ComponentsServiceTest {
         when(marketPlaceExternalServicePlaceholder.createProjectComponent(anyString(), eq(testRequest)))
                 .thenReturn(null);
 
-        Component retrievedComponent = componentsService.createProjectComponent("testId", testRequest);
+        Component retrievedComponent = componentsFacade.createProjectComponent("testId", testRequest);
         assertThat(retrievedComponent).isNull();
     }
 }

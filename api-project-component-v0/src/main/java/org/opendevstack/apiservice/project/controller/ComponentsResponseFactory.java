@@ -2,7 +2,6 @@ package org.opendevstack.apiservice.project.controller;
 
 import org.opendevstack.apiservice.project.model.CreateComponentResponse;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 public class ComponentsResponseFactory {
 
