@@ -3,7 +3,9 @@ package org.opendevstack.apiservice.project.controller;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
 import org.opendevstack.apiservice.project.api.ProjectsApi;
+import org.opendevstack.apiservice.project.exception.ErrorKey;
 import org.opendevstack.apiservice.project.exception.ProjectCreationException;
 import org.opendevstack.apiservice.project.facade.ProjectsFacade;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping(ProjectController.API_BASE_PATH)
@@ -38,10 +42,15 @@ public class ProjectController implements ProjectsApi {
     public ResponseEntity<CreateProjectResponse> createProject(@Valid @RequestBody CreateProjectRequest createProjectRequest) {
         projectRequestValidator.validate(createProjectRequest);
         try {
+            UUID clientId = UUID.fromString("56a0fc62-bf77-4acb-8cd7-8cc9f5f2198f");
+            CreateProjectResponse projectResponse = projectsFacade.createProject(createProjectRequest, clientId);
+            projectResponse.setLocation(API_BASE_PATH + "/" + projectResponse.getProjectKey());
+            projectResponse.setErrorKey(ErrorKey.OK.getKey());
+            projectResponse.setProjectKey(null);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .header(HTTP_HEADER_LOCATION, API_BASE_PATH)
-                    .body(projectsFacade.createProject(createProjectRequest));
+                    .body(projectResponse);
         } catch (ProjectCreationException e) {
             log.error("Project creation conflict: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -52,6 +61,11 @@ public class ProjectController implements ProjectsApi {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .header(HTTP_HEADER_LOCATION, API_BASE_PATH)
                     .body(ProjectResponseFactory.projectKeyGenerationFailed(API_BASE_PATH));
+        } catch (AutomationPlatformException e) {
+            log.error("Failed to execute automated job: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .header(HTTP_HEADER_LOCATION, API_BASE_PATH)
+                    .body(ProjectResponseFactory.internalError(API_BASE_PATH, e.getMessage()));
         }
     }
     

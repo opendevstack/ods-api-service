@@ -124,9 +124,6 @@ components:
         projectKey:
           type: string
           description: Optional project key. If not provided, a unique key will be generated.
-        projectKeyPattern:
-          type: string
-          description: Optional pattern for generating the project key (e.g. 'SS%06d').
         projectName:
           type: string
           description: Name of the project.
@@ -142,11 +139,19 @@ components:
         location:
           type: string
           description: Location of the project.
+        x2OdsAccount:
+          type: string
+          description: X2ODS account for the project.
+        owner:
+          type: string
+          description: Owner of the project.
     CreateProjectResponse:
       type: object
       properties:
         projectKey:
           type: string
+        httStatus:
+          type: string          
         status:
           type: string
         projectFlavor:

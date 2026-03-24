@@ -16,6 +16,8 @@ public class ProjectRequestValidator {
         validateProjectName(request.getProjectName());
         validateProjectDescription(request.getProjectDescription());
         validateFlavorOrConfigItem(request);
+        validateOwner(request.getOwner());
+        validateX2OdsAccount(request.getX2OdsAccount());        
     }
     
     private void validateProjectKey(String projectKey) {
@@ -49,4 +51,31 @@ public class ProjectRequestValidator {
             );
         }
     }
+
+
+    private void validateX2OdsAccount(String x2OdsAccount) {
+        if (!isValidX2OdsAccount(x2OdsAccount)) {
+            throw new ProjectValidationException(ErrorKey.PROJECT_X2ACCOUNT_INVALID_FORMAT);
+        }
+    }
+
+    private void validateOwner(String owner) {
+        if (!isValidOwner(owner)) {
+            throw new ProjectValidationException(ErrorKey.PROJECT_OWNER_INVALID_FORMAT);
+        }
+    }
+
+    private boolean isValidOwner(String owner) {
+        if (owner == null || owner.isBlank()) {
+            return true;
+        }
+        return owner.matches("^[a-z]{1,10}$");
+    }
+
+    private boolean isValidX2OdsAccount(String x2OdsAccount) {
+        if (x2OdsAccount == null || x2OdsAccount.isBlank()) {
+            return true;
+        }
+        return x2OdsAccount.matches("^x2[a-zA-Z0-9]{0,13}$");
+    }    
 }

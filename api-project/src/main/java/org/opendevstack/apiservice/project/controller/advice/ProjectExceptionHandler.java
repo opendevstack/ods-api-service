@@ -2,6 +2,7 @@ package org.opendevstack.apiservice.project.controller.advice;
 
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.project.controller.ProjectController;
+import org.opendevstack.apiservice.project.exception.ClientAppNotRegisteredException;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
@@ -37,6 +38,18 @@ public class ProjectExceptionHandler {
         response.setErrorKey(ErrorKey.BAD_REQUEST_BODY.getKey());
         response.setMessage(validationMessage);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(ClientAppNotRegisteredException.class)
+    public ResponseEntity<CreateProjectResponse> handleClientAppNotRegisteredException(
+            ClientAppNotRegisteredException ex) {
+        log.warn("ClientApp registration error: {}", ex.getMessage());
+        CreateProjectResponse response = new CreateProjectResponse();
+        response.setLocation(ProjectController.API_BASE_PATH);
+        response.setError(HttpStatus.FORBIDDEN.getReasonPhrase());
+        response.setErrorKey(ErrorKey.CLIENT_APP_NOT_REGISTERED.getKey());
+        response.setMessage(ErrorKey.CLIENT_APP_NOT_REGISTERED.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
     @ExceptionHandler(ProjectValidationException.class)

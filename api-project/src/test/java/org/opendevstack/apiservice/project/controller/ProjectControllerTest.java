@@ -20,6 +20,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.UUID;
+
 class ProjectControllerTest {
 
     @Mock
@@ -52,17 +54,17 @@ class ProjectControllerTest {
         serviceResponse.setStatus("Initiated");
         serviceResponse.setMessage("The project creation process has been successfully initiated.");
 
-        when(projectsFacade.createProject(any(CreateProjectRequest.class)))
+        when(projectsFacade.createProject(any(CreateProjectRequest.class), any(UUID.class)))
                 .thenReturn(serviceResponse);
 
         ResponseEntity<CreateProjectResponse> result = sut.createProject(request);
 
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(result.getBody()).isNotNull();
-        assertThat(result.getBody().getProjectKey()).isEqualTo("PROJ01");
+        assertThat(result.getBody().getProjectKey()).isNull();
         assertThat(result.getBody().getStatus()).isEqualTo("Initiated");
         assertThat(result.getBody().getError()).isNull();
-        assertThat(result.getBody().getErrorKey()).isNull();
+        assertThat(result.getBody().getErrorKey()).isEqualTo("000");
         assertThat(result.getBody().getErrorDescription()).isNull();
         verify(projectRequestValidator).validate(request);
     }
@@ -72,7 +74,7 @@ class ProjectControllerTest {
         CreateProjectRequest request = new CreateProjectRequest();
         request.setProjectKey("EXISTING");
 
-        when(projectsFacade.createProject(any(CreateProjectRequest.class)))
+        when(projectsFacade.createProject(any(CreateProjectRequest.class), any(UUID.class)))
                 .thenThrow(new ProjectCreationException("Project with key 'EXISTING' already exists"));
 
         ResponseEntity<CreateProjectResponse> result = sut.createProject(request);
@@ -92,7 +94,7 @@ class ProjectControllerTest {
     void create_project_returns_internal_server_error_when_project_key_generation_exception_is_thrown() throws Exception {
         CreateProjectRequest request = new CreateProjectRequest();
 
-        when(projectsFacade.createProject(any(CreateProjectRequest.class)))
+        when(projectsFacade.createProject(any(CreateProjectRequest.class), any(UUID.class)))
                 .thenThrow(new ProjectKeyGenerationException("Failed to generate unique project key after 10 retries"));
 
         ResponseEntity<CreateProjectResponse> result = sut.createProject(request);
