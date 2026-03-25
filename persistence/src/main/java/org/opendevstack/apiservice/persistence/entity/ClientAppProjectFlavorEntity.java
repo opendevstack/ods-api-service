@@ -8,10 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,7 +30,7 @@ import org.hibernate.type.SqlTypes;
 @AllArgsConstructor
 @Builder
 @ToString(exclude = "clientApp")
-public class ClientAppProjectFlavorEntity {
+public class ClientAppProjectFlavorEntity extends AuditableEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -74,26 +71,5 @@ public class ClientAppProjectFlavorEntity {
 	/** Deployment region. */
 	@Column(name = "location", length = 50)
 	private String location;
-
-	/** Original creation timestamp (UTC). Set automatically on first persist. */
-	@Column(name = "created_at", nullable = false, updatable = false,
-			columnDefinition = "TIMESTAMPTZ")
-	private OffsetDateTime createdAt;
-
-	/** Timestamp of last update (UTC). Updated automatically on every merge. */
-	@Column(name = "updated_at", nullable = false, columnDefinition = "TIMESTAMPTZ")
-	private OffsetDateTime updatedAt;
-
-	@PrePersist
-	void onPrePersist() {
-		OffsetDateTime now = OffsetDateTime.now();
-		this.createdAt = now;
-		this.updatedAt = now;
-	}
-
-	@PreUpdate
-	void onPreUpdate() {
-		this.updatedAt = OffsetDateTime.now();
-	}
 
 }
