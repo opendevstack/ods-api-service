@@ -3,18 +3,20 @@ package org.opendevstack.apiservice.project.controller;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.project.api.ProjectComponentsApi;
+import org.opendevstack.apiservice.project.facade.ComponentsFacade;
 import org.opendevstack.apiservice.project.mapper.ComponentResponseMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 import org.opendevstack.apiservice.project.model.CreateComponentResponse;
-import org.opendevstack.apiservice.project.facade.ComponentsFacade;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @AllArgsConstructor
 @Slf4j
+@RequestMapping("/api/pub/v0")
 public class ProjectComponentsController implements ProjectComponentsApi {
 
     private final ComponentsFacade componentsFacade;

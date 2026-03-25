@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.apiservice.project.mock.ComponentMockService;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 
@@ -19,20 +20,20 @@ import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildT
 class ComponentsServiceTest {
 
     @Mock
-    private ComponentsFacade.MarketplaceExternalServicePlaceholder marketPlaceExternalServicePlaceholder;
+    private ComponentMockService marketPlaceExternalService;
 
     private ComponentsFacade componentsFacade;
 
     @BeforeEach
     void setup() {
-        componentsFacade = new ComponentsFacade(marketPlaceExternalServicePlaceholder);
+        componentsFacade = new ComponentsFacade(marketPlaceExternalService);
     }
 
     @Test
     void testGetProjectComponent_whenSuccess_thenReturnCorrectComponent() throws Exception {
         Component testComponent = buildTestComponent();
 
-        when(marketPlaceExternalServicePlaceholder.getProjectComponent(anyString(), eq("testId")))
+        when(marketPlaceExternalService.getProjectComponent(anyString(), eq("testId")))
                 .thenReturn(testComponent);
 
         Component retrievedComponent = componentsFacade.getProjectComponent("testId", "testId");
@@ -41,7 +42,7 @@ class ComponentsServiceTest {
 
     @Test
     void testGetProjectComponent_whenNoComponentFound_thenReturnNull() throws Exception {
-        when(marketPlaceExternalServicePlaceholder.getProjectComponent(anyString(), eq("testId")))
+        when(marketPlaceExternalService.getProjectComponent(anyString(), eq("testId")))
                 .thenReturn(null);
 
         Component retrievedComponent = componentsFacade.getProjectComponent("testId", "testId");
@@ -53,7 +54,7 @@ class ComponentsServiceTest {
         Component testComponent = buildTestComponent();
         CreateComponentRequest testRequest = buildTestCreateComponentRequest();
 
-        when(marketPlaceExternalServicePlaceholder.createProjectComponent(anyString(), eq(testRequest)))
+        when(marketPlaceExternalService.createProjectComponent(anyString(), eq(testRequest)))
                 .thenReturn(testComponent);
 
         Component retrievedComponent = componentsFacade.createProjectComponent("testId", testRequest);
@@ -65,7 +66,7 @@ class ComponentsServiceTest {
     void testCreateProjectComponent_whenFailure_thenReturnNull() throws Exception {
         CreateComponentRequest testRequest = buildTestCreateComponentRequest();
 
-        when(marketPlaceExternalServicePlaceholder.createProjectComponent(anyString(), eq(testRequest)))
+        when(marketPlaceExternalService.createProjectComponent(anyString(), eq(testRequest)))
                 .thenReturn(null);
 
         Component retrievedComponent = componentsFacade.createProjectComponent("testId", testRequest);
