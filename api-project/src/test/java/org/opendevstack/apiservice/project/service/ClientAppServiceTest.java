@@ -12,6 +12,7 @@ import org.mockito.MockitoAnnotations;
 import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
 import org.opendevstack.apiservice.persistence.repository.ClientAppRepository;
 import org.opendevstack.apiservice.project.exception.ClientAppNotRegisteredException;
+
 class ClientAppServiceTest {
     
     @Mock

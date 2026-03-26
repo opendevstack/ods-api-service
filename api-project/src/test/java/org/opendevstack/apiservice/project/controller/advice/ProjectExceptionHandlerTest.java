@@ -4,8 +4,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
+import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
 import org.opendevstack.apiservice.project.controller.ProjectController;
+import org.opendevstack.apiservice.project.exception.ClientAppNotRegisteredException;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
+import org.opendevstack.apiservice.project.exception.ProjectCreationException;
+import org.opendevstack.apiservice.project.exception.ProjectKeyGenerationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
@@ -119,5 +123,88 @@ class ProjectExceptionHandlerTest {
         assertNull(result.getBody().getStatus());
         assertNull(result.getBody().getErrorDescription());
     }
-}
 
+    @Test
+    void handle_project_creation_exception_returns_conflict() {
+        ProjectCreationException exception = new ProjectCreationException("Project with key 'EXISTING' already exists");
+
+        ResponseEntity<CreateProjectResponse> result = sut.handleProjectCreationException(exception);
+
+        assertEquals(HttpStatus.CONFLICT, result.getStatusCode());
+        assertNotNull(result.getBody());
+        assertEquals(ProjectController.API_BASE_PATH, result.getBody().getLocation());
+        assertEquals("Project already exists", result.getBody().getError());
+        assertEquals("025", result.getBody().getErrorKey());
+        assertEquals("Project with key 'EXISTING' already exists", result.getBody().getMessage());
+        assertNull(result.getBody().getProjectKey());
+        assertNull(result.getBody().getStatus());
+        assertNull(result.getBody().getErrorDescription());
+    }
+
+    @Test
+    void handle_project_key_generation_exception_returns_internal_server_error() {
+        ProjectKeyGenerationException exception = new ProjectKeyGenerationException(
+                "Failed to generate unique project key after 10 retries");
+
+        ResponseEntity<CreateProjectResponse> result = sut.handleProjectKeyGenerationException(exception);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
+        assertNotNull(result.getBody());
+        assertEquals(ProjectController.API_BASE_PATH, result.getBody().getLocation());
+        assertEquals("Internal error", result.getBody().getError());
+        assertEquals("PROJECT_KEY_GENERATION_FAILED", result.getBody().getErrorKey());
+        assertEquals("Failed to generate a unique project key.", result.getBody().getMessage());
+        assertNull(result.getBody().getProjectKey());
+        assertNull(result.getBody().getStatus());
+        assertNull(result.getBody().getErrorDescription());
+    }
+
+    @Test
+    void handle_client_app_not_registered_exception_returns_forbidden() {
+        ClientAppNotRegisteredException exception = new ClientAppNotRegisteredException("client-123");
+
+        ResponseEntity<CreateProjectResponse> result = sut.handleClientAppNotRegisteredException(exception);
+
+        assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
+        assertNotNull(result.getBody());
+        assertEquals(ProjectController.API_BASE_PATH, result.getBody().getLocation());
+        assertEquals(HttpStatus.FORBIDDEN.getReasonPhrase(), result.getBody().getError());
+        assertEquals("027", result.getBody().getErrorKey());
+        assertEquals("ClientApp not registered, manual registration required", result.getBody().getMessage());
+        assertNull(result.getBody().getProjectKey());
+        assertNull(result.getBody().getStatus());
+    }
+
+    @Test
+    void handle_automation_platform_exception_returns_internal_server_error() {
+        AutomationPlatformException exception = new AutomationPlatformException("AAP job failed");
+
+        ResponseEntity<CreateProjectResponse> result = sut.handleAutomationPlatformException(exception);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
+        assertNotNull(result.getBody());
+        assertEquals(ProjectController.API_BASE_PATH, result.getBody().getLocation());
+        assertEquals("Internal error", result.getBody().getError());
+        assertEquals("003", result.getBody().getErrorKey());
+        assertEquals("AAP job failed", result.getBody().getMessage());
+        assertNull(result.getBody().getProjectKey());
+        assertNull(result.getBody().getStatus());
+    }
+
+    @Test
+    void handle_generic_exception_returns_internal_server_error() {
+        RuntimeException exception = new RuntimeException("Database error");
+
+        ResponseEntity<CreateProjectResponse> result = sut.handleGenericException(exception);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
+        assertNotNull(result.getBody());
+        assertEquals(ProjectController.API_BASE_PATH, result.getBody().getLocation());
+        assertEquals("Internal error", result.getBody().getError());
+        assertEquals("003", result.getBody().getErrorKey());
+        assertEquals("An error occurred while processing the request.", result.getBody().getMessage());
+        assertNull(result.getBody().getProjectKey());
+        assertNull(result.getBody().getStatus());
+        assertNull(result.getBody().getErrorDescription());
+    }
+}

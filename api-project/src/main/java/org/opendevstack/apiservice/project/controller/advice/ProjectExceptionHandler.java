@@ -1,9 +1,12 @@
 package org.opendevstack.apiservice.project.controller.advice;
 
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
 import org.opendevstack.apiservice.project.controller.ProjectController;
 import org.opendevstack.apiservice.project.exception.ClientAppNotRegisteredException;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
+import org.opendevstack.apiservice.project.exception.ProjectCreationException;
+import org.opendevstack.apiservice.project.exception.ProjectKeyGenerationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
 import org.springframework.http.HttpStatus;
@@ -62,6 +65,53 @@ public class ProjectExceptionHandler {
         response.setErrorKey(errorKey.getKey());
         response.setMessage(errorKey.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(ProjectCreationException.class)
+    public ResponseEntity<CreateProjectResponse> handleProjectCreationException(
+            ProjectCreationException ex) {
+        log.error("Project creation error: {}", ex.getMessage(), ex);
+        CreateProjectResponse response = new CreateProjectResponse();
+        response.setLocation(ProjectController.API_BASE_PATH);
+        response.setError(ErrorKey.PROJECT_ALREADY_EXISTS.getMessage());
+        response.setErrorKey(ErrorKey.PROJECT_ALREADY_EXISTS.getKey());
+        response.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(ProjectKeyGenerationException.class)
+    public ResponseEntity<CreateProjectResponse> handleProjectKeyGenerationException(
+            ProjectKeyGenerationException ex) {
+        log.error("Failed to generate project key: {}", ex.getMessage(), ex);
+        CreateProjectResponse response = new CreateProjectResponse();
+        response.setLocation(ProjectController.API_BASE_PATH);
+        response.setError(ErrorKey.INTERNAL_ERROR.getMessage());
+        response.setErrorKey("PROJECT_KEY_GENERATION_FAILED");
+        response.setMessage("Failed to generate a unique project key.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(AutomationPlatformException.class)
+    public ResponseEntity<CreateProjectResponse> handleAutomationPlatformException(
+            AutomationPlatformException ex) {
+        log.error("Failed to execute automated job: {}", ex.getMessage(), ex);
+        CreateProjectResponse response = new CreateProjectResponse();
+        response.setLocation(ProjectController.API_BASE_PATH);
+        response.setError(ErrorKey.INTERNAL_ERROR.getMessage());
+        response.setErrorKey(ErrorKey.INTERNAL_ERROR.getKey());
+        response.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<CreateProjectResponse> handleGenericException(Exception ex) {
+        log.error("Unexpected error: {}", ex.getMessage(), ex);
+        CreateProjectResponse response = new CreateProjectResponse();
+        response.setLocation(ProjectController.API_BASE_PATH);
+        response.setError(ErrorKey.INTERNAL_ERROR.getMessage());
+        response.setErrorKey(ErrorKey.INTERNAL_ERROR.getKey());
+        response.setMessage("An error occurred while processing the request.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     private String formatFieldError(FieldError error) {
