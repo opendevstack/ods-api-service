@@ -85,7 +85,7 @@ class ProjectsFacadeImplTest {
     @Test
     void create_project_returns_success_response_when_automation_is_successful() {
         CreateProjectRequest request = new CreateProjectRequest();
-        ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID.toString()).build();
+        ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
                 "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID);
         ProjectRequest serviceRequest = new ProjectRequest();
@@ -122,7 +122,7 @@ class ProjectsFacadeImplTest {
     @Test
     void create_project_throws_project_creation_exception_when_automation_is_not_successful() {
         CreateProjectRequest request = new CreateProjectRequest();
-        ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID.toString()).build();
+        ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
                 "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID);
 

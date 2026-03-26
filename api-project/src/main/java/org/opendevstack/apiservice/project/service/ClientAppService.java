@@ -18,12 +18,11 @@ public class ClientAppService {
     
     @Transactional(readOnly = true)
     public ClientAppEntity findByClientId(UUID clientId) {
-        String clientIdStr = clientId.toString();
-        log.debug("Looking up ClientApp for clientId={}", clientIdStr);
-        return clientAppRepository.findByClientId(clientIdStr)
+        log.debug("Looking up ClientApp for clientId={}", clientId);
+        return clientAppRepository.findDetailedByClientId(clientId)
                 .orElseThrow(() -> {
-                    log.warn("ClientApp not found for clientId={}", clientIdStr);
-                    return new ClientAppNotRegisteredException(clientIdStr);
+                    log.warn("ClientApp not found for clientId={}", clientId);
+                    return new ClientAppNotRegisteredException(clientId.toString());
                 });
     }
 }

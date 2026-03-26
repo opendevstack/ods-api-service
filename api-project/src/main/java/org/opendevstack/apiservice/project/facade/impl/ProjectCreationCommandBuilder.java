@@ -43,7 +43,7 @@ public class ProjectCreationCommandBuilder {
                 location,
                 request.getX2OdsAccount(),
                 owner,
-                clientId);
+                clientApp.getId());
     }
 
     private ClientAppProjectFlavorEntity resolveFlavor(CreateProjectRequest request, ClientAppEntity clientApp) {
@@ -66,7 +66,7 @@ public class ProjectCreationCommandBuilder {
     }
 
     private ClientAppProjectFlavorEntity resolveByFlavorName(
-            String flavorName, List<ClientAppProjectFlavorEntity> flavors, String clientId) {
+            String flavorName, List<ClientAppProjectFlavorEntity> flavors, UUID clientId) {
         return flavors.stream()
                 .filter(f -> flavorName.equals(f.getName()))
                 .findFirst()
@@ -77,7 +77,7 @@ public class ProjectCreationCommandBuilder {
     }
 
     private ClientAppProjectFlavorEntity resolveByConfigurationItem(
-            String configurationItem, List<ClientAppProjectFlavorEntity> flavors, String clientId) {
+            String configurationItem, List<ClientAppProjectFlavorEntity> flavors, UUID clientId) {
         List<ClientAppProjectFlavorEntity> matchingFlavors = flavors.stream()
                 .filter(f -> configurationItem.equals(f.getConfigItem()))
                 .toList();

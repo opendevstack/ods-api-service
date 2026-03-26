@@ -162,7 +162,7 @@ class ProjectCreationCommandBuilderTest {
 
     private ClientAppEntity build_client_app(List<ClientAppProjectFlavorEntity> flavors) {
         ClientAppEntity entity = ClientAppEntity.builder()
-                .clientId(CLIENT_ID.toString())
+                .clientId(CLIENT_ID)
                 .clientName("Test App")
                 .build();
         entity.setProjectFlavors(flavors);

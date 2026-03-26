@@ -1,4 +1,5 @@
 package org.opendevstack.apiservice.project.service;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
@@ -30,28 +31,28 @@ class ClientAppServiceTest {
 
         UUID clientId = UUID.fromString("56a0fc62-bf77-4acb-8cd7-8cc9f5f2198f");
         ClientAppEntity entity = ClientAppEntity.builder()
-                .clientId(clientId.toString())
+                .clientId(clientId)
                 .clientName("Test App")
                 .build();
-        when(clientAppRepository.findByClientId(clientId.toString())).thenReturn(Optional.of(entity));
+        when(clientAppRepository.findDetailedByClientId(clientId)).thenReturn(Optional.of(entity));
 
         ClientAppEntity result = sut.findByClientId(clientId);
 
         assertThat(result).isNotNull();
-        assertThat(result.getClientId()).isEqualTo(clientId.toString());
+        assertThat(result.getClientId()).isEqualTo(clientId);
         assertThat(result.getClientName()).isEqualTo("Test App");
-        verify(clientAppRepository).findByClientId(clientId.toString());
+        verify(clientAppRepository).findDetailedByClientId(clientId);
     }
     
     @Test
     void findByClientId_throws_exception_when_client_not_found() {
 
         UUID clientId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        when(clientAppRepository.findByClientId(clientId.toString())).thenReturn(Optional.empty());
+        when(clientAppRepository.findDetailedByClientId(clientId)).thenReturn(Optional.empty());
 
         assertThrows(
                 ClientAppNotRegisteredException.class,
                 () -> sut.findByClientId(clientId));
-        verify(clientAppRepository).findByClientId(clientId.toString());
+        verify(clientAppRepository).findDetailedByClientId(clientId);
     }
 }

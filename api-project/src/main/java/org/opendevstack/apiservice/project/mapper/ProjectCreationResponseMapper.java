@@ -13,7 +13,7 @@ public interface ProjectCreationResponseMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "httStatus", constant = "OK")
     @Mapping(target = "errorKey", constant = "000")
-    @Mapping(target = "projectKey", ignore = true)
+    @Mapping(target = "projectKey", source = "project.projectKey")
     @Mapping(target = "projectFlavor", ignore = true)
     @Mapping(target = "location", ignore = true)
     @Mapping(target = "error", ignore = true)
