@@ -47,6 +47,7 @@
         <module>external-service-api</module>
         <module>persistence</module>
         <module>core</module>
+        <module>core-contracts</module>
         <module>external-service-aap</module>
         <module>external-service-projects-info-service</module>
         <module>external-service-uipath</module>
@@ -58,6 +59,7 @@
         <module>api-project-users</module>
         <module>api-project-platform</module>
         <module>api-project</module>
+        <module>api-project-component-v0</module>
     </modules>
 
     <dependencyManagement>

@@ -8,10 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,14 +21,6 @@ import org.hibernate.type.SqlTypes;
 
 /**
  * JPA entity mapping the {@code client_app_project_flavors} table.
- *
- * <p>Each row represents a project-flavor configuration tied to a specific
- * {@link ClientAppEntity}. The flavor controls how projects are created
- * (key pattern, template, owner, etc.).</p>
- *
- * <p>Schema is managed externally via Liquibase
- * ({@code 002_create_client_apps_table.sql}). Hibernate is configured with
- * {@code ddl-auto=validate}.</p>
  */
 @Entity
 @Table(name = "client_app_project_flavors")
@@ -41,7 +30,7 @@ import org.hibernate.type.SqlTypes;
 @AllArgsConstructor
 @Builder
 @ToString(exclude = "clientApp")
-public class ClientAppProjectFlavorEntity {
+public class ClientAppProjectFlavorEntity extends AuditableEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -53,19 +42,15 @@ public class ClientAppProjectFlavorEntity {
 	@JoinColumn(name = "client_app_id", nullable = false)
 	private ClientAppEntity clientApp;
 
-	/** Flavor name (e.g. {@code DLSS}, {@code AMP}). */
+	/** Human-readable flavor name. */
 	@Column(name = "name", nullable = false, length = 50)
 	private String name;
 
-	/** Printf-style pattern used to generate the project key (e.g. {@code DLSS%06d}). */
+	/** Project key generation pattern. */
 	@Column(name = "project_key_pattern", nullable = false, length = 100)
 	private String projectKeyPattern;
 
-	/** ODS / Jira template identifier. */
-	@Column(name = "template_id")
-	private Integer templateId;
-
-	/** Default project owner username. */
+	/** Default project owner. */
 	@Column(name = "project_owner", length = 255)
 	private String projectOwner;
 
@@ -73,38 +58,18 @@ public class ClientAppProjectFlavorEntity {
 	@Column(name = "service_account", length = 255)
 	private String serviceAccount;
 
-	/** Default CMDB configuration item for projects created under this flavor. */
+	/** Default CMDB configuration item. */
 	@Column(name = "config_item", length = 255)
 	private String configItem;
 
-	/** Allowed CMDB configuration item overrides (empty = no overrides permitted). */
+	/** Allowed CMDB configuration item overrides. */
 	@JdbcTypeCode(SqlTypes.ARRAY)
 	@Column(name = "allowed_config_items", nullable = false, columnDefinition = "TEXT[]")
 	@Builder.Default
-	private String[] allowedConfigItems = {};
+	private String[] allowedConfigItems = new String[0];
 
-	/** Deployment region (e.g. {@code eu}, {@code us}). */
+	/** Deployment region. */
 	@Column(name = "location", length = 50)
 	private String location;
-
-	/** Original creation timestamp (UTC). Set automatically on first persist. */
-	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMPTZ")
-	private OffsetDateTime createdAt;
-
-	/** Timestamp of last update (UTC). Updated automatically on every merge. */
-	@Column(name = "updated_at", nullable = false, columnDefinition = "TIMESTAMPTZ")
-	private OffsetDateTime updatedAt;
-
-	@PrePersist
-	void onPrePersist() {
-		OffsetDateTime now = OffsetDateTime.now();
-		this.createdAt = now;
-		this.updatedAt = now;
-	}
-
-	@PreUpdate
-	void onPreUpdate() {
-		this.updatedAt = OffsetDateTime.now();
-	}
 
 }
