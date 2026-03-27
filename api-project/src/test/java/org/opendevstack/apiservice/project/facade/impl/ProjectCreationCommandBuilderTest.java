@@ -58,7 +58,7 @@ class ProjectCreationCommandBuilderTest {
 
         when(projectService.getProject("KEY01")).thenReturn(null);
 
-        ProjectCreationCommand result = sut.build(request, clientApp, CLIENT_ID);
+        ProjectCreationCommand result = sut.build(request, clientApp);
 
         assertEquals("DLSS", result.getProjectFlavor());
         assertEquals("CI-001", result.getConfigurationItem());
@@ -75,7 +75,7 @@ class ProjectCreationCommandBuilderTest {
 
         when(projectService.getProject("KEY01")).thenReturn(null);
 
-        ProjectCreationCommand result = sut.build(request, clientApp, CLIENT_ID);
+        ProjectCreationCommand result = sut.build(request, clientApp);
 
         assertEquals("DLSS", result.getProjectFlavor());
         assertEquals("CI-001", result.getConfigurationItem());
@@ -90,7 +90,7 @@ class ProjectCreationCommandBuilderTest {
         when(generateProjectKeyService.generateProjectKey("DLSS%06d")).thenReturn("DLSS000001");
         when(projectService.getProject("DLSS000001")).thenReturn(null);
 
-        ProjectCreationCommand result = sut.build(request, clientApp, CLIENT_ID);
+        ProjectCreationCommand result = sut.build(request, clientApp);
 
         assertEquals("DLSS000001", result.getProjectKey());
         verify(generateProjectKeyService).generateProjectKey("DLSS%06d");
@@ -108,7 +108,7 @@ class ProjectCreationCommandBuilderTest {
                 .build());
 
         ProjectValidationException ex = assertThrows(ProjectValidationException.class,
-                () -> sut.build(request, clientApp, CLIENT_ID));
+                () -> sut.build(request, clientApp));
         assertEquals(ErrorKey.DUPLICATE_RECORD, ex.getErrorKey());
     }
 
@@ -119,7 +119,7 @@ class ProjectCreationCommandBuilderTest {
         CreateProjectRequest request = build_request(null, null, "KEY01");
 
         ProjectValidationException ex = assertThrows(ProjectValidationException.class,
-                () -> sut.build(request, clientApp, CLIENT_ID));
+                () -> sut.build(request, clientApp));
         assertEquals(ErrorKey.BAD_REQUEST_FLAVOR_CONFIG_ITEM, ex.getErrorKey());
     }
 
@@ -131,7 +131,7 @@ class ProjectCreationCommandBuilderTest {
         CreateProjectRequest request = build_request(null, "CI-001", "KEY01");
 
         ProjectValidationException ex = assertThrows(ProjectValidationException.class,
-                () -> sut.build(request, clientApp, CLIENT_ID));
+                () -> sut.build(request, clientApp));
         assertEquals(ErrorKey.INVALID_CONFIG_ITEM, ex.getErrorKey());
     }
 
@@ -144,7 +144,7 @@ class ProjectCreationCommandBuilderTest {
         when(generateProjectKeyService.generateProjectKey("DLSS%06d"))
                 .thenThrow(new org.opendevstack.apiservice.serviceproject.exception.ProjectKeyGenerationException("fail"));
 
-        assertThrows(ProjectKeyGenerationException.class, () -> sut.build(request, clientApp, CLIENT_ID));
+        assertThrows(ProjectKeyGenerationException.class, () -> sut.build(request, clientApp));
     }
 
     private CreateProjectRequest build_request(String flavor, String configItem, String projectKey) {
