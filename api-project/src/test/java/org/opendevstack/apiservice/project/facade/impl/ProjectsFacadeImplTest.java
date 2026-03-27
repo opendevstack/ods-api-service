@@ -100,7 +100,7 @@ class ProjectsFacadeImplTest {
         apiResponse.setProjectFlavor("DLSS");
 
         when(clientAppService.findByClientId(CLIENT_ID)).thenReturn(clientApp);
-        when(projectCreationCommandBuilder.build(request, clientApp, CLIENT_ID)).thenReturn(command);
+        when(projectCreationCommandBuilder.build(request, clientApp)).thenReturn(command);
         when(projectMapper.toServiceRequest(command)).thenReturn(serviceRequest);
         when(projectService.createProject(serviceRequest)).thenReturn(projectResponse);
         when(automationParametersMapper.toWorkflowParameters(command, "11111111-1111-1111-1111-111111111111"))
@@ -113,7 +113,7 @@ class ProjectsFacadeImplTest {
 
         assertEquals("Pending", result.getStatus());
         assertEquals("DLSS", result.getProjectFlavor());
-        verify(projectCreationCommandBuilder).build(request, clientApp, CLIENT_ID);
+        verify(projectCreationCommandBuilder).build(request, clientApp);
         verify(projectMapper).toServiceRequest(command);
         verify(automationParametersMapper)
                 .toWorkflowParameters(command, "11111111-1111-1111-1111-111111111111");
@@ -128,7 +128,7 @@ class ProjectsFacadeImplTest {
                 "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID);
 
         when(clientAppService.findByClientId(CLIENT_ID)).thenReturn(clientApp);
-        when(projectCreationCommandBuilder.build(request, clientApp, CLIENT_ID)).thenReturn(command);
+        when(projectCreationCommandBuilder.build(request, clientApp)).thenReturn(command);
         when(projectMapper.toServiceRequest(command)).thenReturn(new ProjectRequest());
         when(projectService.createProject(any(ProjectRequest.class)))
                 .thenReturn(ProjectResponse.builder()

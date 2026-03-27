@@ -62,7 +62,7 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
 
         ClientAppEntity clientApp = clientAppService.findByClientId(clientId);
 
-        ProjectCreationCommand command = projectCreationCommandBuilder.build(request, clientApp, clientId);
+        ProjectCreationCommand command = projectCreationCommandBuilder.build(request, clientApp);
 
         ProjectResponse project = projectService.createProject(projectMapper.toServiceRequest(command));
 

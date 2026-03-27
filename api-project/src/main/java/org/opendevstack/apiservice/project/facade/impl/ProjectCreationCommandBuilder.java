@@ -25,7 +25,7 @@ public class ProjectCreationCommandBuilder {
     
     private final GenerateProjectKeyService generateProjectKeyService;
 
-    public ProjectCreationCommand build(CreateProjectRequest request, ClientAppEntity clientApp, UUID clientId) {
+    public ProjectCreationCommand build(CreateProjectRequest request, ClientAppEntity clientApp) {
         ClientAppProjectFlavorEntity flavor = resolveFlavor(request, clientApp);
 
         String projectFlavor = firstNonBlank(request.getProjectFlavor(), flavor.getName());
