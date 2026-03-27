@@ -66,10 +66,6 @@ public class ProjectExceptionHandler {
         response.setMessage(errorKey.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
-
-    private String formatFieldError(FieldError error) {
-        return error.getField() + " " + error.getDefaultMessage();
-    }
 }
 
 

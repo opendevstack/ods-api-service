@@ -43,7 +43,7 @@ class ProjectExceptionHandlerTest {
     }
 
     @Test
-    public void handle_validation_exception_returns_bad_request_response_for_project_key_invalid_format() {
+    void handle_validation_exception_returns_bad_request_response_for_project_key_invalid_format() {
         ProjectValidationException exception = new ProjectValidationException(ErrorKey.PROJECT_KEY_INVALID_FORMAT);
 
         ResponseEntity<CreateProjectResponse> result = sut.handleValidationException(exception);
@@ -60,7 +60,7 @@ class ProjectExceptionHandlerTest {
     }
 
     @Test
-    public void handle_validation_exception_returns_bad_request_response_for_project_name_invalid_format() {
+    void handle_validation_exception_returns_bad_request_response_for_project_name_invalid_format() {
         ProjectValidationException exception = new ProjectValidationException(ErrorKey.PROJECT_NAME_INVALID_FORMAT);
 
         ResponseEntity<CreateProjectResponse> result = sut.handleValidationException(exception);
@@ -77,7 +77,7 @@ class ProjectExceptionHandlerTest {
     }
 
     @Test
-    public void handle_validation_exception_returns_bad_request_response_for_missing_flavor_and_config_item() {
+    void handle_validation_exception_returns_bad_request_response_for_missing_flavor_and_config_item() {
         ProjectValidationException exception = new ProjectValidationException(ErrorKey.BAD_REQUEST_FLAVOR_CONFIG_ITEM);
 
         ResponseEntity<CreateProjectResponse> result = sut.handleValidationException(exception);
@@ -94,7 +94,7 @@ class ProjectExceptionHandlerTest {
     }
 
     @Test
-    public void handle_method_argument_not_valid_exception_returns_bad_request_response_for_request_body_validation_errors() {
+    void handle_method_argument_not_valid_exception_returns_bad_request_response_for_request_body_validation_errors() {
         CreateProjectRequest target = new CreateProjectRequest();
         BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "createProjectRequest");
         bindingResult.addError(new FieldError("createProjectRequest", "projectName", null, false, null, null,
@@ -127,7 +127,7 @@ class ProjectExceptionHandlerTest {
 
     @ParameterizedTest
     @MethodSource("provideValidationCases")
-    public void handle_method_argument_not_valid_exception_parameterized(
+    void handle_method_argument_not_valid_exception_parameterized(
             String failingField,
             String expectedErrorKey,
             String expectedMessage
