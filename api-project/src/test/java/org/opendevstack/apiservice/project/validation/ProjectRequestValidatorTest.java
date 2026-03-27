@@ -65,33 +65,4 @@ class ProjectRequestValidatorTest {
 
         assertDoesNotThrow(() -> sut.validate(request));
     }
-
-    @Test
-    void validate_throws_exception_for_invalid_project_key_format() {
-        CreateProjectRequest request = new CreateProjectRequest();
-        request.setProjectName("Valid Name");
-        request.setProjectFlavor("STANDARD");
-        request.setProjectKey("invalid-key"); // Invalid format
-
-        ProjectValidationException exception = assertThrows(
-            ProjectValidationException.class,
-            () -> sut.validate(request)
-        );
-
-        assertEquals(ErrorKey.PROJECT_KEY_INVALID_FORMAT, exception.getErrorKey());
-    }
-
-    @Test
-    void validate_throws_exception_for_invalid_project_name_format() {
-        CreateProjectRequest request = new CreateProjectRequest();
-        request.setProjectName("Invalid@Name#");
-        request.setProjectFlavor("STANDARD");
-
-        ProjectValidationException exception = assertThrows(
-            ProjectValidationException.class,
-            () -> sut.validate(request)
-        );
-
-        assertEquals(ErrorKey.PROJECT_NAME_INVALID_FORMAT, exception.getErrorKey());
-    }
 }

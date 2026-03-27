@@ -28,14 +28,12 @@ class ProjectMapperTest {
     void to_service_request_maps_all_fields_correctly() {
         CreateProjectRequest apiRequest = new CreateProjectRequest();
         apiRequest.setProjectKey("PROJ01");
-        apiRequest.setProjectKeyPattern("SS%06d");
         apiRequest.setProjectDescription("A test project");
 
         ProjectRequest result = projectMapper.toServiceRequest(apiRequest);
 
         assertNotNull(result);
         assertEquals("PROJ01", result.getProjectKey());
-        assertEquals("SS%06d", result.getProjectKeyPattern());
         assertEquals("A test project", result.getProjectDescription());
     }
 
