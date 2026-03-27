@@ -1,11 +1,12 @@
 package org.opendevstack.apiservice.core.security.config;
 
+import org.opendevstack.apiservice.core.security.authorization.PolicyAuthorizationManager;
+import org.opendevstack.apiservice.core.security.jwt.AzureJwtAuthenticationConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import lombok.extern.slf4j.Slf4j;
 import java.util.Arrays;
@@ -17,9 +18,14 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final SecurityProperties securityProperties;
+    private final PolicyAuthorizationManager policyAuthorizationManager;
+    private final AzureJwtAuthenticationConverter azureJwtAuthenticationConverter;
 
-    public SecurityConfig(SecurityProperties securityProperties) {
+
+    public SecurityConfig(SecurityProperties securityProperties, PolicyAuthorizationManager policyAuthorizationManager, AzureJwtAuthenticationConverter azureJwtAuthenticationConverter) {
         this.securityProperties = securityProperties;
+        this.policyAuthorizationManager = policyAuthorizationManager;
+        this.azureJwtAuthenticationConverter = azureJwtAuthenticationConverter;
     }
 
     @Bean
@@ -34,21 +40,14 @@ public class SecurityConfig {
                             authz.requestMatchers(endpoint).permitAll();
                         });
                 }
-                authz.anyRequest().authenticated();
+                authz.anyRequest().access(policyAuthorizationManager);
             })
             .oauth2ResourceServer((oauth2) ->
-                oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(azureJwtAuthenticationConverter))
             )
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))
             .csrf(csrf -> csrf.disable());
 
         return http.build();
-    }
-
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
-        authenticationConverter.setJwtGrantedAuthoritiesConverter(new CustomRoleConverter());
-        return authenticationConverter;
     }
 }
