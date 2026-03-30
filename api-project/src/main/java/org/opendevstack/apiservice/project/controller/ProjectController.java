@@ -37,7 +37,7 @@ public class ProjectController implements ProjectsApi {
     @Override
     public ResponseEntity<CreateProjectResponse> createProject(@Valid @RequestBody CreateProjectRequest createProjectRequest) {
         projectRequestValidator.validate(createProjectRequest);
-        UUID clientId = UUID.fromString("56a0fc62-bf77-4acb-8cd7-8cc9f5f2198f");
+        UUID clientId = UUID.fromString("00000000-0000-0000-0000-000000000001");
         CreateProjectResponse projectResponse = projectsFacade.createProject(createProjectRequest, clientId);
         projectResponse.setLocation(API_BASE_PATH + "/" + projectResponse.getProjectKey());
         return ResponseEntity

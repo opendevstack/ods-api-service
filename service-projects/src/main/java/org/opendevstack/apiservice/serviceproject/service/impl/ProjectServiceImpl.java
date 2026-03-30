@@ -8,6 +8,7 @@ import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
 import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -15,7 +16,14 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class ProjectServiceImpl implements ProjectService {
+
+    private final String MANAGER_ROLE = "MANAGER";
+    private final String TEAM_ROLE = "TEAM";
+    private final String STAKEHOLDER_ROLE = "STAKEHOLDER";
     
+    @Value("${ldap.group.pattern}")
+    private String ldapGroupPattern;
+
     private final ProjectRepository projectRepository;
     
     private final ProjectResponseMapper projectResponseMapper;
@@ -34,9 +42,9 @@ public class ProjectServiceImpl implements ProjectService {
         entity.setProjectFlavor(request.getProjectFlavor());
         entity.setConfigurationItem(request.getConfigurationItem());
         entity.setDescription(request.getProjectFlavor() + " project");
-        entity.setLdapGroupManager(getLdapGroup("MANAGER", request.getProjectKey()));
-        entity.setLdapGroupTeam(getLdapGroup("TEAM", request.getProjectKey()));
-        entity.setLdapGroupStakeholder(getLdapGroup("STAKEHOLDER", request.getProjectKey()));
+        entity.setLdapGroupManager(getLdapGroup(MANAGER_ROLE, request.getProjectKey()));
+        entity.setLdapGroupTeam(getLdapGroup(TEAM_ROLE, request.getProjectKey()));
+        entity.setLdapGroupStakeholder(getLdapGroup(STAKEHOLDER_ROLE, request.getProjectKey()));
         entity.setStatus(Status.PENDING.getDbValue());
         entity.setLocation(request.getLocation());
         ProjectEntity save = projectRepository.save(entity);
@@ -55,7 +63,9 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private String getLdapGroup(String role, String projectKey) {
-        return "CN=BI-AS-ATLASSIAN-P-" + projectKey + "-" + role + ",OU=BIDS-managed,DC=eu,DC=boehringer,DC=com";
+        return ldapGroupPattern
+                .replace("{{projectKey}}", projectKey)
+                .replace("{{role}}", role);
     }
 }
 

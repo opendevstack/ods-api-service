@@ -25,7 +25,7 @@ import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 
 class ProjectCreationCommandBuilderTest {
 
-    private static final UUID CLIENT_ID = UUID.fromString("56a0fc62-bf77-4acb-8cd7-8cc9f5f2198f");
+    private static final UUID CLIENT_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Mock
     private ProjectService projectService;
