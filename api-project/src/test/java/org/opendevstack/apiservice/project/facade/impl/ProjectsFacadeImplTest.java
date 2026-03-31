@@ -102,7 +102,7 @@ class ProjectsFacadeImplTest {
         when(clientAppService.findByClientId(CLIENT_ID)).thenReturn(clientApp);
         when(projectCreationCommandBuilder.build(request, clientApp)).thenReturn(command);
         when(projectMapper.toServiceRequest(command)).thenReturn(serviceRequest);
-        when(projectService.createProject(serviceRequest)).thenReturn(projectResponse);
+        when(projectService.saveProject(serviceRequest)).thenReturn(projectResponse);
         when(automationParametersMapper.toWorkflowParameters(command, "11111111-1111-1111-1111-111111111111"))
                 .thenReturn(Map.of("project_key", "DLSS01"));
         when(automationPlatformService.executeWorkflow(anyString(), anyMap()))
@@ -130,7 +130,7 @@ class ProjectsFacadeImplTest {
         when(clientAppService.findByClientId(CLIENT_ID)).thenReturn(clientApp);
         when(projectCreationCommandBuilder.build(request, clientApp)).thenReturn(command);
         when(projectMapper.toServiceRequest(command)).thenReturn(new ProjectRequest());
-        when(projectService.createProject(any(ProjectRequest.class)))
+        when(projectService.saveProject(any(ProjectRequest.class)))
                 .thenReturn(ProjectResponse.builder()
                         .projectId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
                         .projectKey("DLSS01")

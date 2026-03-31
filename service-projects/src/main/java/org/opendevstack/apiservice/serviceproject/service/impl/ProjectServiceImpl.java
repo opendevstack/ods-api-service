@@ -6,7 +6,6 @@ import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
 import org.opendevstack.apiservice.serviceproject.mapper.ProjectResponseMapper;
 import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
-import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,9 +16,9 @@ import java.util.Optional;
 @Slf4j
 public class ProjectServiceImpl implements ProjectService {
 
-    private final String MANAGER_ROLE = "MANAGER";
-    private final String TEAM_ROLE = "TEAM";
-    private final String STAKEHOLDER_ROLE = "STAKEHOLDER";
+    private static final String MANAGER_ROLE = "MANAGER";
+    private static final String TEAM_ROLE = "TEAM";
+    private static final String STAKEHOLDER_ROLE = "STAKEHOLDER";
     
     @Value("${ldap.group.pattern}")
     private String ldapGroupPattern;
@@ -35,7 +34,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public ProjectResponse createProject(ProjectRequest request) {
+    public ProjectResponse saveProject(ProjectRequest request) {
         ProjectEntity entity = new ProjectEntity();
         entity.setProjectKey(request.getProjectKey());
         entity.setProjectName(request.getProjectName());   
@@ -45,7 +44,7 @@ public class ProjectServiceImpl implements ProjectService {
         entity.setLdapGroupManager(getLdapGroup(MANAGER_ROLE, request.getProjectKey()));
         entity.setLdapGroupTeam(getLdapGroup(TEAM_ROLE, request.getProjectKey()));
         entity.setLdapGroupStakeholder(getLdapGroup(STAKEHOLDER_ROLE, request.getProjectKey()));
-        entity.setStatus(Status.PENDING.getDbValue());
+        entity.setStatus(request.getStatus().getDbValue());
         entity.setLocation(request.getLocation());
         ProjectEntity save = projectRepository.save(entity);
         return projectResponseMapper.toCreateProjectResponse(save);

@@ -91,10 +91,10 @@ public class ProjectExceptionHandler {
         log.error("Project creation error: {}", ex.getMessage(), ex);
         CreateProjectResponse response = new CreateProjectResponse();
         response.setLocation(ProjectController.API_BASE_PATH);
-        response.setError(ErrorKey.PROJECT_ALREADY_EXISTS.getMessage());
-        response.setErrorKey(ErrorKey.PROJECT_ALREADY_EXISTS.getKey());
+        response.setError(ErrorKey.INTERNAL_ERROR.getMessage());
+        response.setErrorKey(ErrorKey.INTERNAL_ERROR.getKey());
         response.setMessage(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(ProjectKeyGenerationException.class)

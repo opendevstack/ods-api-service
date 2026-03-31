@@ -10,14 +10,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectRequest {
+    
+    private UUID projectId;
 
     private String projectKey;
 
     private String projectName;
 
     private String projectDescription;
-    
-    private UUID projectId;
 
     private String projectFlavor;
 
@@ -30,4 +30,6 @@ public class ProjectRequest {
     private String owner;   
     
     private UUID clientId;
+    
+    private Status status;
 }

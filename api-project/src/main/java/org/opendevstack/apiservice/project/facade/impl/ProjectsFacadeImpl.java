@@ -12,7 +12,9 @@ import org.opendevstack.apiservice.project.mapper.ProjectMapper;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
 import org.opendevstack.apiservice.project.service.ClientAppService;
+import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
+import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -64,7 +66,10 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
 
         ProjectCreationCommand command = projectCreationCommandBuilder.build(request, clientApp);
 
-        ProjectResponse project = projectService.createProject(projectMapper.toServiceRequest(command));
+        ProjectRequest projectRequest = projectMapper.toServiceRequest(command);
+        projectRequest.setStatus(Status.PENDING);
+        
+        ProjectResponse project = projectService.saveProject(projectRequest);
 
         AutomationExecutionResult automationExecutionResult = automationPlatformService
                 .executeWorkflow(
@@ -76,6 +81,9 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
         if (automationExecutionResult.isSuccessful()) {
             return projectCreationResponseMapper.toSuccessResponse(command, project);
         } else {
+            projectRequest.setProjectId(project.getProjectId());
+            projectRequest.setStatus(Status.FAILED);
+            projectService.saveProject(projectRequest);
             throw new ProjectCreationException("Failed to create project: " 
                     + automationExecutionResult.getErrorDetails());
         } 

@@ -205,16 +205,16 @@ class ProjectExceptionHandlerTest {
 
     @Test
     void handle_project_creation_exception_returns_conflict() {
-        ProjectCreationException exception = new ProjectCreationException("Project with key 'EXISTING' already exists");
+        ProjectCreationException exception = new ProjectCreationException("error message");
 
         ResponseEntity<CreateProjectResponse> result = sut.handleProjectCreationException(exception);
 
-        assertEquals(HttpStatus.CONFLICT, result.getStatusCode());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
         assertNotNull(result.getBody());
         assertEquals(ProjectController.API_BASE_PATH, result.getBody().getLocation());
-        assertEquals("Project already exists", result.getBody().getError());
-        assertEquals("025", result.getBody().getErrorKey());
-        assertEquals("Project with key 'EXISTING' already exists", result.getBody().getMessage());
+        assertEquals("Internal error", result.getBody().getError());
+        assertEquals("003", result.getBody().getErrorKey());
+        assertEquals("error message", result.getBody().getMessage());
         assertNull(result.getBody().getProjectKey());
         assertNull(result.getBody().getStatus());
         assertNull(result.getBody().getErrorDescription());
