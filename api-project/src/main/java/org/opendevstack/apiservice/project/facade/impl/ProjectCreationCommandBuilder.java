@@ -34,17 +34,20 @@ public class ProjectCreationCommandBuilder {
         String projectFlavor = firstNonBlank(request.getProjectFlavor(), flavor.getName());
         String configurationItem = firstNonBlank(request.getConfigurationItem(), flavor.getConfigItem());
         String owner = firstNonBlank(request.getOwner(), flavor.getProjectOwner());
+        String x2account = firstNonBlank(request.getX2OdsAccount(), flavor.getServiceAccount());
         String location = firstNonBlank(request.getLocation(), flavor.getLocation());
         String projectKey = resolveProjectKey(request.getProjectKey(), flavor);
+        String projectName = firstNonBlank(request.getProjectName(), projectKey);
+        String projectDescription = firstNonBlank(request.getProjectDescription(), "project " + projectFlavor);
 
         return new ProjectCreationCommand(
                 projectKey,
-                request.getProjectName(),
-                request.getProjectDescription(),
+                projectName,
+                projectDescription,
                 projectFlavor,
                 configurationItem,
                 location,
-                request.getX2OdsAccount(),
+                x2account,
                 owner,
                 clientApp.getId());
     }

@@ -19,6 +19,7 @@ import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Component("apiProjectFacadeImpl")
@@ -71,12 +72,11 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
         
         ProjectResponse project = projectService.saveProject(projectRequest);
 
+        String projectId = project.getProjectId().toString();
+        Map<String, Object> workflowParameters = automationParametersMapper.toWorkflowParameters(command, projectId);
+        
         AutomationExecutionResult automationExecutionResult = automationPlatformService
-                .executeWorkflow(
-                    createProjectWorkflow, 
-                    automationParametersMapper.toWorkflowParameters(
-                            command,
-                            project.getProjectId().toString()));
+                .executeWorkflow(createProjectWorkflow, workflowParameters);
 
         if (automationExecutionResult.isSuccessful()) {
             return projectCreationResponseMapper.toSuccessResponse(command, project);
