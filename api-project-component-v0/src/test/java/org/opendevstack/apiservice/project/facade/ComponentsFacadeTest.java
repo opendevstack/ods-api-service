@@ -6,7 +6,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opendevstack.apiservice.externalservice.marketplace.model.CreateComponentParameter;
 import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
@@ -22,7 +21,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestCreateComponentRequest;
 import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestMarketplaceComponent;
-import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestMarketplaceCreateComponentParameters;
 
 @ExtendWith(MockitoExtension.class)
 class ComponentsFacadeTest {
@@ -36,7 +34,7 @@ class ComponentsFacadeTest {
 
     @BeforeEach
     void setup() {
-        componentsFacade = new ComponentsFacade(marketplaceExternalService, marketplaceMapper); //TODO
+        componentsFacade = new ComponentsFacade(marketplaceExternalService, marketplaceMapper);
     }
 
     @Test
@@ -48,6 +46,7 @@ class ComponentsFacadeTest {
 
         Component retrievedComponent = componentsFacade.getProjectComponent("testId", "testId");
         assertThat(retrievedComponent.getId()).isEqualTo(testComponent.getComponentId());
+        assertThat(retrievedComponent.getStatus()).isEqualTo(testComponent.getStatus());
     }
 
     @Test
@@ -69,6 +68,7 @@ class ComponentsFacadeTest {
 
         Component retrievedComponent = componentsFacade.createProjectComponent("testId", testRequest);
         assertThat(retrievedComponent.getId()).isEqualTo(testComponent.getComponentId());
+        assertThat(retrievedComponent.getStatus()).isEqualTo(testComponent.getStatus());
     }
 
 
