@@ -12,7 +12,6 @@ import org.opendevstack.apiservice.project.controller.ProjectController;
 import org.opendevstack.apiservice.project.exception.ClientAppNotRegisteredException;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
 import org.opendevstack.apiservice.project.exception.ProjectCreationException;
-import org.opendevstack.apiservice.project.exception.ProjectKeyGenerationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
@@ -26,9 +25,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class ProjectExceptionHandlerTest {
 
@@ -215,24 +214,6 @@ class ProjectExceptionHandlerTest {
         assertEquals("Internal error", result.getBody().getError());
         assertEquals("003", result.getBody().getErrorKey());
         assertEquals("error message", result.getBody().getMessage());
-        assertNull(result.getBody().getProjectKey());
-        assertNull(result.getBody().getStatus());
-        assertNull(result.getBody().getErrorDescription());
-    }
-
-    @Test
-    void handle_project_key_generation_exception_returns_internal_server_error() {
-        ProjectKeyGenerationException exception = new ProjectKeyGenerationException(
-                "Failed to generate unique project key after 10 retries");
-
-        ResponseEntity<CreateProjectResponse> result = sut.handleProjectKeyGenerationException(exception);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
-        assertNotNull(result.getBody());
-        assertEquals(ProjectController.API_BASE_PATH, result.getBody().getLocation());
-        assertEquals("Internal error", result.getBody().getError());
-        assertEquals("PROJECT_KEY_GENERATION_FAILED", result.getBody().getErrorKey());
-        assertEquals("Failed to generate a unique project key.", result.getBody().getMessage());
         assertNull(result.getBody().getProjectKey());
         assertNull(result.getBody().getStatus());
         assertNull(result.getBody().getErrorDescription());

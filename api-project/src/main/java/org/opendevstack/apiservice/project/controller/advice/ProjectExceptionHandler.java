@@ -6,7 +6,6 @@ import org.opendevstack.apiservice.project.controller.ProjectController;
 import org.opendevstack.apiservice.project.exception.ClientAppNotRegisteredException;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
 import org.opendevstack.apiservice.project.exception.ProjectCreationException;
-import org.opendevstack.apiservice.project.exception.ProjectKeyGenerationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
 import org.springframework.http.HttpStatus;
@@ -94,18 +93,6 @@ public class ProjectExceptionHandler {
         response.setError(ErrorKey.INTERNAL_ERROR.getMessage());
         response.setErrorKey(ErrorKey.INTERNAL_ERROR.getKey());
         response.setMessage(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-
-    @ExceptionHandler(ProjectKeyGenerationException.class)
-    public ResponseEntity<CreateProjectResponse> handleProjectKeyGenerationException(
-            ProjectKeyGenerationException ex) {
-        log.error("Failed to generate project key: {}", ex.getMessage(), ex);
-        CreateProjectResponse response = new CreateProjectResponse();
-        response.setLocation(ProjectController.API_BASE_PATH);
-        response.setError(ErrorKey.INTERNAL_ERROR.getMessage());
-        response.setErrorKey("PROJECT_KEY_GENERATION_FAILED");
-        response.setMessage("Failed to generate a unique project key.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 

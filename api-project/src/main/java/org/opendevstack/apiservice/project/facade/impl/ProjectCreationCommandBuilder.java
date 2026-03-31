@@ -1,29 +1,32 @@
 package org.opendevstack.apiservice.project.facade.impl;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
 import org.opendevstack.apiservice.persistence.entity.ClientAppProjectFlavorEntity;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
-import org.opendevstack.apiservice.project.exception.ProjectKeyGenerationException;
+import org.opendevstack.apiservice.project.exception.ProjectCreationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
+import org.opendevstack.apiservice.serviceproject.exception.ProjectExistenceServiceException;
+import org.opendevstack.apiservice.serviceproject.exception.ProjectKeyGenerationException;
 import org.opendevstack.apiservice.serviceproject.service.GenerateProjectKeyService;
-import org.opendevstack.apiservice.serviceproject.service.ProjectService;
+import org.opendevstack.apiservice.serviceproject.service.ProjectExistenceService;
 import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class ProjectCreationCommandBuilder {
-
-    private final ProjectService projectService;
     
     private final GenerateProjectKeyService generateProjectKeyService;
+    
+    private final ProjectExistenceService projectExistenceService;
 
     public ProjectCreationCommand build(CreateProjectRequest request, ClientAppEntity clientApp) {
         ClientAppProjectFlavorEntity flavor = resolveFlavor(request, clientApp);
@@ -100,25 +103,22 @@ public class ProjectCreationCommandBuilder {
     }
 
     private String resolveProjectKey(String existingProjectKey, ClientAppProjectFlavorEntity flavor) {
-        if (Strings.isNotEmpty(existingProjectKey)) {
-            validateProjectNotExists(existingProjectKey);
-            return existingProjectKey;
-        }
-
-        String pattern = flavor.getProjectKeyPattern();
-        
         try {
-            String generatedProjectKey = generateProjectKeyService.generateProjectKey(pattern);
-            validateProjectNotExists(generatedProjectKey);
-            return generatedProjectKey;
-        } catch (org.opendevstack.apiservice.serviceproject.exception.ProjectKeyGenerationException e) {
-            throw new ProjectKeyGenerationException("Failed to generate unique project key", e);
-        }
-    }
+            if (Strings.isNotEmpty(existingProjectKey)) {
+                if (!projectExistenceService.isProjectFound(existingProjectKey)) {
+                    return existingProjectKey;
+                }
 
-    private void validateProjectNotExists(String projectKey) {
-        if (projectService.getProject(projectKey) != null) {
-            throw new ProjectValidationException(ErrorKey.DUPLICATE_RECORD);
+                throw new ProjectValidationException(ErrorKey.PROJECT_ALREADY_EXISTS);
+            }
+
+            String pattern = flavor.getProjectKeyPattern();
+            
+            return generateProjectKeyService.generateProjectKey(pattern);
+        } catch (ProjectKeyGenerationException e) {
+            throw new ProjectCreationException("Error generating the project key", e);
+        } catch (ProjectExistenceServiceException e) {
+            throw new ProjectCreationException("Error checking if the generated key exists: " + e.getMessage(), e);
         }
     }
 
