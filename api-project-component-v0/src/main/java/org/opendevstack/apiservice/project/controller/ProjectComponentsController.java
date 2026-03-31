@@ -27,11 +27,12 @@ public class ProjectComponentsController implements ProjectComponentsApi {
     public ResponseEntity<CreateComponentResponse> createProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
         try {
             Component component = componentsFacade.createProjectComponent(projectId, createComponentRequest);
+            log.info("Created component {} for project id {} and request {}", component, projectId, createComponentRequest);
             if (component == null) {
                 log.error("Failed to create component for project '{}'", projectId);
                 return componentResponseMapper.toResponseEntity(ComponentsResponseFactory.error(projectId));
             }
-            return componentResponseMapper.toResponseEntity(ComponentsResponseFactory.entityCreated(projectId, component.getName()));
+            return componentResponseMapper.toResponseEntity(ComponentsResponseFactory.entityCreated(projectId, component.getId()));
         } catch (Exception e) {
             log.error("Error while trying to create component for project '" + projectId + "': " + e.getMessage(), e);
             return componentResponseMapper.toResponseEntity(ComponentsResponseFactory.error(projectId));
@@ -42,6 +43,7 @@ public class ProjectComponentsController implements ProjectComponentsApi {
     public ResponseEntity<Component> getProjectComponent(String projectId, String componentId) {
         try {
             Component component = componentsFacade.getProjectComponent(projectId, componentId);
+            log.info("Retrieved component '{}' for project '{}': {}", componentId, projectId, component);
             if (component == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }

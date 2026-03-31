@@ -1,41 +1,41 @@
-package org.opendevstack.apiservice.project.mock;
+package org.opendevstack.apiservice.externalservice.marketplace.service.impl;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.apiservice.externalservice.api.ExternalService;
-import org.opendevstack.apiservice.project.model.Component;
-import org.opendevstack.apiservice.project.model.CreateComponentRequest;
+import org.opendevstack.apiservice.externalservice.marketplace.model.CreateComponentParameter;
+import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
+import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
-@AllArgsConstructor
 @Slf4j
-public class ComponentMockService implements ExternalService {
+public class MarketplaceServiceMockImpl implements MarketplaceService {
 
     @Override
     public boolean isHealthy() {
         return true;
     }
 
-    private Map<ComposedId, Component> mockComponentsCache = Collections.synchronizedMap(new HashMap<>());
+    private Map<ComposedId, ProjectComponent> mockComponentsCache = Collections.synchronizedMap(new HashMap<>());
 
-    public Component getProjectComponent(String projectId, String componentId) {
+    public ProjectComponent getProjectComponent(String projectId, String componentId) {
         log.info("Get component with id '" + componentId + "' for project '" + projectId + "'");
         ComposedId composedId = new ComposedId(projectId, componentId);
         return mockComponentsCache.get(composedId);
     }
 
-    public Component createProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
-        log.info("Creating component for project '" + projectId + "'" + " with request: " + createComponentRequest);
-        Component mockComponent = new Component();
-        mockComponent.setId(generateNextId());
-        mockComponent.setName("Mock Component " + mockComponent.getId() + " for project " + projectId);
+    public ProjectComponent createProjectComponent(String projectId, List<CreateComponentParameter> createComponentParams) {
+        log.info("Creating component for project '" + projectId + "'" + " with request: " + createComponentParams);
+        ProjectComponent mockComponent = new ProjectComponent();
+        mockComponent.setComponentId(generateNextId());
+        mockComponent.setCanBeDeleted(true);
+        mockComponent.setStatus("CREATING");
         synchronized (mockComponentsCache) {
-            ComposedId composedId = new ComposedId(projectId, mockComponent.getId());
+            ComposedId composedId = new ComposedId(projectId, mockComponent.getComponentId());
             mockComponentsCache.put(composedId, mockComponent);
         }
         return mockComponent;
