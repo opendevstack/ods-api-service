@@ -103,7 +103,7 @@ class ProjectExistenceServiceImplTest {
     void is_project_found_throws_exception_when_bitbucket_fails() {
         when(projectService.getProject("KEY6")).thenReturn(null);
         when(bitbucketService.getAvailableInstances()).thenThrow(new RuntimeException("fail"));
-        ProjectExistenceServiceException ex = assertThrows(ProjectExistenceServiceException.class, () -> sut.isProjectFound("KEY6"));
+        assertThrows(ProjectExistenceServiceException.class, () -> sut.isProjectFound("KEY6"));
 
         assertThrows(ProjectExistenceServiceException.class, () -> {
             sut.isProjectFound("KEY6");
@@ -116,7 +116,7 @@ class ProjectExistenceServiceImplTest {
         when(bitbucketService.getAvailableInstances()).thenReturn(Collections.emptySet());
         when(jiraService.getAvailableInstances()).thenThrow(new RuntimeException("fail"));
         
-        ProjectExistenceServiceException ex = assertThrows(ProjectExistenceServiceException.class, () -> sut.isProjectFound("KEY7"));
+        assertThrows(ProjectExistenceServiceException.class, () -> sut.isProjectFound("KEY7"));
 
         assertThrows(ProjectExistenceServiceException.class, () -> {
             sut.isProjectFound("KEY7");
