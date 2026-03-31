@@ -20,7 +20,7 @@ public class MarketplaceServiceMockImpl implements MarketplaceService {
         return true;
     }
 
-    private Map<ComposedId, ProjectComponent> mockComponentsCache = Collections.synchronizedMap(new HashMap<>());
+    private Map<ComposedId, ProjectComponent> mockComponentsCache = new HashMap<>();
 
     public ProjectComponent getProjectComponent(String projectId, String componentId) {
         log.info("Get component with id '" + componentId + "' for project '" + projectId + "'");
@@ -34,10 +34,9 @@ public class MarketplaceServiceMockImpl implements MarketplaceService {
         mockComponent.setComponentId(generateNextId());
         mockComponent.setCanBeDeleted(true);
         mockComponent.setStatus("CREATING");
-        synchronized (mockComponentsCache) {
-            ComposedId composedId = new ComposedId(projectId, mockComponent.getComponentId());
-            mockComponentsCache.put(composedId, mockComponent);
-        }
+        ComposedId composedId = new ComposedId(projectId, mockComponent.getComponentId());
+        mockComponentsCache.put(composedId, mockComponent);
+
         return mockComponent;
     }
 
