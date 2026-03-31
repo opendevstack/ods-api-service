@@ -19,7 +19,7 @@ import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildT
 class ComponentsServiceTest {
 
     @Mock
-    private ComponentsFacade.MarketplaceExternalServicePlaceholder marketPlaceExternalServicePlaceholder;
+    private MarketplaceExternalServicePlaceholder marketPlaceExternalServicePlaceholder;
 
     private ComponentsFacade componentsFacade;
 

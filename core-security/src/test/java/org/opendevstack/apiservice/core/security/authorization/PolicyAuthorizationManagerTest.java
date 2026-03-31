@@ -12,11 +12,19 @@ import org.opendevstack.apiservice.core.security.registry.ApiDefinitionResolver;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
-import java.util.*;
-import java.util.function.Supplier;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class PolicyAuthorizationManagerTest {
 

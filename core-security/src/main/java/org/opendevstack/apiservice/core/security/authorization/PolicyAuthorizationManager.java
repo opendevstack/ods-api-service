@@ -1,26 +1,20 @@
 package org.opendevstack.apiservice.core.security.authorization;
 
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Optional;
-
 import org.opendevstack.apiservice.core.contracts.auth.AuthorizationDecision;
 import org.opendevstack.apiservice.core.contracts.policy.PolicyContext;
 import org.opendevstack.apiservice.core.contracts.policy.PolicyRule;
 import org.opendevstack.apiservice.core.contracts.registry.ApiDefinition;
-import org.opendevstack.apiservice.core.security.filter.AuthTypeEnforcementFilter;
 import org.opendevstack.apiservice.core.security.registry.ApiDefinitionResolver;
-//** */ import org.opendevstack.apiservice.core.engine.filter.CachedBodyHttpServletRequest;
-//** */import org.opendevstack.apiservice.core.security.filter.AuthTypeEnforcementFilter;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
