@@ -12,6 +12,7 @@ import org.opendevstack.apiservice.core.security.registry.ApiDefinitionResolver;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +22,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyMap;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -75,6 +77,7 @@ class PolicyAuthorizationManagerTest {
 
         PolicyContext ctx = mock(PolicyContext.class);
         when(ctx.getClientId()).thenReturn("client-a");
+        when(ctx.withRequestBody(anyMap())).thenReturn(ctx);
         when(contextFactory.create(apiDef, request)).thenReturn(ctx);
 
         List<PolicyRule> rules = List.of(new PolicyRule(UUID.randomUUID(), "api-1", "client-a", "ALLOWED_CLIENTS", Map.of()));
@@ -95,6 +98,7 @@ class PolicyAuthorizationManagerTest {
 
         PolicyContext ctx = mock(PolicyContext.class);
         when(ctx.getClientId()).thenReturn("client-b");
+        when(ctx.withRequestBody(anyMap())).thenReturn(ctx);
         when(contextFactory.create(apiDef, request)).thenReturn(ctx);
 
         List<PolicyRule> rules = List.of(new PolicyRule(UUID.randomUUID(), "api-1", "client-b", "ALLOWED_CLIENTS", Map.of()));
@@ -115,10 +119,39 @@ class PolicyAuthorizationManagerTest {
 
         PolicyContext ctx = mock(PolicyContext.class);
         when(ctx.getClientId()).thenReturn("client-a");
+        when(ctx.withRequestBody(anyMap())).thenReturn(ctx);
         when(contextFactory.create(apiDef, request)).thenReturn(ctx);
 
         when(policyService.findPolicies(anyString(), anyString())).thenReturn(List.of());
         when(policyEngine.evaluate(any(), any())).thenReturn(AuthorizationDecision.ABSTAIN);
+
+        var decision = manager.check(() -> null, new RequestAuthorizationContext(request));
+
+        assertTrue(decision.isGranted());
+    }
+
+    @Test
+    void check_securedPostRequest_populatesRequestBodyInContext() {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v0/projects");
+        request.setContentType("application/json");
+        String requestBody = "{" +
+            "\"projectFlavor\":\"DLSS\"," +
+            "\"location\":\"UNKNOWN_REGION\"" +
+            "}";
+        request.setContent(requestBody.getBytes(StandardCharsets.UTF_8));
+
+        ApiDefinition apiDef = new ApiDefinition("api-1", "Projects", "/projects", "v0",
+                Set.of(AuthType.CLIENT_CREDENTIALS), false, null, true);
+        when(resolver.resolve(request)).thenReturn(Optional.of(apiDef));
+
+        PolicyContext ctx = mock(PolicyContext.class);
+        when(ctx.getClientId()).thenReturn("client-a");
+        when(ctx.withRequestBody(anyMap())).thenReturn(ctx);
+        when(contextFactory.create(apiDef, request)).thenReturn(ctx);
+
+        List<PolicyRule> rules = List.of(new PolicyRule(UUID.randomUUID(), "api-1", "client-a", "FLAVOR_RESTRICTION", Map.of()));
+        when(policyService.findPolicies("api-1", "client-a")).thenReturn(rules);
+        when(policyEngine.evaluate(ctx, rules)).thenReturn(AuthorizationDecision.PERMIT);
 
         var decision = manager.check(() -> null, new RequestAuthorizationContext(request));
 

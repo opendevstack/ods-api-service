@@ -1,6 +1,7 @@
 package org.opendevstack.apiservice.core.security.authorization;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.opendevstack.apiservice.core.contracts.auth.AuthorizationDecision;
@@ -13,7 +14,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -65,6 +68,7 @@ public class PolicyAuthorizationManager implements AuthorizationManager<RequestA
         }
 
         PolicyContext policyContext = contextFactory.create(apiDef.get(), request);
+        policyContext = policyContext.withRequestBody(extractRequestBody(request));
 
         List<PolicyRule> rules = policyService.findPolicies(apiDef.get().getId(), policyContext.getClientId());
 
@@ -73,5 +77,34 @@ public class PolicyAuthorizationManager implements AuthorizationManager<RequestA
         return new org.springframework.security.authorization.AuthorizationDecision(
                 decision != AuthorizationDecision.DENY
         );
+    }
+
+    private Map<String, Object> extractRequestBody(HttpServletRequest request) {
+        if (!isJsonWriteRequest(request)) {
+            return Map.of();
+        }
+
+        try {
+            byte[] bytes = request.getInputStream().readAllBytes();
+            if (bytes.length == 0) {
+                return Map.of();
+            }
+            return objectMapper.readValue(bytes, new TypeReference<>() {
+            });
+        } catch (IOException ex) {
+            return Map.of();
+        }
+    }
+
+    private boolean isJsonWriteRequest(HttpServletRequest request) {
+        String method = request.getMethod();
+        if (!"POST".equalsIgnoreCase(method)
+                && !"PUT".equalsIgnoreCase(method)
+                && !"PATCH".equalsIgnoreCase(method)) {
+            return false;
+        }
+
+        String contentType = request.getContentType();
+        return contentType != null && contentType.toLowerCase().startsWith("application/json");
     }
 }
