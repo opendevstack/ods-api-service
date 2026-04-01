@@ -4,6 +4,7 @@ import org.opendevstack.apiservice.core.contracts.auth.AuthorizationDecision;
 import org.opendevstack.apiservice.core.contracts.policy.PolicyContext;
 import org.opendevstack.apiservice.core.contracts.policy.PolicyEvaluator;
 import org.opendevstack.apiservice.core.contracts.policy.PolicyRule;
+import org.opendevstack.apiservice.core.contracts.policy.PolicyTypes;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,11 +18,9 @@ import java.util.Map;
 @Component
 public class FlavorRestrictionEvaluator implements PolicyEvaluator {
 
-    public static final String FLAVOR_RESTRICTION = "FLAVOR_RESTRICTION";
-
     @Override
     public boolean supports(String policyType) {
-        return FLAVOR_RESTRICTION.equals(policyType);
+        return PolicyTypes.FLAVOR_RESTRICTION.equals(policyType);
     }
 
     @Override

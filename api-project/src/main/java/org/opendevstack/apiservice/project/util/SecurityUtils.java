@@ -15,8 +15,7 @@ public class SecurityUtils {
     public static UUID getClientId() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (principal instanceof Jwt) {
-            Jwt jwt = ((Jwt) principal);
+        if (principal instanceof Jwt jwt) {
             String clientId = jwt.getClaimAsString("azp");
             if (clientId == null || clientId.isBlank()) {
                 clientId = jwt.getClaimAsString("appid");

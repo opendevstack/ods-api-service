@@ -38,10 +38,6 @@ public class ClientCredentialFlowValidator implements AuthFlowValidator {
 
         String sub = jwt.getSubject();
         String oid = jwt.getClaimAsString("oid");
-        if (sub == null || oid == null || !sub.equals(oid)) {
-            return false;
-        }
-
-        return true;
+        return sub != null && oid != null && sub.equals(oid);
     }
 }
