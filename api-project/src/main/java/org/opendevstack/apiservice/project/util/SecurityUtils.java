@@ -27,7 +27,7 @@ public class SecurityUtils {
             
             return UUID.fromString(clientId);
         } else {
-            throw new InvalidBearerTokenException("Invalid authentication token: " + principal.getClass().getName());
+            throw new InvalidBearerTokenException("Invalid authentication token");
         }
     }
 }

@@ -8,6 +8,7 @@ import org.opendevstack.apiservice.core.contracts.auth.AuthorizationDecision;
 import org.opendevstack.apiservice.core.contracts.policy.PolicyContext;
 import org.opendevstack.apiservice.core.contracts.policy.PolicyRule;
 import org.opendevstack.apiservice.core.contracts.registry.ApiDefinition;
+import org.opendevstack.apiservice.core.security.filter.AuthTypeEnforcementFilter;
 import org.opendevstack.apiservice.core.security.registry.ApiDefinitionResolver;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.core.Authentication;
@@ -55,7 +56,7 @@ public class PolicyAuthorizationManager implements AuthorizationManager<RequestA
         Optional<ApiDefinition> apiDef = this.resolver.resolve(request);
 
         if (apiDef.isPresent()) {
-            request.setAttribute("oas.apiDefinition", apiDef.get());   
+            request.setAttribute(AuthTypeEnforcementFilter.API_DEFINITION_ATTR, apiDef.get());   
         }
 
         // Unknown routes are denied (fail-closed). Public API definitions are allowed.
