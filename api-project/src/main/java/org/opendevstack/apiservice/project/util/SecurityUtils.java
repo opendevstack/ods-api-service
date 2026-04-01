@@ -13,15 +13,22 @@ public class SecurityUtils {
     }
 
     public static UUID getClientId() {
-        String appId = null;
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         if (principal instanceof Jwt) {
-            appId = ((Jwt) principal).getClaimAsString("appid");
+            Jwt jwt = ((Jwt) principal);
+            String clientId = jwt.getClaimAsString("azp");
+            if (clientId == null || clientId.isBlank()) {
+                clientId = jwt.getClaimAsString("appid");
+            }
+            
+            if (clientId == null || clientId.isBlank()) {
+                throw new InvalidBearerTokenException("Client ID not found in token claims");
+            }
+            
+            return UUID.fromString(clientId);
         } else {
             throw new InvalidBearerTokenException("Invalid authentication token: " + principal.getClass().getName());
         }
-
-        return UUID.fromString(appId);
     }
 }

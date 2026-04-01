@@ -51,6 +51,10 @@ public class PolicyAuthorizationManager implements AuthorizationManager<RequestA
 
         Optional<ApiDefinition> apiDef = this.resolver.resolve(request);
 
+        if (apiDef.isPresent()) {
+            request.setAttribute("oas.apiDefinition", apiDef.get());   
+        }
+
         // Unknown routes are denied (fail-closed). Public API definitions are allowed.
         if (apiDef.isEmpty()) {
             return new org.springframework.security.authorization.AuthorizationDecision(false);
