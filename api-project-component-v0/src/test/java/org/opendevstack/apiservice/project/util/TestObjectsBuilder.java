@@ -1,7 +1,7 @@
 package org.opendevstack.apiservice.project.util;
 
-import org.opendevstack.apiservice.externalservice.marketplace.model.CreateComponentParameter;
-import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 import org.opendevstack.apiservice.project.model.CreateComponentResponse;
@@ -24,8 +24,8 @@ public class TestObjectsBuilder {
         return component;
     }
 
-    public static ProjectComponent buildTestMarketplaceComponent() {
-        ProjectComponent component = new ProjectComponent();
+    public static ProjectComponentInfo buildTestMarketplaceComponent() {
+        ProjectComponentInfo component = new ProjectComponentInfo();
         component.setComponentId("testComponentId");
         component.setCanBeDeleted(false);
         component.setComponentUrl("http://test.component.url");
@@ -39,17 +39,17 @@ public class TestObjectsBuilder {
         return request;
     }
 
-    public static List<CreateComponentParameter> buildTestMarketplaceCreateComponentParameters() {
-        List<CreateComponentParameter> parameters = new ArrayList<>();
-        parameters.add(new CreateComponentParameter("name", "string", "testComponentName"));
-        parameters.add(new CreateComponentParameter("productId", "string", "testProductId"));
+    public static List<ProvisionActionParameter> buildTestMarketplaceCreateComponentParameters() {
+        List<ProvisionActionParameter> parameters = new ArrayList<>();
+        parameters.add(new ProvisionActionParameter().name("name").type("string").value("testComponentName"));
+        parameters.add(new ProvisionActionParameter().name("productId").type("string").value("testProductId"));
         return parameters;
     }
 
-    public static CreateComponentResponse buildTestCreateComponentResponseSuccess(String componentId, String projectId) {
+    public static CreateComponentResponse buildTestCreateComponentResponseSuccess(String projectId) {
         CreateComponentResponse response = new CreateComponentResponse();
         response.setErrorCode(HttpStatus.CREATED.value());
-        response.setMessage(componentId + " component created successfully in project " + projectId);
+        response.setMessage("Component created successfully in project " + projectId);
         return response;
     }
 

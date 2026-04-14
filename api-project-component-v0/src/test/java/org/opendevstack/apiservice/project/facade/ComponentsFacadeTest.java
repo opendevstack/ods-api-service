@@ -6,8 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
@@ -39,7 +39,7 @@ class ComponentsFacadeTest {
 
     @Test
     void testGetProjectComponent_whenSuccess_thenReturnCorrectComponent() throws Exception {
-        ProjectComponent testComponent = buildTestMarketplaceComponent();
+        ProjectComponentInfo testComponent = buildTestMarketplaceComponent();
 
         when(marketplaceExternalService.getProjectComponent(anyString(), eq("testId")))
                 .thenReturn(testComponent);
@@ -60,15 +60,14 @@ class ComponentsFacadeTest {
 
     @Test
     void testCreateProjectComponent_whenSuccess_thenReturnCorrectComponent() throws Exception {
-        ProjectComponent testComponent = buildTestMarketplaceComponent();
+        ProjectComponentInfo testComponent = buildTestMarketplaceComponent();
         CreateComponentRequest testRequest = buildTestCreateComponentRequest();
 
-        when(marketplaceExternalService.createProjectComponent(anyString(), any(List.class)))
-                .thenReturn(testComponent);
+        when(marketplaceExternalService.provisionProjectComponent(anyString(), any(List.class)))
+                .thenReturn(true);
 
-        Component retrievedComponent = componentsFacade.createProjectComponent("testId", testRequest);
-        assertThat(retrievedComponent.getId()).isEqualTo(testComponent.getComponentId());
-        assertThat(retrievedComponent.getStatus()).isEqualTo(testComponent.getStatus());
+        boolean result = componentsFacade.createProjectComponent("testId", testRequest);
+        assertThat(result).isTrue();
     }
 
 
@@ -76,10 +75,10 @@ class ComponentsFacadeTest {
     void testCreateProjectComponent_whenFailure_thenReturnNull() throws Exception {
         CreateComponentRequest testRequest = buildTestCreateComponentRequest();
 
-        when(marketplaceExternalService.createProjectComponent(anyString(), any(List.class)))
-                .thenReturn(null);
+        when(marketplaceExternalService.provisionProjectComponent(anyString(), any(List.class)))
+                .thenReturn(false);
 
-        Component retrievedComponent = componentsFacade.createProjectComponent("testId", testRequest);
-        assertThat(retrievedComponent).isNull();
+        boolean result = componentsFacade.createProjectComponent("testId", testRequest);
+        assertThat(result).isFalse();
     }
 }

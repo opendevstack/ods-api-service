@@ -40,11 +40,10 @@ class ProjectComponentsControllerTest {
         Component testComponent = buildTestComponent();
         String testProjectId = "testProjectId";
         CreateComponentRequest testCreateComponentRequest = buildTestCreateComponentRequest();
-        CreateComponentResponse testServiceResponseSuccess = buildTestCreateComponentResponseSuccess(testComponent.getId(),
-                testProjectId);
+        CreateComponentResponse testServiceResponseSuccess = buildTestCreateComponentResponseSuccess(testProjectId);
 
         when(componentsFacade.createProjectComponent(anyString(), any(CreateComponentRequest.class)))
-                .thenReturn(testComponent);
+                .thenReturn(true);
 
         ResponseEntity<CreateComponentResponse> response = projectComponentsController.createProjectComponent(testProjectId,
                 testCreateComponentRequest);
@@ -61,7 +60,7 @@ class ProjectComponentsControllerTest {
         CreateComponentResponse testServiceResponseFailure = buildTestCreateComponentResponseFailure(testProjectId);
 
         when(componentsFacade.createProjectComponent(anyString(), any(CreateComponentRequest.class)))
-                .thenReturn(null);
+                .thenReturn(false);
 
         ResponseEntity<CreateComponentResponse> response = projectComponentsController.createProjectComponent(testProjectId,
                 testCreateComponentRequest);

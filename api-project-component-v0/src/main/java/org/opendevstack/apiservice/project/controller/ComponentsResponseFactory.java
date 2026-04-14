@@ -15,10 +15,10 @@ public class ComponentsResponseFactory {
         return response;
     }
 
-    public static CreateComponentResponse entityCreated(String projectId, String componentId) {
+    public static CreateComponentResponse entityCreated(String projectId) {
         CreateComponentResponse response = new CreateComponentResponse();
         response.setErrorCode(HttpStatus.CREATED.value());
-        response.setMessage(componentId + " component created successfully in project " + projectId);
+        response.setMessage("Component created successfully in project " + projectId);
         return response;
     }
 }
