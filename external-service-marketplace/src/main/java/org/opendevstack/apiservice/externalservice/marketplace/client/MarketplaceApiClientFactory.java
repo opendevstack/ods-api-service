@@ -159,7 +159,7 @@ public class MarketplaceApiClientFactory {
         if (config.isTrustAllCertificates()) {
             log.warn("Trust all certificates is enabled for Marketplace API connection. "
                     + "This should only be used in development environments!");
-            configureTrustAllCertificates(restTemplate);
+            configureTrustAllCertificates();
         }
 
         return restTemplate;
@@ -168,10 +168,9 @@ public class MarketplaceApiClientFactory {
     /**
      * Configure RestTemplate to trust all SSL certificates.
      * WARNING: This should only be used in development environments.
-     *
-     * @param restTemplate RestTemplate to configure
      */
-    private void configureTrustAllCertificates(RestTemplate restTemplate) {
+    @SuppressWarnings({"java:S4830", "java:S1186"})
+    private void configureTrustAllCertificates() {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {

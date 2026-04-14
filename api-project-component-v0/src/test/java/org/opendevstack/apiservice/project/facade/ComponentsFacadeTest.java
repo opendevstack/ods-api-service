@@ -60,7 +60,6 @@ class ComponentsFacadeTest {
 
     @Test
     void testCreateProjectComponent_whenSuccess_thenReturnCorrectComponent() throws Exception {
-        ProjectComponentInfo testComponent = buildTestMarketplaceComponent();
         CreateComponentRequest testRequest = buildTestCreateComponentRequest();
 
         when(marketplaceExternalService.provisionProjectComponent(anyString(), any(List.class)))
