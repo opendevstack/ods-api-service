@@ -172,25 +172,22 @@ public class MarketplaceApiClientFactory {
     @SuppressWarnings({"java:S4830", "java:S1186"})
     private void configureTrustAllCertificates() {
         try {
-            TrustManager[] trustAllCerts = new TrustManager[]{
+            TrustManager[] trustAllCerttificates = new TrustManager[]{
                     new X509TrustManager() {
                         public X509Certificate[] getAcceptedIssuers() {
                             return new X509Certificate[0];
                         }
-                        // Intentionally empty - trusting all certificates for development environments
                         public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                            // No validation performed - development only
                         }
                         // Intentionally empty - trusting all certificates for development environments
                         public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                            // No validation performed - development only
                         }
                     }
             };
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, trustAllCerttificates, new java.security.SecureRandom());
 
-            HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+            HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
             // Intentionally disabling hostname verification for development environments
             HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
 
