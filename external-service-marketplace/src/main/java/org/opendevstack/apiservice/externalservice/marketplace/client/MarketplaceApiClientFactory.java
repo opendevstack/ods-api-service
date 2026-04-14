@@ -157,7 +157,7 @@ public class MarketplaceApiClientFactory {
         restTemplate.setRequestFactory(requestFactory);
 
         if (config.isTrustAllCertificates()) {
-            log.warn("Trust all certificates is enabled for Marketplace connection. "
+            log.warn("Trust all certificates is enabled for Marketplace API connection. "
                     + "This should only be used in development environments!");
             configureTrustAllCertificates(restTemplate);
         }
@@ -171,7 +171,6 @@ public class MarketplaceApiClientFactory {
      *
      * @param restTemplate RestTemplate to configure
      */
-    @SuppressWarnings({"java:S4830", "java:S1186"})
     private void configureTrustAllCertificates(RestTemplate restTemplate) {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
@@ -189,7 +188,6 @@ public class MarketplaceApiClientFactory {
                         }
                     }
             };
-
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
 
@@ -197,8 +195,8 @@ public class MarketplaceApiClientFactory {
             // Intentionally disabling hostname verification for development environments
             HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
 
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("Failed to configure SSL trust all certificates", e);
+        } catch (NoSuchAlgorithmException | KeyManagementException ex) {
+            log.error("Failed to configure SSL trust all certificates for Marketplace API", ex);
         }
     }
 }
