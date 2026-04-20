@@ -139,10 +139,10 @@ components:
           type: string
           description: Product ID
         environment:
-          $ref: '#/components/schemas/EnvironmentsTypeDTO'
+          $ref: '#/components/schemas/EnvironmentsDTO'
           description: Environment
         status:
-          $ref: '#/components/schemas/EnvironmentsStatusDTO'
+          $ref: '#/components/schemas/ComponentsStatusDTO'
           description: Status of the component
         resultTraceback:
           type: object
@@ -210,13 +210,13 @@ components:
           type: object
           description: Additional parameters (key-value pairs)
           additionalProperties: true
-    EnvironmentsTypeDTO:
+    EnvironmentsDTO:
       type: string
       enum:
         - DEV
         - QA
         - PROD
-    EnvironmentsStatusDTO:
+    ComponentsStatusDTO:
       type: string
       enum:
         - READY

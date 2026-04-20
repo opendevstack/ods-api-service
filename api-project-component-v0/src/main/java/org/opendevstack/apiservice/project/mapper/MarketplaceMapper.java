@@ -7,10 +7,9 @@ import org.mapstruct.Named;
 import org.opendevstack.apiservice.externalservice.marketplace.model.CreateComponentParameter;
 import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
 import org.opendevstack.apiservice.project.model.Component;
+import org.opendevstack.apiservice.project.model.ComponentsStatusDTO;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
-import org.opendevstack.apiservice.project.model.EnvironmentsStatusDTO;
-
-import org.opendevstack.apiservice.project.model.EnvironmentsTypeDTO;
+import org.opendevstack.apiservice.project.model.EnvironmentsDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -20,8 +19,8 @@ import java.util.UUID;
 public interface MarketplaceMapper {
 
     @Mapping(target = "id", source = "componentId", qualifiedByName = "uuidToString")
-    @Mapping(target = "environment", source = "environment", qualifiedByName = "toEnvironmentType")
-    @Mapping(target = "status", source = "status", qualifiedByName = "toEnvironmentStatus")
+    @Mapping(target = "environment", source = "environment", qualifiedByName = "toEnvironment")
+    @Mapping(target = "status", source = "status", qualifiedByName = "toComponentStatus")
     @Mapping(target = "params", expression = "java(java.util.Collections.emptyMap())")
     @Mapping(target = "resultTraceback", ignore = true)
     Component mapMarketplaceComponentToV0Component(ProjectComponent source);
@@ -48,25 +47,25 @@ public interface MarketplaceMapper {
         return sourceId != null ? sourceId.toString() : null;
     }
 
-    @Named("toEnvironmentStatus")
-    default EnvironmentsStatusDTO toEnvironmentStatus(String sourceStatus) {
+    @Named("toComponentStatus")
+    default ComponentsStatusDTO toComponentStatus(String sourceStatus) {
         if (sourceStatus == null || sourceStatus.isBlank()) {
             return null;
         }
         try {
-            return EnvironmentsStatusDTO.fromValue(sourceStatus);
+            return ComponentsStatusDTO.fromValue(sourceStatus);
         } catch (IllegalArgumentException ex) {
             return null;
         }
     }
 
-    @Named("toEnvironmentType")
-    default EnvironmentsTypeDTO toEnvironmentType(String sourceEnv) {
+    @Named("toEnvironment")
+    default EnvironmentsDTO toEnvironment(String sourceEnv) {
         if (sourceEnv == null || sourceEnv.isBlank()) {
             return null;
         }
         try {
-            return EnvironmentsTypeDTO.fromValue(sourceEnv);
+            return EnvironmentsDTO.fromValue(sourceEnv);
         } catch (IllegalArgumentException ex) {
             return null;
         }

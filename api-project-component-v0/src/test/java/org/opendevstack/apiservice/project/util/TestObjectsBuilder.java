@@ -2,9 +2,9 @@ package org.opendevstack.apiservice.project.util;
 
 import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
 import org.opendevstack.apiservice.project.model.Component;
+import org.opendevstack.apiservice.project.model.ComponentsStatusDTO;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
-import org.opendevstack.apiservice.project.model.EnvironmentsStatusDTO;
-import org.opendevstack.apiservice.project.model.EnvironmentsTypeDTO;
+import org.opendevstack.apiservice.project.model.EnvironmentsDTO;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -18,8 +18,8 @@ public class TestObjectsBuilder {
         Component component = new Component();
         component.setId("testId");
         component.setName("testComponentName");
-        component.setEnvironment(EnvironmentsTypeDTO.DEV);
-        component.setStatus(EnvironmentsStatusDTO.RUNNING);
+        component.setEnvironment(EnvironmentsDTO.DEV);
+        component.setStatus(ComponentsStatusDTO.RUNNING);
         component.setComponentType("testComponentType");
         component.setParams(new HashMap<>());
         return component;

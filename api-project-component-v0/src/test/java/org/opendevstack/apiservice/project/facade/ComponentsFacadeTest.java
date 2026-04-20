@@ -12,8 +12,8 @@ import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
+import org.opendevstack.apiservice.project.model.ComponentsStatusDTO;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
-import org.opendevstack.apiservice.project.model.EnvironmentsStatusDTO;
 
 import java.util.List;
 
@@ -59,7 +59,7 @@ class ComponentsFacadeTest {
 
         assertThat(retrievedComponent).isNotNull();
         assertThat(retrievedComponent.getId()).isEqualTo(marketplaceComponent.getComponentId().toString());
-        assertThat(retrievedComponent.getStatus()).isEqualTo(EnvironmentsStatusDTO.RUNNING);
+        assertThat(retrievedComponent.getStatus()).isEqualTo(ComponentsStatusDTO.RUNNING);
         verify(marketplaceExternalService).getProjectComponent("testProject", "testComponent");
     }
 
@@ -86,7 +86,7 @@ class ComponentsFacadeTest {
 
         assertThat(createdComponent).isNotNull();
         assertThat(createdComponent.getId()).isEqualTo(marketplaceComponent.getComponentId().toString());
-        assertThat(createdComponent.getStatus()).isEqualTo(EnvironmentsStatusDTO.RUNNING);
+        assertThat(createdComponent.getStatus()).isEqualTo(ComponentsStatusDTO.RUNNING);
         verify(marketplaceExternalService).createProjectComponent(eq("testProject"), any(List.class));
     }
 
