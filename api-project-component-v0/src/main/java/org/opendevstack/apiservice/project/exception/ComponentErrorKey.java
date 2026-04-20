@@ -12,6 +12,9 @@ public enum ComponentErrorKey {
     BAD_REQUEST_BODY("014", badRequest()),
     COMPONENT_PARAM_INVALID_FORMAT("017", badRequest());
 
+    private static final String BAD_REQUEST_MESSSAGE = "Bad Request";
+    private static final String NOT_FOUND_MESSAGE = "Not Found";
+
     private final String key;
     private final String message;
 
@@ -29,10 +32,10 @@ public enum ComponentErrorKey {
     }
 
     private static String badRequest() {
-        return "Bad Request";
+        return BAD_REQUEST_MESSSAGE;
     }
 
     private static String notFound() {
-        return "Not Found";
+        return NOT_FOUND_MESSAGE;
     }
 }
