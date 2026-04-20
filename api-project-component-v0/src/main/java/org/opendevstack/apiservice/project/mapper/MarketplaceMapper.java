@@ -1,6 +1,9 @@
 package org.opendevstack.apiservice.project.mapper;
 
+import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import org.opendevstack.apiservice.externalservice.marketplace.model.CreateComponentParameter;
 import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
 import org.opendevstack.apiservice.project.model.Component;
@@ -9,47 +12,44 @@ import org.opendevstack.apiservice.project.model.EnvironmentsStatusDTO;
 
 import org.opendevstack.apiservice.project.model.EnvironmentsTypeDTO;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Mapper(componentModel = "spring")
 public interface MarketplaceMapper {
 
-    default Component mapMarketplaceComponentToV0Component(ProjectComponent source) {
-        if (source == null) {
-            return null;
-        }
-
-        Component target = new Component();
-        target.setId((source.getComponentId() != null) ? source.getComponentId().toString() : null);
-        target.setName(source.getName());
-        target.setProductDescription(source.getProductDescription());
-        target.setProductName(source.getProductName());
-        target.setProductId(source.getProductId());
-        target.setEnvironment(toEnvironmentType(source.getEnvironment()));
-        target.setStatus(toEnvironmentStatus(source.getStatus()));
-        target.setRepositoryURL(source.getRepositoryURL());
-        target.setComponentType(source.getComponentType());
-        target.setParams(Collections.emptyMap());
-        return target;
-    }
+    @Mapping(target = "id", source = "componentId", qualifiedByName = "uuidToString")
+    @Mapping(target = "environment", source = "environment", qualifiedByName = "toEnvironmentType")
+    @Mapping(target = "status", source = "status", qualifiedByName = "toEnvironmentStatus")
+    @Mapping(target = "params", expression = "java(java.util.Collections.emptyMap())")
+    @Mapping(target = "resultTraceback", ignore = true)
+    Component mapMarketplaceComponentToV0Component(ProjectComponent source);
 
     default List<CreateComponentParameter> mapCreateComponentRequestToCreateComponentParameterList(CreateComponentRequest createComponentRequest) {
         if (createComponentRequest == null || createComponentRequest.getParams() == null) {
             return List.of();
         }
 
-        return createComponentRequest.getParams().entrySet().stream()
-                .map(this::toCreateComponentParameter)
-                .toList();
+        return mapEntriesToCreateComponentParameterList(createComponentRequest.getParams().entrySet().stream().toList());
     }
 
-    private CreateComponentParameter toCreateComponentParameter(Map.Entry<String, Object> entry) {
-        return new CreateComponentParameter(entry.getKey(), "string", String.valueOf(entry.getValue()));
+    @IterableMapping(qualifiedByName = "toCreateComponentParameter")
+    List<CreateComponentParameter> mapEntriesToCreateComponentParameterList(List<Map.Entry<String, Object>> entries);
+
+    @Named("toCreateComponentParameter")
+    @Mapping(target = "name", source = "key")
+    @Mapping(target = "type", constant = "string")
+    @Mapping(target = "value", expression = "java(String.valueOf(entry.getValue()))")
+    CreateComponentParameter toCreateComponentParameter(Map.Entry<String, Object> entry);
+
+    @Named("uuidToString")
+    default String uuidToString(UUID sourceId) {
+        return sourceId != null ? sourceId.toString() : null;
     }
 
-    private EnvironmentsStatusDTO toEnvironmentStatus(String sourceStatus) {
+    @Named("toEnvironmentStatus")
+    default EnvironmentsStatusDTO toEnvironmentStatus(String sourceStatus) {
         if (sourceStatus == null || sourceStatus.isBlank()) {
             return null;
         }
@@ -60,7 +60,8 @@ public interface MarketplaceMapper {
         }
     }
 
-    private EnvironmentsTypeDTO toEnvironmentType(String sourceEnv) {
+    @Named("toEnvironmentType")
+    default EnvironmentsTypeDTO toEnvironmentType(String sourceEnv) {
         if (sourceEnv == null || sourceEnv.isBlank()) {
             return null;
         }
