@@ -111,7 +111,7 @@ class ProjectExceptionHandlerTest {
         assertNotNull(result.getBody());
         assertEquals("011", result.getBody().getErrorKey());
         assertEquals(
-                "Incorrect location. Valid locations are:  MADRID,BARCELONA,SANT_CUGAT",
+            "Incorrect location. Valid locations are: MADRID,BARCELONA,SANT_CUGAT",
                 result.getBody().getMessage()
         );
     }
