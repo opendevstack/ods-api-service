@@ -13,7 +13,7 @@ public enum ErrorKey {
     ONLY_INVITED_PROJECT("008", ErrorMessage.FORBIDDEN),
     ONCE_PER_PROJECT("009", ErrorMessage.FORBIDDEN),
     COMPONENT_PARAM_NOT_MEET_REGEX("010", ErrorMessage.BAD_REQUEST),
-    INVALID_LOCATION("011", ErrorMessage.BAD_REQUEST),
+    INVALID_LOCATION("011", "Incorrect location. Valid locations are:"),
     PROJECT_NOT_FOUND("012", ErrorMessage.NOT_FOUND),
     COMPONENT_NOT_FOUND("013", ErrorMessage.NOT_FOUND),
     BAD_REQUEST_BODY("014", ErrorMessage.BAD_REQUEST),
