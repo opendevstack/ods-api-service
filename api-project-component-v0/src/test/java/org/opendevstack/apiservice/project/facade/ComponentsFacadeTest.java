@@ -52,7 +52,7 @@ class ComponentsFacadeTest {
     void get_project_component_returns_mapped_component_when_marketplace_returns_data() {
         ProjectComponent marketplaceComponent = buildTestMarketplaceComponent();
 
-        when(marketplaceExternalService.getProjectComponent(eq("testProject"), eq("testComponent")))
+        when(marketplaceExternalService.getProjectComponent("testProject", "testComponent"))
                 .thenReturn(marketplaceComponent);
 
         Component retrievedComponent = componentsFacade.getProjectComponent("testProject", "testComponent");
@@ -65,7 +65,7 @@ class ComponentsFacadeTest {
 
     @Test
     void get_project_component_throws_not_found_when_marketplace_returns_null() {
-        when(marketplaceExternalService.getProjectComponent(eq("testProject"), eq("testComponent")))
+        when(marketplaceExternalService.getProjectComponent("testProject", "testComponent"))
                 .thenReturn(null);
 
         assertThatThrownBy(() -> componentsFacade.getProjectComponent("testProject", "testComponent"))

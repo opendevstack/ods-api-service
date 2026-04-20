@@ -5,12 +5,12 @@ public enum ComponentErrorKey {
     OK("000", "Success"),
     ACCESS_DENIED("002", "Forbidden"),
     INTERNAL_ERROR("003", "Internal error"),
-    INVALID_PARAMETERS("006", "Bad Request"),
-    COMPONENT_PARAM_NOT_MEET_REGEX("010", "Bad Request"),
-    PROJECT_NOT_FOUND("012", "Not Found"),
-    COMPONENT_NOT_FOUND("013", "Not Found"),
-    BAD_REQUEST_BODY("014", "Bad Request"),
-    COMPONENT_PARAM_INVALID_FORMAT("017", "Bad Request");
+    INVALID_PARAMETERS("006", badRequest()),
+    COMPONENT_PARAM_NOT_MEET_REGEX("010", badRequest()),
+    PROJECT_NOT_FOUND("012", notFound()),
+    COMPONENT_NOT_FOUND("013", notFound()),
+    BAD_REQUEST_BODY("014", badRequest()),
+    COMPONENT_PARAM_INVALID_FORMAT("017", badRequest());
 
     private final String key;
     private final String message;
@@ -26,5 +26,13 @@ public enum ComponentErrorKey {
 
     public String getMessage() {
         return message;
+    }
+
+    private static String badRequest() {
+        return "Bad Request";
+    }
+
+    private static String notFound() {
+        return "Not Found";
     }
 }

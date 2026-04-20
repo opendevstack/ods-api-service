@@ -67,7 +67,7 @@ class ProjectComponentsControllerTest {
         assertThat(response.getBody().getErrorKey()).isEqualTo("000");
         assertThat(response.getBody().getMessage()).isEqualTo("Component created");
         assertThat(response.getBody().getPath()).isEqualTo("/api/pub/v0/projects/testProjectId/components/component-123");
-        verify(componentsFacade).createProjectComponent(eq(projectId), eq(request));
+        verify(componentsFacade).createProjectComponent(projectId, request);
     }
 
     @Test
@@ -81,7 +81,7 @@ class ProjectComponentsControllerTest {
         assertThatThrownBy(() -> projectComponentsController.createProjectComponent(projectId, request))
             .isInstanceOf(ComponentCreationException.class)
             .hasMessage("Failed to create component for project 'testProjectId'");
-        verify(componentsFacade).createProjectComponent(eq(projectId), eq(request));
+        verify(componentsFacade).createProjectComponent(projectId, request);
     }
 
     @Test
@@ -95,7 +95,7 @@ class ProjectComponentsControllerTest {
         assertThatThrownBy(() -> projectComponentsController.createProjectComponent(projectId, request))
             .isInstanceOf(RuntimeException.class)
             .hasMessage("boom");
-        verify(componentsFacade).createProjectComponent(eq(projectId), eq(request));
+        verify(componentsFacade).createProjectComponent(projectId, request);
     }
 
     @Test

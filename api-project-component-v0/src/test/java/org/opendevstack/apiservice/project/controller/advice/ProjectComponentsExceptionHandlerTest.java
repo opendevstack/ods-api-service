@@ -161,6 +161,7 @@ class ProjectComponentsExceptionHandlerTest {
     @SuppressWarnings("unused")
     private static class DummyController {
         public void dummyMethod(@ModelAttribute DummyRequest request) {
+            // no implementation needed for testing purposes
         }
     }
 }
