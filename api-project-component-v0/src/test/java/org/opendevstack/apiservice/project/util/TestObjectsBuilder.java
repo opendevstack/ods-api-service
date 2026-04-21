@@ -1,14 +1,13 @@
 package org.opendevstack.apiservice.project.util;
 
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
+import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
 import org.opendevstack.apiservice.project.model.Component;
+import org.opendevstack.apiservice.project.model.ComponentsStatusDTO;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
-import org.opendevstack.apiservice.project.model.CreateComponentResponse;
-import org.springframework.http.HttpStatus;
+import org.opendevstack.apiservice.project.model.EnvironmentsDTO;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.UUID;
 
 public class TestObjectsBuilder {
 
@@ -19,14 +18,17 @@ public class TestObjectsBuilder {
         Component component = new Component();
         component.setId("testId");
         component.setName("testComponentName");
-        component.environment("testEnv");
+        component.setEnvironment(EnvironmentsDTO.DEV);
+        component.setStatus(ComponentsStatusDTO.RUNNING);
         component.setComponentType("testComponentType");
+        component.setParams(new HashMap<>());
         return component;
     }
 
-    public static ProjectComponentInfo buildTestMarketplaceComponent() {
-        ProjectComponentInfo component = new ProjectComponentInfo();
-        component.setComponentId("testComponentId");
+    public static ProjectComponent buildTestMarketplaceComponent() {
+        ProjectComponent component = new ProjectComponent();
+        component.setComponentId(UUID.randomUUID());
+        component.setStatus("RUNNING");
         component.setCanBeDeleted(false);
         component.setComponentUrl("http://test.component.url");
         return component;
@@ -34,29 +36,9 @@ public class TestObjectsBuilder {
 
     public static CreateComponentRequest buildTestCreateComponentRequest() {
         CreateComponentRequest request = new CreateComponentRequest();
-        request.setName("testComponentName");
+        request.setName("testcomponent");
         request.setProductId("testProductId");
+        request.setParams(new HashMap<>());
         return request;
-    }
-
-    public static List<ProvisionActionParameter> buildTestMarketplaceCreateComponentParameters() {
-        List<ProvisionActionParameter> parameters = new ArrayList<>();
-        parameters.add(new ProvisionActionParameter().name("name").type("string").value("testComponentName"));
-        parameters.add(new ProvisionActionParameter().name("productId").type("string").value("testProductId"));
-        return parameters;
-    }
-
-    public static CreateComponentResponse buildTestCreateComponentResponseSuccess(String projectId) {
-        CreateComponentResponse response = new CreateComponentResponse();
-        response.setErrorCode(HttpStatus.CREATED.value());
-        response.setMessage("Component created successfully in project " + projectId);
-        return response;
-    }
-
-    public static CreateComponentResponse buildTestCreateComponentResponseFailure(String projectId) {
-        CreateComponentResponse response = new CreateComponentResponse();
-        response.setErrorCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.setMessage("Failed to create component for project '" + projectId + "'");
-        return response;
     }
 }
