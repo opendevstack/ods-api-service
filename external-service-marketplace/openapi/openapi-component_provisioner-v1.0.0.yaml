@@ -172,6 +172,10 @@ paths:
                   type: string
                   description: The base64 encoded path for the catalogItem. Mind that it may include branch reference.
                   example: "cHJvamVjdHMvQ0FURVNUL3JlcG9zL3VzZXItYWN0aW9ucy1pdGVtL3Jhdy9DYXRhbG9nSXRlbS55YW1sP2F0PXJlZnMvaGVhZHMvbWFzdGVy"
+                catalogItemSlug:
+                  type: string
+                  description: The slug for the provisioned component.
+                  example: "myproject_repo_name"
                 componentUrl:
                   type: string
                   description: The bitbucket repository url for the provisioned component.

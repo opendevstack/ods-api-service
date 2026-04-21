@@ -3,7 +3,7 @@ package org.opendevstack.apiservice.externalservice.marketplace.client;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceServiceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceServiceConfig.MarketplaceInstanceConfig;
-import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceClientException;
+import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -48,13 +48,13 @@ public class MarketplaceApiClientFactory {
      * <ul>
      *   <li>If the default instance is configured via {@code externalservices.marketplace.default-instance}, it is returned.</li>
      *   <li>Otherwise the first entry of the instances map is returned (insertion order).</li>
-     *   <li>If no instances are configured at all, a {@link MarketplaceClientException} is thrown.</li>
+     *   <li>If no instances are configured at all, a {@link MarketplaceException} is thrown.</li>
      * </ul>
      *
      * @return The resolved instance name (never {@code null}/blank)
-     * @throws MarketplaceClientException if no Marketplace instances are configured
+     * @throws MarketplaceException if no Marketplace instances are configured
      */
-    public String getDefaultInstanceName() throws MarketplaceClientException {
+    public String getDefaultInstanceName() throws MarketplaceException {
 
         String defaultInstance = configuration.getDefaultInstance();
         if (defaultInstance != null && !defaultInstance.isBlank()) {
@@ -63,7 +63,7 @@ public class MarketplaceApiClientFactory {
 
         Map<String, ?> instances = configuration.getInstances();
         if (instances == null || instances.isEmpty()) {
-            throw new MarketplaceClientException("No Marketplace instances configured");
+            throw new MarketplaceException("No Marketplace instances configured");
         }
 
         return instances.keySet().iterator().next();
@@ -75,12 +75,12 @@ public class MarketplaceApiClientFactory {
      *
      * @param instanceName Name of the Marketplace instance, or {@code null}/{@code ""} for the default
      * @return Configured MarketplaceApiClient
-     * @throws MarketplaceClientException if the instance is not configured
+     * @throws MarketplaceException if the instance is not configured
      */
     @Cacheable(value = "marketplaceApiClients", key = "#instanceName", condition = "#instanceName != null && !#instanceName.isBlank()")
-    public MarketplaceApiClient getClient(String instanceName) throws MarketplaceClientException {
+    public MarketplaceApiClient getClient(String instanceName) throws MarketplaceException {
         if (instanceName == null || instanceName.isBlank()) {
-            throw new MarketplaceClientException(
+            throw new MarketplaceException(
                     String.format("Provide instance name. Available instances: %s",
                             configuration.getInstances().keySet()));
         }
@@ -88,7 +88,7 @@ public class MarketplaceApiClientFactory {
         MarketplaceInstanceConfig instanceConfig = configuration.getInstances().get(instanceName);
 
         if (instanceConfig == null) {
-            throw new MarketplaceClientException(
+            throw new MarketplaceException(
                     String.format("Marketplace instance '%s' is not configured. Available instances: %s",
                             instanceName, configuration.getInstances().keySet()));
         }
@@ -104,10 +104,10 @@ public class MarketplaceApiClientFactory {
      * Falls back to the first configured instance when {@code default-instance} is not set.
      *
      * @return MarketplaceApiClient for the default instance
-     * @throws MarketplaceClientException if no instances are configured
+     * @throws MarketplaceException if no instances are configured
      */
     @Cacheable(value = "marketplaceApiClients", key = "'default'")
-    public MarketplaceApiClient getClient() throws MarketplaceClientException {
+    public MarketplaceApiClient getClient() throws MarketplaceException {
         String defaultInstanceName = getDefaultInstanceName();
         MarketplaceInstanceConfig instanceConfig = configuration.getInstances().get(defaultInstanceName);
         RestTemplate restTemplate = createRestTemplate(instanceConfig);

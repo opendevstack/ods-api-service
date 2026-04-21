@@ -1,7 +1,7 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service;
 
 import org.opendevstack.apiservice.externalservice.api.ExternalService;
-import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceClientException;
+import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 
@@ -14,16 +14,22 @@ public interface MarketplaceService extends ExternalService {
 
     boolean hasInstance(String instanceName);
 
-    String getDefaultInstance() throws MarketplaceClientException;
+    String getDefaultInstance() throws MarketplaceException;
 
-    ProjectComponentInfo getProjectComponent(String projectId, String componentId) throws MarketplaceClientException;
+    ProjectComponentInfo getProjectComponent(String projectId, String componentId) throws MarketplaceException;
 
-    ProjectComponentInfo getProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceClientException;
+    ProjectComponentInfo getProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException;
 
-    boolean provisionProjectComponent(String projectId, List<ProvisionActionParameter> params) throws MarketplaceClientException;
+    boolean provisionProjectComponent(String projectId, List<ProvisionActionParameter> params) throws MarketplaceException;
 
-    boolean deleteProjectComponent(String projectId, String componentId) throws MarketplaceClientException;
+    boolean provisionProjectComponent(String instanceName, String projectId, List<ProvisionActionParameter> params) throws MarketplaceException;
 
-    void registerProjectComponent(String projectId, String componentId) throws MarketplaceClientException;
+    boolean deleteProjectComponent(String projectId, String componentId) throws MarketplaceException;
+
+    boolean deleteProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException;
+
+    void registerProjectComponent(String projectId, String componentId) throws MarketplaceException;
+
+    void registerProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException;
 
 }

@@ -40,11 +40,6 @@ public class MarketplaceServiceConfig {
         private String provisionerActionsBaseUrl;
 
         /**
-         * The provision results base URL of the Marketplace
-         */
-        private String provisionResultsBaseUrl;
-
-        /**
          * Authentication access token for accessing the Marketplace API
          */
         private String accessToken;
