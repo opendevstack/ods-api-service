@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.facade.ComponentsFacade;
@@ -50,13 +51,13 @@ class ProjectComponentsControllerTest {
     }
 
     @Test
-    void create_project_component_returns_ok_when_component_is_created() {
+    void create_project_component_returns_ok_when_component_is_created() throws MarketplaceException {
         String projectId = "testProjectId";
         CreateComponentRequest request = buildTestCreateComponentRequest();
         Component createdComponent = buildTestComponent();
         createdComponent.setId("component-123");
 
-        when(componentsFacade.createProjectComponent(eq(projectId), any(CreateComponentRequest.class)))
+        when(componentsFacade.provisionProjectComponent(eq(projectId), any(CreateComponentRequest.class)))
                 .thenReturn(createdComponent);
 
         ResponseEntity<CreateComponentResponse> response = projectComponentsController.createProjectComponent(projectId, request);
@@ -67,39 +68,39 @@ class ProjectComponentsControllerTest {
         assertThat(response.getBody().getErrorKey()).isEqualTo("000");
         assertThat(response.getBody().getMessage()).isEqualTo("Component created");
         assertThat(response.getBody().getPath()).isEqualTo("/api/pub/v0/projects/testProjectId/components/component-123");
-        verify(componentsFacade).createProjectComponent(projectId, request);
+        verify(componentsFacade).provisionProjectComponent(projectId, request);
     }
 
     @Test
-    void create_project_component_returns_internal_error_when_component_creation_returns_null() {
+    void create_project_component_returns_internal_error_when_component_creation_returns_null() throws MarketplaceException {
         String projectId = "testProjectId";
         CreateComponentRequest request = buildTestCreateComponentRequest();
 
-        when(componentsFacade.createProjectComponent(eq(projectId), any(CreateComponentRequest.class)))
+        when(componentsFacade.provisionProjectComponent(eq(projectId), any(CreateComponentRequest.class)))
                 .thenReturn(null);
 
         assertThatThrownBy(() -> projectComponentsController.createProjectComponent(projectId, request))
             .isInstanceOf(ComponentCreationException.class)
             .hasMessage("Failed to create component for project 'testProjectId'");
-        verify(componentsFacade).createProjectComponent(projectId, request);
+        verify(componentsFacade).provisionProjectComponent(projectId, request);
     }
 
     @Test
-        void create_project_component_propagates_exception_when_facade_throws_exception() {
+        void create_project_component_propagates_exception_when_facade_throws_exception() throws MarketplaceException {
         String projectId = "testProjectId";
         CreateComponentRequest request = buildTestCreateComponentRequest();
 
-        when(componentsFacade.createProjectComponent(eq(projectId), any(CreateComponentRequest.class)))
+        when(componentsFacade.provisionProjectComponent(eq(projectId), any(CreateComponentRequest.class)))
                 .thenThrow(new RuntimeException("boom"));
 
         assertThatThrownBy(() -> projectComponentsController.createProjectComponent(projectId, request))
             .isInstanceOf(RuntimeException.class)
             .hasMessage("boom");
-        verify(componentsFacade).createProjectComponent(projectId, request);
+        verify(componentsFacade).provisionProjectComponent(projectId, request);
     }
 
     @Test
-    void get_project_component_returns_ok_when_component_exists() {
+    void get_project_component_returns_ok_when_component_exists() throws MarketplaceException {
         String projectId = "projectId";
         UUID componentId = UUID.randomUUID();
         Component testComponent = buildTestComponent();
@@ -114,7 +115,7 @@ class ProjectComponentsControllerTest {
     }
 
     @Test
-    void get_project_component_throws_not_found_when_component_does_not_exist() {
+    void get_project_component_throws_not_found_when_component_does_not_exist() throws MarketplaceException {
         String projectId = "projectId";
         UUID componentId = UUID.randomUUID();
 

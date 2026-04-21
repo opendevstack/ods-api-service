@@ -2,9 +2,12 @@ package org.opendevstack.apiservice.project.facade;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.apiservice.externalservice.marketplace.model.CreateComponentParameter;
-import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
+import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
+import org.opendevstack.apiservice.project.exception.ComponentCreationException;
+import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
@@ -21,8 +24,8 @@ public class ComponentsFacade {
 
     private final MarketplaceMapper marketplaceMapper;
 
-    public Component getProjectComponent(String projectId, String componentId) {
-        ProjectComponent marketplaceComponent = marketplaceExternalService.getProjectComponent(projectId, componentId);
+    public Component getProjectComponent(String projectId, String componentId) throws MarketplaceException {
+        ProjectComponentInfo marketplaceComponent = marketplaceExternalService.getProjectComponent(projectId, componentId);
         if (marketplaceComponent == null) {
             log.info("Marketplace component with id {} not found", componentId);
             throw new ComponentNotFoundException(
@@ -32,16 +35,17 @@ public class ComponentsFacade {
         return marketplaceMapper.mapMarketplaceComponentToV0Component(marketplaceComponent);
     }
 
-    public Component createProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
-        List<CreateComponentParameter> createComponentParameterList = marketplaceMapper.mapCreateComponentRequestToCreateComponentParameterList(createComponentRequest);
-        ProjectComponent marketplaceComponent = marketplaceExternalService.createProjectComponent(projectId, createComponentParameterList);
-        if (marketplaceComponent == null) {
+    public Component provisionProjectComponent(String projectId, CreateComponentRequest createComponentRequest) throws MarketplaceException {
+        List<ProvisionActionParameter> createComponentParameterList = marketplaceMapper.mapCreateComponentRequestToCreateComponentParameterList(createComponentRequest);
+        //TODO implement this with more info from marketplace
+        boolean success = marketplaceExternalService.provisionProjectComponent(projectId, createComponentParameterList);
+        if (!success) {
             log.error("Failed to create component in marketplace for project with id {}", projectId);
             throw new ComponentCreationException(
                     String.format("Failed to create component for project '%s'", projectId)
             );
         }
-        return marketplaceMapper.mapMarketplaceComponentToV0Component(marketplaceComponent);
+        return marketplaceMapper.mapMarketplaceComponentToV0Component(new ProjectComponentInfo()); //TODO get the created component info from marketplace and map it
     }
 
     public Boolean deleteProjectComponent(String projectId, String componentId) {

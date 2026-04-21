@@ -4,8 +4,8 @@ import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
-import org.opendevstack.apiservice.externalservice.marketplace.model.CreateComponentParameter;
-import org.opendevstack.apiservice.externalservice.marketplace.model.ProjectComponent;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.ComponentsStatusDTO;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
@@ -19,13 +19,13 @@ import java.util.UUID;
 public interface MarketplaceMapper {
 
     @Mapping(target = "id", source = "componentId", qualifiedByName = "uuidToString")
-    @Mapping(target = "environment", source = "environment", qualifiedByName = "toEnvironment")
+//    TODO @Mapping(target = "environment", source = "environment", qualifiedByName = "toEnvironment")
     @Mapping(target = "status", source = "status", qualifiedByName = "toComponentStatus")
-    @Mapping(target = "params", expression = "java(java.util.Collections.emptyMap())")
+//   TODO @Mapping(target = "params", expression = "java(java.util.Collections.emptyMap())")
     @Mapping(target = "resultTraceback", ignore = true)
-    Component mapMarketplaceComponentToV0Component(ProjectComponent source);
+    Component mapMarketplaceComponentToV0Component(ProjectComponentInfo source);
 
-    default List<CreateComponentParameter> mapCreateComponentRequestToCreateComponentParameterList(CreateComponentRequest createComponentRequest) {
+    default List<ProvisionActionParameter> mapCreateComponentRequestToCreateComponentParameterList(CreateComponentRequest createComponentRequest) {
         if (createComponentRequest == null || createComponentRequest.getParams() == null) {
             return List.of();
         }
@@ -34,13 +34,13 @@ public interface MarketplaceMapper {
     }
 
     @IterableMapping(qualifiedByName = "toCreateComponentParameter")
-    List<CreateComponentParameter> mapEntriesToCreateComponentParameterList(List<Map.Entry<String, Object>> entries);
+    List<ProvisionActionParameter> mapEntriesToCreateComponentParameterList(List<Map.Entry<String, Object>> entries);
 
     @Named("toCreateComponentParameter")
     @Mapping(target = "name", source = "key")
     @Mapping(target = "type", constant = "string")
     @Mapping(target = "value", expression = "java(String.valueOf(entry.getValue()))")
-    CreateComponentParameter toCreateComponentParameter(Map.Entry<String, Object> entry);
+    ProvisionActionParameter toCreateComponentParameter(Map.Entry<String, Object> entry);
 
     @Named("uuidToString")
     default String uuidToString(UUID sourceId) {

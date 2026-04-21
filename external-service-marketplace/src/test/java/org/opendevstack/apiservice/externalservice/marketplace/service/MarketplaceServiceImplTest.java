@@ -101,6 +101,8 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new RestClientException("Connection failed"));
 
         // Act & Assert
         assertThrows(MarketplaceException.class, () ->
