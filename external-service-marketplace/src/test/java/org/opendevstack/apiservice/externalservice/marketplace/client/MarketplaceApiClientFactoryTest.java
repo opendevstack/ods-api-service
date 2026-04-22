@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceServiceConfig;
-import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceServiceConfig.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.web.client.RestTemplate;
@@ -14,7 +14,10 @@ import org.springframework.web.client.RestTemplate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 

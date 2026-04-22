@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.project.api.ProjectComponentsApi;
-import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.facade.ComponentsFacade;
 import org.opendevstack.apiservice.project.mapper.ComponentResponseMapper;
@@ -15,8 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
@@ -32,30 +29,20 @@ public class ProjectComponentsController implements ProjectComponentsApi {
 
     @Override
     public ResponseEntity<CreateComponentResponse> createProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
-        try {
-            Component component = componentsFacade.provisionProjectComponent(projectId, createComponentRequest);
-            if (component == null) {
-                throw new ComponentCreationException(String.format("Failed to create component for project '%s'", projectId));
-            }
+        componentsFacade.provisionProjectComponent(projectId, createComponentRequest);
 
-            log.info("Created component {} for project id {} and request {}", component, projectId, createComponentRequest);
-            return componentResponseMapper.toResponseEntity(
-                    ComponentsResponseFactory.entityCreated(projectId, component.getId())
-            );
-        } catch (MarketplaceException e) { //TODO use error handler
-            log.error("Error while creating component for project '{}': {}", projectId, e.getMessage(), e);
-            throw new ComponentCreationException(
-                    String.format("Failed to create component for project '%s': %s", projectId, e.getMessage()), e
-            );
-        }
+        log.info("Created component '{}' for project '{}'", createComponentRequest.getName(), projectId);
+        return componentResponseMapper.toResponseEntity(
+                ComponentsResponseFactory.entityCreated(projectId, createComponentRequest.getName())
+        );
 
     }
 
     @Override
-    public ResponseEntity<Component> getProjectComponent(String projectId, UUID componentId) {
+    public ResponseEntity<Component> getProjectComponent(String projectId, String componentId) {
         try {
 
-            Component component = componentsFacade.getProjectComponent(projectId, componentId.toString());
+            Component component = componentsFacade.getProjectComponent(projectId, componentId);
             if (component == null) {
                 throw new ComponentNotFoundException(
                         String.format("Component '%s' not found for project '%s'", componentId, projectId)

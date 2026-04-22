@@ -1,8 +1,8 @@
 package org.opendevstack.apiservice.externalservice.marketplace.client;
 
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceServiceConfig;
-import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceServiceConfig.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.annotation.CacheEvict;

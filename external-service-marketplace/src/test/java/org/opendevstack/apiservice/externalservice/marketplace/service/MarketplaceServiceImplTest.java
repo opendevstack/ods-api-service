@@ -7,7 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
-import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceServiceConfig.MarketplaceInstanceConfig;
+import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.ApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
@@ -20,6 +20,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -335,6 +336,33 @@ class MarketplaceServiceImplTest {
                 .thenThrow(new MarketplaceException("No Marketplace instances configured"));
 
         assertThrows(MarketplaceException.class, () -> marketplaceService.getDefaultInstance());
+    }
+
+    @Test
+    void testProvisionProjectComponent_Conflict_ThrowsMarketplaceExceptionWithDuplicateMessage() throws MarketplaceException {
+        String instanceName = "dev";
+        String projectKey = "EDPC";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+
+        HttpClientErrorException conflictEx = HttpClientErrorException.create(
+            HttpStatus.CONFLICT,
+            "Conflict",
+            HttpHeaders.EMPTY,
+            "{\"message\":\"This component name already exists, please choose another name.\"}".getBytes(StandardCharsets.UTF_8),
+            StandardCharsets.UTF_8
+        );
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenThrow(conflictEx);
+
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+            marketplaceService.provisionProjectComponent(instanceName, projectKey, List.of()));
+
+        assertEquals("This component name already exists, please choose another name.", exception.getMessage());
     }
 
 }

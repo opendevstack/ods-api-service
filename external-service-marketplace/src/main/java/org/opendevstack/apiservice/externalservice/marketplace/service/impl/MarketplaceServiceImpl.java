@@ -3,6 +3,7 @@ package org.opendevstack.apiservice.externalservice.marketplace.service.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
+import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.ApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.ProjectComponentsApi;
@@ -80,17 +81,36 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         try {
             MarketplaceApiClient marketplaceClient = clientFactory.getClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
+            MarketplaceInstanceConfig config = marketplaceClient.getConfig();
+
+            String provisionerActionsBaseUrl = config.getProvisionerActionsBaseUrl();
+            String accessToken = config.getAccessToken();
+            String workflow = config.getWorkflow();
+            String odsNamespace = config.getOdsNamespace();
+            String quickstarterRepository = config.getQuickstarterRepository();
+            String catalogItemId = config.getCatalogItemId();
 
             ProvisionAction provisionAction = new ProvisionAction();
             provisionAction.setId("PROVISION");
             provisionAction.addParametersItem(new ProvisionActionParameter().name("project_key").type("string").value(projectId));
+
+            //TODO: currently in dev is not working but, we need to add 
+            //TODO: the error 500  on POST request for "https://component-provisioner-devstack-dev.apps.eu-dev.ocp.aws.boehringer.com/v1/provision-actions": "{"message":"Duplicate key access_token (attempted merging values [...]])"}"
+//            provisionAction.addParametersItem(new ProvisionActionParameter().name("access_token").type("string").value(accessToken));
+            provisionAction.addParametersItem(new ProvisionActionParameter().name("workflow").type("string").value(workflow));
+            provisionAction.addParametersItem(new ProvisionActionParameter().name("ods_namespace").type("string").value(odsNamespace));
+            provisionAction.addParametersItem(new ProvisionActionParameter().name("quickstarter_repo").type("string").value(quickstarterRepository));
+            provisionAction.addParametersItem(new ProvisionActionParameter().name("catalog_item_id").type("string").value(catalogItemId));
+
             params.forEach(provisionAction::addParametersItem);
 
             ProvisionerActionsApi provisionerActionsApi = new ProvisionerActionsApi(apiClient);
-            apiClient.setBasePath(marketplaceClient.getConfig().getProvisionerActionsBaseUrl());
+            apiClient.setBasePath(provisionerActionsBaseUrl);
 
             ProvisionActionResponse response = provisionerActionsApi.triggerProvisionAction(provisionAction);
             return !response.getFailed();
+        } catch (HttpClientErrorException.Conflict e) {
+            throw new MarketplaceException("This component name already exists, please choose another name.", e);
         } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
             throw new MarketplaceException(
                     String.format("Access denied when provisioning project component in project '%s' and instance '%s'",

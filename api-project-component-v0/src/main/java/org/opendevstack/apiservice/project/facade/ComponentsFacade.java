@@ -6,12 +6,14 @@ import org.opendevstack.apiservice.externalservice.marketplace.exception.Marketp
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
+import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
 
@@ -35,17 +37,35 @@ public class ComponentsFacade {
         return marketplaceMapper.mapMarketplaceComponentToV0Component(marketplaceComponent);
     }
 
-    public Component provisionProjectComponent(String projectId, CreateComponentRequest createComponentRequest) throws MarketplaceException {
-        List<ProvisionActionParameter> createComponentParameterList = marketplaceMapper.mapCreateComponentRequestToCreateComponentParameterList(createComponentRequest);
-        //TODO implement this with more info from marketplace
-        boolean success = marketplaceExternalService.provisionProjectComponent(projectId, createComponentParameterList);
-        if (!success) {
-            log.error("Failed to create component in marketplace for project with id {}", projectId);
+    public void provisionProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
+        try {
+            List<ProvisionActionParameter> createComponentParameterList = marketplaceMapper.mapCreateComponentRequestToCreateComponentParameterList(createComponentRequest);
+            boolean success = marketplaceExternalService.provisionProjectComponent(projectId, createComponentParameterList);
+            if (!success) {
+                log.error("Failed to create component in marketplace for project with id {}", projectId);
+                throw new ComponentCreationException(
+                        String.format("Failed to create component for project '%s'", projectId)
+                );
+            }
+        } catch (MarketplaceException e) {
+            if (isConflictCause(e)) {
+                throw new ComponentAlreadyExistsException(e.getMessage(), e);
+            }
             throw new ComponentCreationException(
-                    String.format("Failed to create component for project '%s'", projectId)
+                    String.format("Failed to create component for project '%s': %s", projectId, e.getMessage()), e
             );
         }
-        return marketplaceMapper.mapMarketplaceComponentToV0Component(new ProjectComponentInfo()); //TODO get the created component info from marketplace and map it
+    }
+
+    private boolean isConflictCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof HttpClientErrorException.Conflict) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     public Boolean deleteProjectComponent(String projectId, String componentId) {

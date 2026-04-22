@@ -7,30 +7,37 @@ import org.mapstruct.Named;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.project.model.Component;
-import org.opendevstack.apiservice.project.model.ComponentsStatusDTO;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
-import org.opendevstack.apiservice.project.model.EnvironmentsDTO;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Mapper(componentModel = "spring")
 public interface MarketplaceMapper {
 
-    @Mapping(target = "id", source = "componentId", qualifiedByName = "uuidToString")
-//    TODO @Mapping(target = "environment", source = "environment", qualifiedByName = "toEnvironment")
-    @Mapping(target = "status", source = "status", qualifiedByName = "toComponentStatus")
-//   TODO @Mapping(target = "params", expression = "java(java.util.Collections.emptyMap())")
+    @Mapping(target = "id", source = "componentId")
     @Mapping(target = "resultTraceback", ignore = true)
     Component mapMarketplaceComponentToV0Component(ProjectComponentInfo source);
 
     default List<ProvisionActionParameter> mapCreateComponentRequestToCreateComponentParameterList(CreateComponentRequest createComponentRequest) {
-        if (createComponentRequest == null || createComponentRequest.getParams() == null) {
+        if (createComponentRequest == null) {
             return List.of();
         }
 
-        return mapEntriesToCreateComponentParameterList(createComponentRequest.getParams().entrySet().stream().toList());
+        List<ProvisionActionParameter> parameters = new ArrayList<>();
+        parameters.add(createParameter("component_id", createComponentRequest.getName(), "string"));
+        parameters.add(createParameter("component_type", createComponentRequest.getProductId(), "string"));
+
+        if (createComponentRequest.getParams() != null && !createComponentRequest.getParams().isEmpty()) {
+            parameters.addAll(mapEntriesToCreateComponentParameterList(createComponentRequest.getParams().entrySet().stream().toList()));
+        }
+
+        return parameters;
+    }
+
+    default ProvisionActionParameter createParameter(String name, String value, String type) {
+        return new ProvisionActionParameter().name(name).type(type).value(value);
     }
 
     @IterableMapping(qualifiedByName = "toCreateComponentParameter")
@@ -41,33 +48,4 @@ public interface MarketplaceMapper {
     @Mapping(target = "type", constant = "string")
     @Mapping(target = "value", expression = "java(String.valueOf(entry.getValue()))")
     ProvisionActionParameter toCreateComponentParameter(Map.Entry<String, Object> entry);
-
-    @Named("uuidToString")
-    default String uuidToString(UUID sourceId) {
-        return sourceId != null ? sourceId.toString() : null;
-    }
-
-    @Named("toComponentStatus")
-    default ComponentsStatusDTO toComponentStatus(String sourceStatus) {
-        if (sourceStatus == null || sourceStatus.isBlank()) {
-            return null;
-        }
-        try {
-            return ComponentsStatusDTO.fromValue(sourceStatus);
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
-    }
-
-    @Named("toEnvironment")
-    default EnvironmentsDTO toEnvironment(String sourceEnv) {
-        if (sourceEnv == null || sourceEnv.isBlank()) {
-            return null;
-        }
-        try {
-            return EnvironmentsDTO.fromValue(sourceEnv);
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
-    }
 }

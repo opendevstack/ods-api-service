@@ -22,6 +22,10 @@ public final class ComponentsResponseFactory {
         return buildResponse(HttpStatus.FORBIDDEN, errorKey, path, message);
     }
 
+    public static CreateComponentResponse conflict(String path, String message, ComponentErrorKey errorKey) {
+        return buildResponse(HttpStatus.CONFLICT, errorKey, path, message);
+    }
+
     public static CreateComponentResponse notFound(String path, String message, ComponentErrorKey errorKey) {
         return buildResponse(HttpStatus.NOT_FOUND, errorKey, path, message);
     }
