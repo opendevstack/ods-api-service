@@ -89,11 +89,14 @@ public class ProjectExceptionHandler {
     @ExceptionHandler(ProjectAlreadyExistsException.class)
     public ResponseEntity<CreateProjectResponse> handleProjectAlreadyExistsException(ProjectAlreadyExistsException ex) {
         log.warn("Validation error: {}", ex.getMessage());
+        ErrorKey errorKey = ex.getErrorKey() != null
+            ? ex.getErrorKey()
+            : ErrorKey.PROJECT_ALREADY_EXISTS;
         CreateProjectResponse response = new CreateProjectResponse();
         response.setLocation(ProjectController.API_BASE_PATH);
         response.setError(HttpStatus.CONFLICT.getReasonPhrase());
-        response.setErrorKey(ErrorKey.PROJECT_ALREADY_EXISTS.getKey());
-        response.setMessage(ErrorKey.PROJECT_ALREADY_EXISTS.getMessage());
+        response.setErrorKey(errorKey.getKey());
+        response.setMessage(errorKey.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }    
 

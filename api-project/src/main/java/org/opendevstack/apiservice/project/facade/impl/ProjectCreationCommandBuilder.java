@@ -118,7 +118,7 @@ public class ProjectCreationCommandBuilder {
                     return existingProjectKey;
                 }
 
-                throw new ProjectValidationException(ErrorKey.PROJECT_ALREADY_EXISTS);
+                throw new ProjectAlreadyExistsException(ErrorKey.PROJECT_ALREADY_EXISTS);
             }
 
             String pattern = flavor.getProjectKeyPattern();
@@ -149,7 +149,7 @@ public class ProjectCreationCommandBuilder {
         if (!Strings.isEmpty(preferred)) {
             try {
                 if (projectExistenceService.isProjectFoundByName(preferred)) {
-                    throw new ProjectAlreadyExistsException();
+                    throw new ProjectAlreadyExistsException(ErrorKey.PROJECT_SAME_PROJECT_NAME_ALREADY_EXISTS);
                 }
             } catch (ProjectExistenceServiceException e) {
                 throw new ProjectCreationException("Error checking if project name already exists: " + e.getMessage(), e);
