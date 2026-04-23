@@ -98,14 +98,14 @@ class ProjectCreationCommandBuilderTest {
     }
 
     @Test
-    void build_throws_validation_exception_when_project_key_already_exists() throws ProjectExistenceServiceException {
+    void build_throws_project_already_exists_exception_when_project_key_already_exists() throws ProjectExistenceServiceException {
         ClientAppProjectFlavorEntity flavor = build_flavor("DLSS", "CI-001", new String[] {}, "eu", "owner1");
         ClientAppEntity clientApp = build_client_app(List.of(flavor));
         CreateProjectRequest request = build_request("DLSS", null, "KEY01");
 
         when(projectExistenceService.isProjectFound("KEY01")).thenReturn(true);
 
-        ProjectValidationException ex = assertThrows(ProjectValidationException.class,
+        ProjectAlreadyExistsException ex = assertThrows(ProjectAlreadyExistsException.class,
                 () -> sut.build(request, clientApp));
         assertEquals(ErrorKey.PROJECT_ALREADY_EXISTS, ex.getErrorKey());
     }
