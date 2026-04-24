@@ -9,15 +9,18 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Set;
 
@@ -157,73 +160,54 @@ public class BitbucketApiClientFactory {
     private RestTemplate createRestTemplate(BitbucketInstanceConfig config) {
         RestTemplate restTemplate = restTemplateBuilder.build();
 
-        if (config.isTrustAllCertificates()) {
-            log.warn("Trust all certificates is enabled for Bitbucket connection. " +
-                    "This should only be used in development environments!");
-            restTemplate.setRequestFactory(createTrustAllRequestFactory(config));
-        } else {
+        if (!StringUtils.hasText(config.getTrustStorePath())) {
+            log.info("No custom trust store configured for Bitbucket instance, using JVM default trust store");
             SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
             requestFactory.setConnectTimeout(config.getConnectionTimeout());
             requestFactory.setReadTimeout(config.getReadTimeout());
             restTemplate.setRequestFactory(requestFactory);
+            return restTemplate;
         }
 
-        return restTemplate;
-    }
-
-    /**
-     * Create a {@link SimpleClientHttpRequestFactory} that trusts all SSL certificates
-     * <b>only for this specific RestTemplate</b>, without modifying the JVM-wide defaults.
-     * <p>
-     * WARNING: This should only be used in development environments.
-     *
-     * @param config Instance configuration (for timeouts)
-     * @return A request factory whose connections skip SSL verification
-     */
-    @SuppressWarnings({"java:S4830", "java:S1186"}) // Intentionally disabling SSL validation for development
-    private SimpleClientHttpRequestFactory createTrustAllRequestFactory(BitbucketInstanceConfig config) {
         try {
-            TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[0];
-                    }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                        // No validation performed - development only
-                    }
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                        // No validation performed - development only
-                    }
-                }
-            };
+            log.info("Loading custom trust store for Bitbucket instance from: {}", config.getTrustStorePath());
+            KeyStore trustStore = KeyStore.getInstance(config.getTrustStoreType());
+            try (FileInputStream fis = new FileInputStream(config.getTrustStorePath())) {
+                char[] password = StringUtils.hasText(config.getTrustStorePassword())
+                        ? config.getTrustStorePassword().toCharArray()
+                        : new char[0];
+                trustStore.load(fis, password);
+            }
+
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(trustStore);
 
             SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            sslContext.init(null, tmf.getTrustManagers(), new SecureRandom());
 
             final javax.net.ssl.SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-            final javax.net.ssl.HostnameVerifier trustAllHostnames = (hostname, session) -> true;
-
-            // Override prepareConnection so SSL settings apply only to this RestTemplate
             SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory() {
                 @Override
-                protected void prepareConnection(java.net.HttpURLConnection connection, String httpMethod) throws java.io.IOException {
+                protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
                     if (connection instanceof HttpsURLConnection httpsConnection) {
                         httpsConnection.setSSLSocketFactory(sslSocketFactory);
-                        httpsConnection.setHostnameVerifier(trustAllHostnames);
                     }
                     super.prepareConnection(connection, httpMethod);
                 }
             };
             requestFactory.setConnectTimeout(config.getConnectionTimeout());
             requestFactory.setReadTimeout(config.getReadTimeout());
-            return requestFactory;
+            restTemplate.setRequestFactory(requestFactory);
 
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("Failed to configure SSL trust all certificates, falling back to default factory", e);
+        } catch (GeneralSecurityException | IOException e) {
+            log.error("Failed to load custom trust store '{}' for Bitbucket instance, falling back to JVM default: {}",
+                    config.getTrustStorePath(), e.getMessage());
             SimpleClientHttpRequestFactory fallback = new SimpleClientHttpRequestFactory();
             fallback.setConnectTimeout(config.getConnectionTimeout());
             fallback.setReadTimeout(config.getReadTimeout());
-            return fallback;
+            restTemplate.setRequestFactory(fallback);
         }
+
+        return restTemplate;
     }
 }

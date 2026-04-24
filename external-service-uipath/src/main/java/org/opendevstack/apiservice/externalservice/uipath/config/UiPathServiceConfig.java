@@ -7,15 +7,17 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.client.RestTemplate;
 
-import javax.net.ssl.HostnameVerifier;
+import org.springframework.util.StringUtils;
+
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.security.GeneralSecurityException;
-import java.security.cert.X509Certificate;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -41,67 +43,58 @@ public class UiPathServiceConfig {
      */
     @Bean(name = "uiPathRestTemplate")
     public RestTemplate uiPathRestTemplate() {
-        if (!uiPathProperties.getSsl().isVerifyCertificates()) {
-            log.warn("UIPath SSL certificate verification is DISABLED - this should only be used in development environments");
-            return createInsecureRestTemplate();
-        } else {
-            log.info("UIPath SSL certificate verification is ENABLED");
-            return createSecureRestTemplate();
-        }
+        log.info("UIPath SSL certificate verification is ENABLED");
+        return createSecureRestTemplate();
     }
 
-    private RestTemplate createInsecureRestTemplate() {
+    private RestTemplate createSecureRestTemplate() {
+        SslProperties ssl = uiPathProperties.getSsl();
+
+        if (!StringUtils.hasText(ssl.getTrustStorePath())) {
+            log.info("No custom trust store configured for UIPath, using JVM default trust store");
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(uiPathProperties.getTimeout());
+            requestFactory.setReadTimeout(uiPathProperties.getTimeout());
+            return new RestTemplate(requestFactory);
+        }
+
         try {
-            // Create a trust manager that accepts all certificates
-            // WARNING: This is insecure and should only be used in development environments
-            TrustManager[] trustAllCerts = new TrustManager[] {
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[0];
-                    }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                        // Intentionally empty - accepts all client certificates (insecure)
-                    }
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                        // Intentionally empty - accepts all server certificates (insecure)
-                    }
-                }
-            };
+            log.info("Loading custom trust store for UIPath from: {}", ssl.getTrustStorePath());
+            KeyStore trustStore = KeyStore.getInstance(ssl.getTrustStoreType());
+            try (FileInputStream fis = new FileInputStream(ssl.getTrustStorePath())) {
+                char[] password = StringUtils.hasText(ssl.getTrustStorePassword())
+                        ? ssl.getTrustStorePassword().toCharArray()
+                        : new char[0];
+                trustStore.load(fis, password);
+            }
 
-            // Install the all-trusting trust manager
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(trustStore);
+
             SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            sslContext.init(null, tmf.getTrustManagers(), new SecureRandom());
 
-            // Create hostname verifier that accepts all hostnames (insecure)
-            HostnameVerifier allHostsValid = (hostname, session) -> true;
-
-            // Create a custom request factory that uses our SSL configuration
+            final javax.net.ssl.SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
             SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory() {
                 @Override
                 protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
                     if (connection instanceof HttpsURLConnection httpsConnection) {
-                        httpsConnection.setSSLSocketFactory(sslContext.getSocketFactory());
-                        httpsConnection.setHostnameVerifier(allHostsValid);
+                        httpsConnection.setSSLSocketFactory(sslSocketFactory);
                     }
                     super.prepareConnection(connection, httpMethod);
                 }
             };
-
             requestFactory.setConnectTimeout(uiPathProperties.getTimeout());
             requestFactory.setReadTimeout(uiPathProperties.getTimeout());
-
             return new RestTemplate(requestFactory);
 
-        } catch (GeneralSecurityException e) {
-            log.warn("Failed to create insecure RestTemplate, falling back to default: {}", e.getMessage());
-            return createSecureRestTemplate();
+        } catch (GeneralSecurityException | IOException e) {
+            log.error("Failed to load custom trust store '{}' for UIPath, falling back to JVM default: {}",
+                    ssl.getTrustStorePath(), e.getMessage());
+            SimpleClientHttpRequestFactory fallback = new SimpleClientHttpRequestFactory();
+            fallback.setConnectTimeout(uiPathProperties.getTimeout());
+            fallback.setReadTimeout(uiPathProperties.getTimeout());
+            return new RestTemplate(fallback);
         }
-    }
-
-    private RestTemplate createSecureRestTemplate() {
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(uiPathProperties.getTimeout());
-        requestFactory.setReadTimeout(uiPathProperties.getTimeout());
-        return new RestTemplate(requestFactory);
     }
 }

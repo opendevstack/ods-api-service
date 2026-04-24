@@ -9,13 +9,17 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import javax.net.ssl.*;
+import org.springframework.util.StringUtils;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
-import java.time.Duration;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -123,56 +127,54 @@ public class WebhookProxyClientFactory {
     private RestTemplate createRestTemplate(ClusterConfig config) {
         RestTemplate restTemplate = restTemplateBuilder.build();
 
-        // Set timeouts using SimpleClientHttpRequestFactory
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(config.getConnectionTimeout());
-        requestFactory.setReadTimeout(config.getReadTimeout());
-        restTemplate.setRequestFactory(requestFactory);
+        if (!StringUtils.hasText(config.getTrustStorePath())) {
+            log.info("No custom trust store configured for webhook proxy cluster, using JVM default trust store");
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(config.getConnectionTimeout());
+            requestFactory.setReadTimeout(config.getReadTimeout());
+            restTemplate.setRequestFactory(requestFactory);
+            return restTemplate;
+        }
 
-        if (config.isTrustAllCertificates()) {
-            log.warn("Creating RestTemplate with SSL certificate verification DISABLED for webhook proxy - " +
-                    "this should only be used in development environments");
-            configureTrustAllCertificates(restTemplate);
+        try {
+            log.info("Loading custom trust store for webhook proxy cluster from: {}", config.getTrustStorePath());
+            KeyStore trustStore = KeyStore.getInstance(config.getTrustStoreType());
+            try (FileInputStream fis = new FileInputStream(config.getTrustStorePath())) {
+                char[] password = StringUtils.hasText(config.getTrustStorePassword())
+                        ? config.getTrustStorePassword().toCharArray()
+                        : new char[0];
+                trustStore.load(fis, password);
+            }
 
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(trustStore);
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, tmf.getTrustManagers(), new SecureRandom());
+
+            final javax.net.ssl.SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory() {
+                @Override
+                protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
+                    if (connection instanceof HttpsURLConnection httpsConnection) {
+                        httpsConnection.setSSLSocketFactory(sslSocketFactory);
+                    }
+                    super.prepareConnection(connection, httpMethod);
+                }
+            };
+            requestFactory.setConnectTimeout(config.getConnectionTimeout());
+            requestFactory.setReadTimeout(config.getReadTimeout());
+            restTemplate.setRequestFactory(requestFactory);
+
+        } catch (GeneralSecurityException | IOException e) {
+            log.error("Failed to load custom trust store '{}' for webhook proxy cluster, falling back to JVM default: {}",
+                    config.getTrustStorePath(), e.getMessage());
+            SimpleClientHttpRequestFactory fallback = new SimpleClientHttpRequestFactory();
+            fallback.setConnectTimeout(config.getConnectionTimeout());
+            fallback.setReadTimeout(config.getReadTimeout());
+            restTemplate.setRequestFactory(fallback);
         }
 
         return restTemplate;
-    }
-
-    /**
-     * Configure RestTemplate to trust all SSL certificates
-     * WARNING: This should only be used in development environments
-     * 
-     * @param restTemplate RestTemplate to configure
-     */
-    @SuppressWarnings({"java:S4830", "java:S1186"}) // Intentionally disabling SSL validation for development
-    private void configureTrustAllCertificates(RestTemplate restTemplate) {
-        try {
-            TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[0];
-                    }
-                    // Intentionally empty - trusting all certificates for development environments
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                        // No validation performed - development only
-                    }
-                    // Intentionally empty - trusting all certificates for development environments
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                        // No validation performed - development only
-                    }
-                }
-            };
-            
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-            
-            HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-            // Intentionally disabling hostname verification for development environments
-            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-            
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("Failed to configure SSL trust all certificates", e);
-        }
     }
 }

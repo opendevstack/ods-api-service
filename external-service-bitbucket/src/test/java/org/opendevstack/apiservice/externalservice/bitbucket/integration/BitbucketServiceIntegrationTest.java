@@ -363,7 +363,6 @@ class BitbucketServiceIntegrationTest {
         badConfig.setBearerToken(null); // force basic auth with bad credentials
         badConfig.setConnectionTimeout(realConfig.getConnectionTimeout());
         badConfig.setReadTimeout(realConfig.getReadTimeout());
-        badConfig.setTrustAllCertificates(realConfig.isTrustAllCertificates());
 
         BitbucketServiceConfiguration badConfiguration = new BitbucketServiceConfiguration();
         badConfiguration.setInstances(java.util.Map.of("unauthorized", badConfig));
