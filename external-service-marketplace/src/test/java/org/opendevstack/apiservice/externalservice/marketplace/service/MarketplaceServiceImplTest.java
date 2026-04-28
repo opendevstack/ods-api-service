@@ -1,10 +1,16 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
@@ -21,6 +27,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -54,11 +61,30 @@ class MarketplaceServiceImplTest {
     @Mock
     private ApiClient apiClient;
 
+    @Mock
+    private OboTokenService oboTokenService;
+
     private MarketplaceService marketplaceService;
 
     @BeforeEach
     void setUp() {
-        marketplaceService = new MarketplaceServiceImpl(clientFactory);
+        marketplaceService = new MarketplaceServiceImpl(clientFactory, oboTokenService);
+
+        // Set up a fake SecurityContext so JwtUtils.getTokenValue() works
+        Jwt jwt = Jwt.withTokenValue("test-jwt-assertion")
+                .header("alg", "RS256")
+                .claim("azp", "test-client-id")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .build();
+        SecurityContext ctx = SecurityContextHolder.createEmptyContext();
+        ctx.setAuthentication(new JwtAuthenticationToken(jwt));
+        SecurityContextHolder.setContext(ctx);
+
+        // Default OBO stub — tests that fail before OBO won't reach this
+        lenient().when(oboTokenService.exchangeToken(anyString(), anyString()))
+                .thenReturn("obo-test-token");
+
         // Stub ApiClient utility methods used by the generated ProjectApi / ServerInfoApi
         // before invokeAPI is reached. Without these, putAll(null) causes NullPointerException.
         lenient().when(apiClient.parameterToMultiValueMap(any(), anyString(), any()))
@@ -67,6 +93,11 @@ class MarketplaceServiceImplTest {
                 .thenReturn(List.of(MediaType.APPLICATION_JSON));
         lenient().when(apiClient.selectHeaderContentType(any()))
                 .thenReturn(MediaType.APPLICATION_JSON);
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     // -------------------------------------------------------------------------
@@ -98,6 +129,7 @@ class MarketplaceServiceImplTest {
         String projectKey = "PROJ";
         String componentId = "test-component";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
 
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
@@ -120,7 +152,7 @@ class MarketplaceServiceImplTest {
         String projectKey = "UNKNOWN";
         String componentId = "test-component";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setAccessToken("1234");
+        instanceConfig.setOboScope("api://test/scope");
         HttpClientErrorException notFoundEx = HttpClientErrorException.create(
                 HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
 
@@ -231,9 +263,10 @@ class MarketplaceServiceImplTest {
         String projectKey = "PROJ";
         String componentId = "test-component";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setAccessToken("1234");
+        instanceConfig.setOboScope("api://test/scope");
 
-        when(clientFactory.getClient(null)).thenReturn(marketplaceApiClient);
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(ResponseEntity.ok(null));
@@ -242,16 +275,16 @@ class MarketplaceServiceImplTest {
         ProjectComponentInfo result = marketplaceService.getProjectComponent(projectKey, componentId);
 
         assertNull(result);
-        verify(clientFactory).getClient(null);
+        verify(clientFactory).getClient("default");
     }
 
     @Test
     void testGetProjectComponent_NullInstanceName_UsesDefaultClient() throws MarketplaceException {
-        // Passing null explicitly as instanceName should also resolve to the default
+        // Passing null explicitly as instanceName should resolve via getDefaultInstance -> getAuthenticatedClient
         String projectKey = "PROJ";
         String componentId = "test-component";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setAccessToken("1234");
+        instanceConfig.setOboScope("api://test/scope");
 
         when(clientFactory.getClient(null)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
@@ -270,7 +303,7 @@ class MarketplaceServiceImplTest {
         String projectKey = "PROJ";
         String componentId = "test-component";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setAccessToken("1234");
+        instanceConfig.setOboScope("api://test/scope");
 
         when(clientFactory.getClient("")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
@@ -289,12 +322,13 @@ class MarketplaceServiceImplTest {
         String projectKey = "ZZZNOPE";
         String componentId = "test-component";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setAccessToken("1234");
+        instanceConfig.setOboScope("api://test/scope");
 
         HttpClientErrorException notFoundEx = HttpClientErrorException.create(
                 HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
 
-        when(clientFactory.getClient(null)).thenReturn(marketplaceApiClient);
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(notFoundEx);
@@ -308,9 +342,10 @@ class MarketplaceServiceImplTest {
     @Test
     void testGetProjectComponent_NoInstanceArg_RestClientException_ThrowsMarketplaceException() throws MarketplaceException {
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setAccessToken("1234");
+        instanceConfig.setOboScope("api://test/scope");
 
-        when(clientFactory.getClient(null)).thenReturn(marketplaceApiClient);
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(new RestClientException("timeout"));
@@ -344,6 +379,7 @@ class MarketplaceServiceImplTest {
         String projectKey = "EDPC";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
         instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
 
         HttpClientErrorException conflictEx = HttpClientErrorException.create(
             HttpStatus.CONFLICT,

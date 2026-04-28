@@ -5,8 +5,6 @@ import org.opendevstack.apiservice.externalservice.marketplace.config.Marketplac
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceServiceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -77,7 +75,6 @@ public class MarketplaceApiClientFactory {
      * @return Configured MarketplaceApiClient
      * @throws MarketplaceException if the instance is not configured
      */
-    @Cacheable(value = "marketplaceApiClients", key = "#instanceName", condition = "#instanceName != null && !#instanceName.isBlank()")
     public MarketplaceApiClient getClient(String instanceName) throws MarketplaceException {
         if (instanceName == null || instanceName.isBlank()) {
             throw new MarketplaceException(
@@ -100,13 +97,26 @@ public class MarketplaceApiClientFactory {
     }
 
     /**
+     * Get a {@link MarketplaceApiClient} for a specific instance with the given bearer token.
+     *
+     * @param instanceName Name of the Marketplace instance
+     * @param bearerToken  Bearer token to use for authentication
+     * @return Configured MarketplaceApiClient with the given bearer token
+     * @throws MarketplaceException if the instance is not configured
+     */
+    public MarketplaceApiClient getClient(String instanceName, String bearerToken) throws MarketplaceException {
+        MarketplaceApiClient client = getClient(instanceName);
+        client.setBearerToken(bearerToken);
+        return client;
+    }
+
+    /**
      * Get the default client, as determined by {@code externalservices.marketplace.default-instance}.
      * Falls back to the first configured instance when {@code default-instance} is not set.
      *
      * @return MarketplaceApiClient for the default instance
      * @throws MarketplaceException if no instances are configured
      */
-    @Cacheable(value = "marketplaceApiClients", key = "'default'")
     public MarketplaceApiClient getClient() throws MarketplaceException {
         String defaultInstanceName = getDefaultInstanceName();
         MarketplaceInstanceConfig instanceConfig = configuration.getInstances().get(defaultInstanceName);
@@ -132,14 +142,6 @@ public class MarketplaceApiClientFactory {
      */
     public boolean hasInstance(String instanceName) {
         return configuration.getInstances().containsKey(instanceName);
-    }
-
-    /**
-     * Clear the client cache (useful for testing or when configuration changes).
-     */
-    @CacheEvict(value = "marketplaceApiClients", allEntries = true)
-    public void clearCache() {
-        log.info("Clearing MarketplaceApiClient cache");
     }
 
     /**
