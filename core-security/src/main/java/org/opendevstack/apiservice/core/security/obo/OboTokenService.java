@@ -27,11 +27,6 @@ public class OboTokenService {
         this.restTemplate = restTemplate;
     }
 
-    OboTokenService(OboTokenProperties properties, RestTemplate restTemplate) {
-        this.properties = properties;
-        this.restTemplate = restTemplate;
-    }
-
     /**
      * Exchanges the given JWT assertion for an OBO (On-Behalf-Of) access token.
      *

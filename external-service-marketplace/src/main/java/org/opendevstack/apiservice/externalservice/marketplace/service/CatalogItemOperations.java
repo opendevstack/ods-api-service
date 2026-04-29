@@ -1,11 +1,13 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 
 import java.util.Base64;
 
 public class CatalogItemOperations {
+
+    private CatalogItemOperations() {
+    }
 
     public static byte[] encodeId(String id) {
         return Base64.getUrlEncoder().encode(id.getBytes());

@@ -431,7 +431,6 @@ class MarketplaceServiceImplTest {
         String instanceName = "dev";
         String catalogItemId = "test-catalog-item-base64-string";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setAccessToken("1234");
         HttpClientErrorException notFoundEx = HttpClientErrorException.create(
                 HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
 

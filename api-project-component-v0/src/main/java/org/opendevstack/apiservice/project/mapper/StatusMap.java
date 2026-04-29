@@ -7,7 +7,10 @@ import java.util.Map;
 
 public class StatusMap {
 
-    static Map<String, ComponentsStatusDTO> STATUS_MAP = new HashMap<>();
+    private StatusMap() {
+    }
+
+    static final Map<String, ComponentsStatusDTO> STATUS_MAP = new HashMap<>();
 
     static {
         STATUS_MAP.put("CREATING", ComponentsStatusDTO.RUNNING);
