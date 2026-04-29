@@ -227,7 +227,16 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                     String.format("OBO scope not configured for Marketplace instance '%s'", instanceName));
         }
         String assertion = JwtUtils.getTokenValue();
-        String oboToken = oboTokenService.exchangeToken(assertion, oboScope);
+        final String oboToken;
+        try {
+            oboToken = oboTokenService.exchangeToken(assertion, oboScope);
+        } catch (RuntimeException ex) {
+            throw new MarketplaceException(
+                    String.format(
+                            "Failed to exchange OBO token for Marketplace instance '%s' with scope '%s'",
+                            instanceName, oboScope),
+                    ex);
+        }
         client.setBearerToken(oboToken);
         return client;
     }
