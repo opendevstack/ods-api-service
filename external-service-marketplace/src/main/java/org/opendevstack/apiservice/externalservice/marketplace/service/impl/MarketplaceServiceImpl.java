@@ -114,17 +114,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             MarketplaceInstanceConfig config = marketplaceClient.getConfig();
 
             String provisionerActionsBaseUrl = config.getProvisionerActionsBaseUrl();
-            String workflow = config.getWorkflow();
-            String odsNamespace = config.getOdsNamespace();
-            String quickstarterRepository = config.getQuickstarterRepository();
             String catalogItemId = config.getCatalogItemId();
 
             ProvisionAction provisionAction = new ProvisionAction();
             provisionAction.setId("PROVISION");
             provisionAction.addParametersItem(new ProvisionActionParameter().name("project_key").type("string").value(projectId));
-            provisionAction.addParametersItem(new ProvisionActionParameter().name("workflow").type("string").value(workflow));
-            provisionAction.addParametersItem(new ProvisionActionParameter().name("ods_namespace").type("string").value(odsNamespace));
-            provisionAction.addParametersItem(new ProvisionActionParameter().name("quickstarter_repo").type("string").value(quickstarterRepository));
             provisionAction.addParametersItem(new ProvisionActionParameter().name("catalog_item_id").type("string").value(catalogItemId));
 
             params.forEach(provisionAction::addParametersItem);

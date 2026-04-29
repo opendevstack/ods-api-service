@@ -30,6 +30,10 @@ public final class ComponentsResponseFactory {
         return buildResponse(HttpStatus.NOT_FOUND, errorKey, path, message);
     }
 
+    public static CreateComponentResponse unprocessableEntity(String path, String message, ComponentErrorKey errorKey) {
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, errorKey, path, message);
+    }
+
     public static CreateComponentResponse internalError(String path, String message, ComponentErrorKey errorKey) {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, errorKey, path, message);
     }

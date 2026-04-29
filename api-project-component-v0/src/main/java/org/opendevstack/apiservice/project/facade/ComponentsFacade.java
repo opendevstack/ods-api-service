@@ -10,6 +10,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.service.CatalogIt
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.opendevstack.apiservice.project.exception.CatalogItemNotFoundException;
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
+import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.exception.ComponentRetrievalException;
@@ -72,6 +73,10 @@ public class ComponentsFacade {
             if (isConflictCause(e)) {
                 throw new ComponentAlreadyExistsException(e.getMessage(), e);
             }
+            if (isBadRequestCause(e)) {
+                String downstreamMessage = extractHttpErrorMessage(e);
+                throw new ComponentBadRequestException(downstreamMessage, e);
+            }
             throw new ComponentCreationException(
                     String.format("Failed to create component for project '%s': %s", projectId, e.getMessage()), e
             );
@@ -87,6 +92,29 @@ public class ComponentsFacade {
             current = current.getCause();
         }
         return false;
+    }
+
+    private boolean isBadRequestCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof HttpClientErrorException.UnprocessableEntity
+                    || current instanceof HttpClientErrorException.BadRequest) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private String extractHttpErrorMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof HttpClientErrorException httpError) {
+                return httpError.getResponseBodyAsString();
+            }
+            current = current.getCause();
+        }
+        return throwable.getMessage();
     }
 
     public Boolean deleteProjectComponent(String projectId, String componentId) {
