@@ -125,11 +125,11 @@ class ProjectsFacadeImplTest {
         request.setRegistrationOnly(true);
         ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
-                "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID);
+                "P3RO01", "name", "desc", null, "CI-001", "eu", "x2test", "owner", CLIENT_ID);
         ProjectRequest serviceRequest = new ProjectRequest();
         ProjectResponse projectResponse = ProjectResponse.builder()
                 .projectId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
-                .projectKey("DLSS01")
+                .projectKey("P3RO01")
                 .status(Status.RUNNING)
                 .build();
         CreateProjectResponse apiResponse = new CreateProjectResponse();
