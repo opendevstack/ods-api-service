@@ -69,7 +69,9 @@ public class MarketplaceApiClientFactory {
 
     /**
      * Get a {@link MarketplaceApiClient} for a specific instance.
-     * If {@code instanceName} is {@code null} or blank, the default instance is used.
+     * If {@code instanceName} is {@code null} or blank, this method will throw a {@link MarketplaceException} 
+     * to avoid ambiguity. The caller should explicitly call {@link #getClient()} to get the default instance client 
+     * in that case.
      *
      * @param instanceName Name of the Marketplace instance, or {@code null}/{@code ""} for the default
      * @return Configured MarketplaceApiClient

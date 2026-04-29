@@ -15,16 +15,6 @@ public class MarketplaceInstanceConfig {
     private String provisionerActionsBaseUrl;
 
     /**
-     * Username for authentication (used with password for basic auth).
-     */
-    private String username;
-
-    /**
-     * Password or personal access token for authentication.
-     */
-    private String password;
-
-    /**
      * Connection timeout in milliseconds (default: 30000)
      */
     private int connectionTimeout = 30000;
