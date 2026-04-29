@@ -37,21 +37,7 @@ public class MarketplaceApiClient {
         // Initialize the generated ApiClient
         this.apiClient = new ApiClient(restTemplate);
 
-        // Configure authentication – prefer bearer token over basic auth
-        if (config.getBearerToken() != null && !config.getBearerToken().isEmpty()) {
-            HttpBearerAuth auth = (HttpBearerAuth) this.apiClient.getAuthentication("bearerAuth");
-            auth.setBearerToken(config.getBearerToken());
-            log.info("MarketplaceApiClient initialized for instance '{}' with bearer token authentication",
-                    instanceName);
-        } else if (config.getUsername() != null && config.getPassword() != null) {
-            this.apiClient.setUsername(config.getUsername());
-            this.apiClient.setPassword(config.getPassword());
-            log.info("MarketplaceApiClient initialized for instance '{}' with basic authentication",
-                    instanceName);
-        } else {
-            log.warn("MarketplaceApiClient initialized for instance '{}' without authentication "
-                    + "(neither bearer token nor username/password provided)", instanceName);
-        }
+        log.info("MarketplaceApiClient initialized for instance '{}'", instanceName);
     }
 
     /**
@@ -69,5 +55,16 @@ public class MarketplaceApiClient {
             }
         }
         log.warn("No MappingJackson2HttpMessageConverter found in RestTemplate for instance '{}'", instanceName);
+    }
+
+    /**
+     * Sets the bearer token for authentication on this client.
+     * This replaces any previously configured bearer token.
+     *
+     * @param bearerToken the bearer token to use for subsequent API calls
+     */
+    public void setBearerToken(String bearerToken) {
+        HttpBearerAuth auth = (HttpBearerAuth) this.apiClient.getAuthentication("bearerAuth");
+        auth.setBearerToken(bearerToken);
     }
 }

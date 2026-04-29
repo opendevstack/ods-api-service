@@ -1,6 +1,8 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
+import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
@@ -30,9 +32,12 @@ import java.util.Set;
 public class MarketplaceServiceImpl implements MarketplaceService {
 
     private final MarketplaceApiClientFactory clientFactory;
+    private final OboTokenService oboTokenService;
 
-    public MarketplaceServiceImpl(MarketplaceApiClientFactory clientFactory) {
+    public MarketplaceServiceImpl(MarketplaceApiClientFactory clientFactory,
+                                  OboTokenService oboTokenService) {
         this.clientFactory = clientFactory;
+        this.oboTokenService = oboTokenService;
         log.info("MarketplaceServiceImpl initialized");
     }
 
@@ -75,7 +80,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public ProjectComponentExtendedInfo getProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException {
         log.debug("Marketplace service GET component with id {} for project {} in instance {} ", componentId, projectId, instanceName);
         try {
-            MarketplaceApiClient marketplaceClient = clientFactory.getClient(instanceName);
+            MarketplaceApiClient marketplaceClient = getAuthenticatedClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
             ProjectComponentsApi projectComponentsApi = new ProjectComponentsApi(apiClient);
             apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
@@ -104,12 +109,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public boolean provisionProjectComponent(String instanceName, String projectId, List<ProvisionActionParameter> params) throws MarketplaceException {
         log.debug("Marketplace service PROVISION component for project {}: ", projectId);
         try {
-            MarketplaceApiClient marketplaceClient = clientFactory.getClient(instanceName);
+            MarketplaceApiClient marketplaceClient = getAuthenticatedClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
             MarketplaceInstanceConfig config = marketplaceClient.getConfig();
 
             String provisionerActionsBaseUrl = config.getProvisionerActionsBaseUrl();
-            String accessToken = config.getAccessToken();
             String workflow = config.getWorkflow();
             String odsNamespace = config.getOdsNamespace();
             String quickstarterRepository = config.getQuickstarterRepository();
@@ -118,10 +122,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             ProvisionAction provisionAction = new ProvisionAction();
             provisionAction.setId("PROVISION");
             provisionAction.addParametersItem(new ProvisionActionParameter().name("project_key").type("string").value(projectId));
-
-            //TODO: currently in dev is not working but, we need to add 
-            //TODO: the error 500  on POST request for "https://component-provisioner-devstack-dev.apps.eu-dev.ocp.aws.boehringer.com/v1/provision-actions": "{"message":"Duplicate key access_token (attempted merging values [...]])"}"
-//            provisionAction.addParametersItem(new ProvisionActionParameter().name("access_token").type("string").value(accessToken));
             provisionAction.addParametersItem(new ProvisionActionParameter().name("workflow").type("string").value(workflow));
             provisionAction.addParametersItem(new ProvisionActionParameter().name("ods_namespace").type("string").value(odsNamespace));
             provisionAction.addParametersItem(new ProvisionActionParameter().name("quickstarter_repo").type("string").value(quickstarterRepository));
@@ -156,7 +156,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public boolean deleteProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException {
         log.debug("Marketplace service DELETE component {} for project {}: ", componentId, projectId);
         try {
-            MarketplaceApiClient marketplaceClient = clientFactory.getClient(instanceName);
+            MarketplaceApiClient marketplaceClient = getAuthenticatedClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
 
             ProvisionResultsApi provisionResultsApi = new ProvisionResultsApi(apiClient);
@@ -186,7 +186,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public void registerProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException {
         log.debug("Marketplace service REGISTER component {} for project {}: ", componentId, projectId);
         try {
-            MarketplaceApiClient marketplaceClient = clientFactory.getClient(instanceName);
+            MarketplaceApiClient marketplaceClient = getAuthenticatedClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
 
             ProvisionResultsApi provisionResultsApi = new ProvisionResultsApi(apiClient);
@@ -238,5 +238,31 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     @Override
     public boolean hasInstance(String instanceName) {
         return clientFactory.hasInstance(instanceName);
+    }
+
+    /**
+     * Creates a {@link MarketplaceApiClient} authenticated with an OBO token
+     * obtained from the current request's JWT.
+     */
+    private MarketplaceApiClient getAuthenticatedClient(String instanceName) throws MarketplaceException {
+        MarketplaceApiClient client = clientFactory.getClient(instanceName);
+        String oboScope = client.getConfig().getOboScope();
+        if (oboScope == null || oboScope.isBlank()) {
+            throw new MarketplaceException(
+                    String.format("OBO scope not configured for Marketplace instance '%s'", instanceName));
+        }
+        String assertion = JwtUtils.getTokenValue();
+        final String oboToken;
+        try {
+            oboToken = oboTokenService.exchangeToken(assertion, oboScope);
+        } catch (RuntimeException ex) {
+            throw new MarketplaceException(
+                    String.format(
+                            "Failed to exchange OBO token for Marketplace instance '%s' with scope '%s'",
+                            instanceName, oboScope),
+                    ex);
+        }
+        client.setBearerToken(oboToken);
+        return client;
     }
 }
