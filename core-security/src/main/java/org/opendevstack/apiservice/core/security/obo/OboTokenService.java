@@ -22,9 +22,9 @@ public class OboTokenService {
     private final RestTemplate restTemplate;
 
     @Autowired
-    public OboTokenService(OboTokenProperties properties) {
+    public OboTokenService(OboTokenProperties properties, RestTemplate restTemplate) {
         this.properties = properties;
-        this.restTemplate = new RestTemplate();
+        this.restTemplate = restTemplate;
     }
 
     OboTokenService(OboTokenProperties properties, RestTemplate restTemplate) {
