@@ -10,6 +10,8 @@ import org.opendevstack.apiservice.externalservice.marketplace.client.Marketplac
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.ApiClient;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.service.impl.MarketplaceServiceImpl;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +29,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -131,7 +134,7 @@ class MarketplaceServiceImplTest {
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         // Act
-        ProjectComponentInfo result = marketplaceService.getProjectComponent(instanceName, projectKey, componentId);
+        ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(instanceName, projectKey, componentId);
 
         // Assert
         assertNull(result);
@@ -239,7 +242,7 @@ class MarketplaceServiceImplTest {
                 .thenReturn(ResponseEntity.ok(null));
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
-        ProjectComponentInfo result = marketplaceService.getProjectComponent(projectKey, componentId);
+        ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(projectKey, componentId);
 
         assertNull(result);
         verify(clientFactory).getClient(null);
@@ -259,7 +262,7 @@ class MarketplaceServiceImplTest {
                 .thenReturn(ResponseEntity.ok(null));
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
-        ProjectComponentInfo result = marketplaceService.getProjectComponent(null, projectKey, componentId);
+        ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(null, projectKey, componentId);
 
         assertNull(result);
         verify(clientFactory).getClient(null);
@@ -278,7 +281,7 @@ class MarketplaceServiceImplTest {
                 .thenReturn(ResponseEntity.ok(null));
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
-        ProjectComponentInfo result = marketplaceService.getProjectComponent("", projectKey, componentId);
+        ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent("", projectKey, componentId);
 
         assertNull(result);
         verify(clientFactory).getClient("");
@@ -300,7 +303,7 @@ class MarketplaceServiceImplTest {
                 .thenThrow(notFoundEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
-        ProjectComponentInfo result = marketplaceService.getProjectComponent(projectKey, componentId);
+        ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(projectKey, componentId);
 
         assertNull(result);
     }
@@ -363,6 +366,51 @@ class MarketplaceServiceImplTest {
             marketplaceService.provisionProjectComponent(instanceName, projectKey, List.of()));
 
         assertEquals("This component name already exists, please choose another name.", exception.getMessage());
+    }
+
+    @Test
+    void testGetCatalogItem_RestClientException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String catalogItemId = "test-catalog-item-base64-string";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new RestClientException("Connection failed"));
+
+        // Act & Assert
+        assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getCatalogItem(instanceName, catalogItemId));
+
+        verify(clientFactory).getClient(instanceName);
+        verify(marketplaceApiClient).getApiClient();
+    }
+
+    @Test
+    void testGetCatalogItem_NotFound_ReturnsNull() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String catalogItemId = "test-catalog-item-base64-string";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setAccessToken("1234");
+        HttpClientErrorException notFoundEx = HttpClientErrorException.create(
+                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(notFoundEx);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+        // Act
+        CatalogItem result = marketplaceService.getCatalogItem(instanceName, catalogItemId);
+
+        // Assert
+        assertNull(result);
+        verify(clientFactory).getClient(instanceName);
     }
 
 }

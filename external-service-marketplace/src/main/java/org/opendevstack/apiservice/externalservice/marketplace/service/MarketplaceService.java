@@ -2,7 +2,8 @@ package org.opendevstack.apiservice.externalservice.marketplace.service;
 
 import org.opendevstack.apiservice.externalservice.api.ExternalService;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 
 import java.util.List;
@@ -16,9 +17,13 @@ public interface MarketplaceService extends ExternalService {
 
     String getDefaultInstance() throws MarketplaceException;
 
-    ProjectComponentInfo getProjectComponent(String projectId, String componentId) throws MarketplaceException;
+    ProjectComponentExtendedInfo getProjectComponent(String projectId, String componentId) throws MarketplaceException;
 
-    ProjectComponentInfo getProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException;
+    ProjectComponentExtendedInfo getProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException;
+
+    CatalogItem getCatalogItem(String catalogItemId) throws MarketplaceException;
+
+    CatalogItem getCatalogItem(String instanceName, String catalogItemId) throws MarketplaceException;
 
     boolean provisionProjectComponent(String projectId, List<ProvisionActionParameter> params) throws MarketplaceException;
 

@@ -8,6 +8,8 @@ import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsExcep
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentErrorKey;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
+import org.opendevstack.apiservice.project.exception.ComponentRetrievalException;
+import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -137,6 +139,16 @@ public class ProjectComponentsExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(ComponentRetrievalException.class)
+    public ResponseEntity<Component> handleComponentRetrievalException(
+            ComponentRetrievalException ex,
+            HttpServletRequest request) {
+
+        log.error("Component retrieval failed: {}", ex.getMessage(), ex);
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
 
     @ExceptionHandler(ComponentAlreadyExistsException.class)

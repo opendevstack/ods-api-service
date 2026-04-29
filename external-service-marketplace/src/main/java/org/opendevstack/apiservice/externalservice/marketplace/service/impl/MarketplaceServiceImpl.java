@@ -6,12 +6,14 @@ import org.opendevstack.apiservice.externalservice.marketplace.client.Marketplac
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.ApiClient;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.CatalogItemsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.ProjectComponentsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.ProvisionResultsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.ProvisionerActionsApi;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CreateIncidentAction;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.NotifyProvisioningStatusUpdateRequest;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionAction;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionResponse;
@@ -34,27 +36,50 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         log.info("MarketplaceServiceImpl initialized");
     }
 
+
     @Override
-    public ProjectComponentInfo getProjectComponent(String projectId, String componentId) throws MarketplaceException {
+    public CatalogItem getCatalogItem(String catalogItemId) throws MarketplaceException {
+        return getCatalogItem(getDefaultInstance(), catalogItemId);
+    }
+
+    @Override
+    public CatalogItem getCatalogItem(String instanceName, String catalogItemId) throws MarketplaceException {
+        log.debug("Marketplace service GET catalog item with id {} in instance {} ", catalogItemId, instanceName);
+        try {
+            MarketplaceApiClient marketplaceClient = clientFactory.getClient(instanceName);
+            ApiClient apiClient = marketplaceClient.getApiClient();
+            CatalogItemsApi catalogItemsApi = new CatalogItemsApi(apiClient);
+            apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
+            return catalogItemsApi.getCatalogItemById(catalogItemId);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.debug("Catalog item with id '{}' not found in Marketplace instance '{}'",
+                    catalogItemId, instanceName);
+            return null;
+        } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
+            throw new MarketplaceException(
+                    String.format("Access denied when getting catalog item '%s' in instance '%s'",
+                            catalogItemId, instanceName), e);
+        } catch (RestClientException e) {
+            throw new MarketplaceException(
+                    String.format("Failed to retrieve catalog item '%s' in instance '%s'",
+                            catalogItemId, instanceName), e);
+        }
+    }
+
+    @Override
+    public ProjectComponentExtendedInfo getProjectComponent(String projectId, String componentId) throws MarketplaceException {
         return getProjectComponent(getDefaultInstance(), projectId, componentId);
     }
 
     @Override
-    public ProjectComponentInfo getProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException {
+    public ProjectComponentExtendedInfo getProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException {
         log.debug("Marketplace service GET component with id {} for project {} in instance {} ", componentId, projectId, instanceName);
         try {
             MarketplaceApiClient marketplaceClient = clientFactory.getClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
             ProjectComponentsApi projectComponentsApi = new ProjectComponentsApi(apiClient);
             apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
-            List<ProjectComponentInfo> components = projectComponentsApi.getProjectComponents(projectId);
-            if (components == null || components.isEmpty()) {
-                return null;
-            }
-            return components.stream()
-                    .filter(component -> component.getComponentId().equals(componentId))
-                    .findFirst()
-                    .orElse(null);
+            return projectComponentsApi.getProjectComponentById(projectId, componentId);
         } catch (HttpClientErrorException.NotFound e) {
             log.debug("Component with id '{}' not found in Marketplace instance '{}' for project '{}'",
                     componentId, instanceName, projectId);

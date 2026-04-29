@@ -3,12 +3,16 @@ package org.opendevstack.apiservice.project.facade;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
+import org.opendevstack.apiservice.externalservice.marketplace.service.CatalogItemOperations;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
+import org.opendevstack.apiservice.project.exception.CatalogItemNotFoundException;
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
+import org.opendevstack.apiservice.project.exception.ComponentRetrievalException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
@@ -26,15 +30,32 @@ public class ComponentsFacade {
 
     private final MarketplaceMapper marketplaceMapper;
 
-    public Component getProjectComponent(String projectId, String componentId) throws MarketplaceException {
-        ProjectComponentInfo marketplaceComponent = marketplaceExternalService.getProjectComponent(projectId, componentId);
-        if (marketplaceComponent == null) {
-            log.info("Marketplace component with id {} not found", componentId);
-            throw new ComponentNotFoundException(
-                    String.format("Component '%s' not found for project '%s'", componentId, projectId)
+    public Component getProjectComponent(String projectId, String componentId) {
+        try {
+            ProjectComponentExtendedInfo marketplaceComponent = marketplaceExternalService.getProjectComponent(projectId, componentId);
+            if (marketplaceComponent == null) {
+                log.info("Marketplace component with id {} not found", componentId);
+                throw new ComponentNotFoundException(
+                        String.format("Component '%s' not found for project '%s'", componentId, projectId)
+                );
+            }
+            String catalogItemId = CatalogItemOperations.buildCatalogItemId(marketplaceComponent);
+            CatalogItem catalogItem = marketplaceExternalService.getCatalogItem(catalogItemId);
+            if (catalogItem == null) {
+                log.info("Catalog item with id {} not found", catalogItemId);
+                throw new CatalogItemNotFoundException(
+                        String.format("Catalog item with id '%s' not found", catalogItemId)
+                );
+            }
+            Component component = marketplaceMapper.mapMarketplaceComponentToV0Component(marketplaceComponent, catalogItem);
+            log.info("Marketplace v0 component retrieved: {}", component);
+            return component;
+        } catch (MarketplaceException e) {
+            log.error("Failed to retrieve component with id {} for project with id {}: {}", componentId, projectId, e.getMessage(), e);
+            throw new ComponentRetrievalException(
+                    String.format("Failed to retrieve component '%s' for project '%s': %s", componentId, projectId, e.getMessage()), e
             );
         }
-        return marketplaceMapper.mapMarketplaceComponentToV0Component(marketplaceComponent);
     }
 
     public void provisionProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {

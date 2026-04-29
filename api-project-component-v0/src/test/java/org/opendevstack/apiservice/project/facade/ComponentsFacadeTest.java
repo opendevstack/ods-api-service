@@ -9,7 +9,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
@@ -25,9 +26,11 @@ import org.springframework.web.client.HttpClientErrorException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestCatalogItem;
 import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestCreateComponentRequest;
 import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestMarketplaceComponent;
 
@@ -56,10 +59,13 @@ class ComponentsFacadeTest {
 
     @Test
     void get_project_component_returns_mapped_component_when_marketplace_returns_data() throws MarketplaceException {
-        ProjectComponentInfo marketplaceComponent = buildTestMarketplaceComponent();
+        ProjectComponentExtendedInfo marketplaceComponent = buildTestMarketplaceComponent();
+        CatalogItem testCatalogItem = buildTestCatalogItem();
 
         when(marketplaceExternalService.getProjectComponent("testProject", "testComponent"))
                 .thenReturn(marketplaceComponent);
+        when(marketplaceExternalService.getCatalogItem(anyString()))
+                .thenReturn(testCatalogItem);
 
         Component retrievedComponent = componentsFacade.getProjectComponent("testProject", "testComponent");
 

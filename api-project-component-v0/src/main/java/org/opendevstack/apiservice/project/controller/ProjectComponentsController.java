@@ -40,23 +40,15 @@ public class ProjectComponentsController implements ProjectComponentsApi {
 
     @Override
     public ResponseEntity<Component> getProjectComponent(String projectId, String componentId) {
-        try {
-
-            Component component = componentsFacade.getProjectComponent(projectId, componentId);
-            if (component == null) {
-                throw new ComponentNotFoundException(
-                        String.format("Component '%s' not found for project '%s'", componentId, projectId)
-                );
-            }
-
-            log.info("Retrieved component '{}' for project '{}': {}", componentId, projectId, component);
-            return ResponseEntity.status(HttpStatus.OK).body(component);
-        } catch (MarketplaceException e) { //TODO use error handler
-            log.error("Error while retrieving component '{}' for project '{}': {}", componentId, projectId, e.getMessage(), e);
+        Component component = componentsFacade.getProjectComponent(projectId, componentId);
+        if (component == null) {
             throw new ComponentNotFoundException(
-                    String.format("Failed to retrieve component '%s' for project '%s': %s", componentId, projectId, e.getMessage()), e
+                    String.format("Component '%s' not found for project '%s'", componentId, projectId)
             );
         }
+
+        log.info("Retrieved component '{}' for project '{}': {}", componentId, projectId, component);
+        return ResponseEntity.status(HttpStatus.OK).body(component);
     }
 
 }
