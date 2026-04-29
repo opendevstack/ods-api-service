@@ -36,11 +36,5 @@ public class MarketplaceInstanceConfig {
      */
     private String oboScope;
     
-    private String workflow;
-    
-    private String odsNamespace;
-    
-    private String quickstarterRepository;
-    
     private String catalogItemId;
 }
