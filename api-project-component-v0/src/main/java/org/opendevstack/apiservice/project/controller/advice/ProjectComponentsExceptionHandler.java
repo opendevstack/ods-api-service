@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.project.controller.ComponentsResponseFactory;
 import org.opendevstack.apiservice.project.controller.ProjectComponentsController;
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
+import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentErrorKey;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
@@ -165,6 +166,22 @@ public class ProjectComponentsExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(ComponentBadRequestException.class)
+    public ResponseEntity<CreateComponentResponse> handleComponentBadRequestException(
+            ComponentBadRequestException ex,
+            HttpServletRequest request) {
+
+        log.warn("Bad request from downstream service: {}", ex.getMessage());
+
+        CreateComponentResponse response = ComponentsResponseFactory.unprocessableEntity(
+                request.getRequestURI(),
+                ex.getMessage(),
+                ComponentErrorKey.INVALID_PARAMETERS
+        );
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
     }
 
     @ExceptionHandler(Exception.class)
