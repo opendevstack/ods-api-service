@@ -157,7 +157,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <openapiNormalizer>FILTER=operationId:getProjectComponents|getProjectComponentById|getCatalogItemById</openapiNormalizer>
+                            <openapiNormalizer>FILTER=operationId:getProjectComponents|getProjectComponentById|getCatalogItemById|getCatalogItemBySlug</openapiNormalizer>
                             <generatorName>java</generatorName>
                             <output>${project.basedir}</output>
                             <library>resttemplate</library>

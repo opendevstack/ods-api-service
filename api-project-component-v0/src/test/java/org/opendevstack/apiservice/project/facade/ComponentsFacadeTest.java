@@ -92,14 +92,10 @@ class ComponentsFacadeTest {
         CreateComponentRequest request = buildTestCreateComponentRequest();
 
         when(marketplaceExternalService.provisionProjectComponent(eq("testProject"), anyList()))
-                .thenReturn(true); //TODO fix this to return more info
+                .thenReturn(true);
 
         componentsFacade.provisionProjectComponent("testProject", request);
 
-        //TODO fix this to return more info and assert on it
-//        assertThat(createdComponent).isNotNull();
-//        assertThat(createdComponent.getId()).isEqualTo(marketplaceComponent.getComponentId().toString());
-//        assertThat(createdComponent.getStatus()).isEqualTo(ComponentsStatusDTO.RUNNING);
         verify(marketplaceExternalService).provisionProjectComponent(eq("testProject"), anyList());
     }
 
@@ -108,7 +104,7 @@ class ComponentsFacadeTest {
         CreateComponentRequest request = buildTestCreateComponentRequest();
 
         when(marketplaceExternalService.provisionProjectComponent(eq("testProject"), anyList()))
-                .thenReturn(false); //TODO fix this to return more info
+                .thenReturn(false);
 
         assertThatThrownBy(() -> componentsFacade.provisionProjectComponent("testProject", request))
                 .isInstanceOf(ComponentCreationException.class)

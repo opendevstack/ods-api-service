@@ -1,12 +1,10 @@
 package org.opendevstack.apiservice.project.mapper;
 
-import lombok.extern.slf4j.Slf4j;
-import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItemUserAction;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItemUserActionParameter;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.project.model.Component;
@@ -14,11 +12,14 @@ import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 import org.opendevstack.apiservice.project.model.EnvironmentsDTO;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Mapper(componentModel = "spring")
 public interface MarketplaceMapper {
+
+    String DEFAULT_PARAMETER_TYPE = "string";
 
     default Component mapMarketplaceComponentToV0Component(ProjectComponentExtendedInfo source, CatalogItem catalogItem) throws MarketplaceException {
         Component component = new Component();
@@ -40,32 +41,53 @@ public interface MarketplaceMapper {
         return component;
     }
 
-    default List<ProvisionActionParameter> mapCreateComponentRequestToCreateComponentParameterList(CreateComponentRequest createComponentRequest) {
+    default List<ProvisionActionParameter> mapCreateComponentRequestToCreateComponentParameterList(
+            CreateComponentRequest createComponentRequest, CatalogItem catalogItem) {
         if (createComponentRequest == null) {
             return List.of();
         }
 
+        Map<String, String> parameterTypesByName = buildParameterTypeIndex(catalogItem);
+
         List<ProvisionActionParameter> parameters = new ArrayList<>();
-        parameters.add(createParameter("component_id", createComponentRequest.getName(), "string"));
-        parameters.add(createParameter("component_type", createComponentRequest.getProductId(), "string"));
+        parameters.add(createParameter("component_id", createComponentRequest.getName(), DEFAULT_PARAMETER_TYPE));
+        parameters.add(createParameter("catalog_item_slug", createComponentRequest.getProductId(), DEFAULT_PARAMETER_TYPE));
 
         if (createComponentRequest.getParams() != null && !createComponentRequest.getParams().isEmpty()) {
-            parameters.addAll(mapEntriesToCreateComponentParameterList(createComponentRequest.getParams().entrySet().stream().toList()));
+            createComponentRequest.getParams().forEach((name, value) -> {
+                String type = parameterTypesByName.getOrDefault(name, DEFAULT_PARAMETER_TYPE);
+                parameters.add(createParameter(name, value, type));
+            });
         }
 
         return parameters;
     }
 
-    default ProvisionActionParameter createParameter(String name, String value, String type) {
+    default ProvisionActionParameter createParameter(String name, Object value, String type) {
         return new ProvisionActionParameter().name(name).type(type).value(value);
     }
 
-    @IterableMapping(qualifiedByName = "toCreateComponentParameter")
-    List<ProvisionActionParameter> mapEntriesToCreateComponentParameterList(List<Map.Entry<String, Object>> entries);
-
-    @Named("toCreateComponentParameter")
-    @Mapping(target = "name", source = "key")
-    @Mapping(target = "type", constant = "string")
-    @Mapping(target = "value", expression = "java(String.valueOf(entry.getValue()))")
-    ProvisionActionParameter toCreateComponentParameter(Map.Entry<String, Object> entry);
+    /**
+     * Builds a map of parameter name -> type from the catalog item user actions.
+     * The type comes from the {@link CatalogItemUserActionParameter#getType()} value
+     * (e.g. {@code string}, {@code boolean}, {@code multiplelist}, {@code singlelist}, ...).
+     */
+    private static Map<String, String> buildParameterTypeIndex(CatalogItem catalogItem) {
+        Map<String, String> index = new HashMap<>();
+        if (catalogItem == null || catalogItem.getUserActions() == null) {
+            return index;
+        }
+        for (CatalogItemUserAction action : catalogItem.getUserActions()) {
+            if (action == null || action.getParameters() == null) {
+                continue;
+            }
+            for (CatalogItemUserActionParameter param : action.getParameters()) {
+                if (param == null || param.getName() == null || param.getType() == null) {
+                    continue;
+                }
+                index.putIfAbsent(param.getName(), param.getType());
+            }
+        }
+        return index;
+    }
 }

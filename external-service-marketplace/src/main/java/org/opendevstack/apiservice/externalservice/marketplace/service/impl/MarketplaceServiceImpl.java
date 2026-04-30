@@ -51,7 +51,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public CatalogItem getCatalogItem(String instanceName, String catalogItemId) throws MarketplaceException {
         log.debug("Marketplace service GET catalog item with id {} in instance {} ", catalogItemId, instanceName);
         try {
-            MarketplaceApiClient marketplaceClient = clientFactory.getClient(instanceName);
+            MarketplaceApiClient marketplaceClient = getAuthenticatedClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
             CatalogItemsApi catalogItemsApi = new CatalogItemsApi(apiClient);
             apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
@@ -68,6 +68,35 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new MarketplaceException(
                     String.format("Failed to retrieve catalog item '%s' in instance '%s'",
                             catalogItemId, instanceName), e);
+        }
+    }
+
+    @Override
+    public CatalogItem getCatalogItemBySlug(String slug) throws MarketplaceException {
+        return getCatalogItemBySlug(getDefaultInstance(), slug);
+    }
+
+    @Override
+    public CatalogItem getCatalogItemBySlug(String instanceName, String slug) throws MarketplaceException {
+        log.debug("Marketplace service GET catalog item with slug {} in instance {} ", slug, instanceName);
+        try {
+            MarketplaceApiClient marketplaceClient = getAuthenticatedClient(instanceName);
+            ApiClient apiClient = marketplaceClient.getApiClient();
+            CatalogItemsApi catalogItemsApi = new CatalogItemsApi(apiClient);
+            apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
+            return catalogItemsApi.getCatalogItemBySlug(slug);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.debug("Catalog item with slug '{}' not found in Marketplace instance '{}'",
+                    slug, instanceName);
+            return null;
+        } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
+            throw new MarketplaceException(
+                    String.format("Access denied when getting catalog item with slug '%s' in instance '%s'",
+                            slug, instanceName), e);
+        } catch (RestClientException e) {
+            throw new MarketplaceException(
+                    String.format("Failed to retrieve catalog item with slug '%s' in instance '%s'",
+                            slug, instanceName), e);
         }
     }
 
@@ -106,7 +135,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
-    public boolean provisionProjectComponent(String instanceName, String projectId, List<ProvisionActionParameter> params) throws MarketplaceException {
+    public boolean provisionProjectComponent(String instanceName, 
+                                             String projectId,
+                                             List<ProvisionActionParameter> params) 
+            throws MarketplaceException {
         log.debug("Marketplace service PROVISION component for project {}: ", projectId);
         try {
             MarketplaceApiClient marketplaceClient = getAuthenticatedClient(instanceName);
@@ -114,12 +146,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             MarketplaceInstanceConfig config = marketplaceClient.getConfig();
 
             String provisionerActionsBaseUrl = config.getProvisionerActionsBaseUrl();
-            String catalogItemId = config.getCatalogItemId();
 
             ProvisionAction provisionAction = new ProvisionAction();
             provisionAction.setId("PROVISION");
             provisionAction.addParametersItem(new ProvisionActionParameter().name("project_key").type("string").value(projectId));
-            provisionAction.addParametersItem(new ProvisionActionParameter().name("catalog_item_id").type("string").value(catalogItemId));
 
             params.forEach(provisionAction::addParametersItem);
 
