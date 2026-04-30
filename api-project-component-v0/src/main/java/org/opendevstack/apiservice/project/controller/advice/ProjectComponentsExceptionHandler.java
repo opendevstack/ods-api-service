@@ -143,13 +143,19 @@ public class ProjectComponentsExceptionHandler {
     }
 
     @ExceptionHandler(ComponentRetrievalException.class)
-    public ResponseEntity<Component> handleComponentRetrievalException(
+    public ResponseEntity<CreateComponentResponse> handleComponentRetrievalException(
             ComponentRetrievalException ex,
             HttpServletRequest request) {
 
         log.error("Component retrieval failed: {}", ex.getMessage(), ex);
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        CreateComponentResponse response = ComponentsResponseFactory.internalError(
+                request.getRequestURI(),
+                ex.getMessage(),
+                ComponentErrorKey.INTERNAL_ERROR
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(ComponentAlreadyExistsException.class)
