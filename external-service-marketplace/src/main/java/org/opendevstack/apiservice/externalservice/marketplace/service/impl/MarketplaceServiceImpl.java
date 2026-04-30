@@ -157,7 +157,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             apiClient.setBasePath(provisionerActionsBaseUrl);
 
             ProvisionActionResponse response = provisionerActionsApi.triggerProvisionAction(provisionAction);
-            return !response.getFailed();
+            return !Boolean.TRUE.equals(response.getFailed());
         } catch (HttpClientErrorException.Conflict e) {
             throw new MarketplaceException("This component name already exists, please choose another name.", e);
         } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
@@ -189,7 +189,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
             CreateIncidentAction deleteAction = new CreateIncidentAction();
             ProvisionActionResponse response = provisionResultsApi.createIncident(projectId, componentId, deleteAction);
-            return !response.getFailed();
+            return !Boolean.TRUE.equals(response.getFailed());
         } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
             throw new MarketplaceException(
                     String.format("Access denied when deleting project component '%s' in project '%s' and instance '%s'",

@@ -31,13 +31,17 @@ public interface MarketplaceMapper {
         if (component.getStatus() == null) {
             throw new MarketplaceException("No status mapping found for status " + source.getStatus());
         }
-        component.setProductId(catalogItem.getId());
-        component.setProductName(catalogItem.getTitle());
-        component.setProductDescription(catalogItem.getShortDescription());
+        if (catalogItem != null) {
+            component.setProductId(catalogItem.getId());
+            component.setProductName(catalogItem.getTitle());
+            component.setProductDescription(catalogItem.getShortDescription());
+        }
 
-        source.getParameters().forEach(
-                param -> component.putParamsItem(param.getName(), param.getValues())
-        );
+        if (source.getParameters() != null) {
+            source.getParameters().forEach(
+                    param -> component.putParamsItem(param.getName(), param.getValues())
+            );
+        }
         return component;
     }
 

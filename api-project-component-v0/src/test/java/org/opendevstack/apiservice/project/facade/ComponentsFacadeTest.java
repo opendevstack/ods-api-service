@@ -1,12 +1,10 @@
 package org.opendevstack.apiservice.project.facade;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
@@ -44,17 +42,9 @@ class ComponentsFacadeTest {
 
     private ComponentsFacade componentsFacade;
 
-    private AutoCloseable openMocks;
-
     @BeforeEach
     void setup() {
-        openMocks = MockitoAnnotations.openMocks(this);
         componentsFacade = new ComponentsFacade(marketplaceExternalService, marketplaceMapper);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        openMocks.close();
     }
 
     @Test
