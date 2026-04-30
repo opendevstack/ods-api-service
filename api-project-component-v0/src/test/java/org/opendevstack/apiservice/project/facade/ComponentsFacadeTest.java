@@ -15,7 +15,6 @@ import org.opendevstack.apiservice.externalservice.marketplace.service.Marketpla
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
-import org.opendevstack.apiservice.project.exception.ComponentRetrievalException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.ComponentsStatusDTO;
