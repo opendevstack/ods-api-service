@@ -101,10 +101,14 @@ clean: check-maven
 		! -path "./external-service-marketplace/src/main/java/org/opendevstack/apiservice/externalservice/marketplace/model" \
 		! -path "./external-service-uipath/src/main/java/org/opendevstack/apiservice/externalservice/uipath/model" \
 		-prune -exec rm -rf {} +
+	@echo "$(GREEN)✓ Clean complete$(NC)"
+
+## Remove local Maven cache for org.opendevstack.apiservice
+clean-cache:
 	@echo "$(BLUE)Removing local Maven cache for org.opendevstack.apiservice...$(NC)"
 	@rm -rf "$$HOME/.m2/repository/org/opendevstack/apiservice"
 	@rm -rf "$$HOME/.m2/repositories/org/opendevstack/apiservice"
-	@echo "$(GREEN)✓ Clean complete$(NC)"
+	@echo "$(GREEN)✓ Maven cache clean complete$(NC)"
 
 ## Compile the project
 compile: check-java check-maven
