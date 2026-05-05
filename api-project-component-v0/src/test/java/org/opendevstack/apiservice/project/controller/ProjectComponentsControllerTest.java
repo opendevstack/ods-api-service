@@ -107,4 +107,28 @@ class ProjectComponentsControllerTest {
                 .hasMessage("Component '" + componentId + "' not found for project 'projectId'");
         verify(componentsFacade).getProjectComponent(projectId, componentId);
     }
+
+    @Test
+    void delete_project_component_returns_ok_when_component_exists() throws MarketplaceException {
+        String projectId = "projectId";
+        String componentId = "test-component-delete";
+
+        ResponseEntity<Void> response = projectComponentsController.deleteProjectComponent(projectId, componentId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(null);
+        verify(componentsFacade).deleteProjectComponent(projectId, componentId);
+    }
+
+    //TODO Enable this test once the API does throw an error
+//    @Test
+//    void delete_project_component_throws_not_found_when_component_does_not_exist() throws MarketplaceException {
+//        String projectId = "projectId";
+//        String componentId = "test-component-delete";
+//
+//        assertThatThrownBy(() -> projectComponentsController.deleteProjectComponent(projectId, componentId))
+//                .isInstanceOf(ComponentNotFoundException.class)
+//                .hasMessage("Component '" + componentId + "' not found for project 'projectId'");
+//        verify(componentsFacade).deleteProjectComponent(projectId, componentId);
+//    }
 }

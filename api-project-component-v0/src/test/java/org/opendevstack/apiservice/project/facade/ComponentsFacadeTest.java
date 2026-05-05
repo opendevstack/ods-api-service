@@ -14,6 +14,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.Pro
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
+import org.opendevstack.apiservice.project.exception.ComponentDeletionException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
@@ -115,23 +116,39 @@ class ComponentsFacadeTest {
         verify(marketplaceExternalService).provisionProjectComponent(eq("testProject"), anyList());
     }
 
-        @Test
-        void create_project_component_throws_already_exists_when_marketplace_returns_conflict() throws MarketplaceException {
+    @Test
+    void create_project_component_throws_already_exists_when_marketplace_returns_conflict() throws MarketplaceException {
         CreateComponentRequest request = buildTestCreateComponentRequest();
         HttpClientErrorException conflict = HttpClientErrorException.Conflict.create(
-            HttpStatus.CONFLICT,
-            "Conflict",
-            HttpHeaders.EMPTY,
-            new byte[0],
-            null
+                HttpStatus.CONFLICT,
+                "Conflict",
+                HttpHeaders.EMPTY,
+                new byte[0],
+                null
         );
 
         when(marketplaceExternalService.provisionProjectComponent(eq("testProject"), anyList()))
-            .thenThrow(new MarketplaceException("This component name already exists, please choose another name.", conflict));
+                .thenThrow(new MarketplaceException("This component name already exists, please choose another name.", conflict));
 
         assertThatThrownBy(() -> componentsFacade.provisionProjectComponent("testProject", request))
-            .isInstanceOf(ComponentAlreadyExistsException.class)
-            .hasMessage("This component name already exists, please choose another name.");
+                .isInstanceOf(ComponentAlreadyExistsException.class)
+                .hasMessage("This component name already exists, please choose another name.");
         verify(marketplaceExternalService).provisionProjectComponent(eq("testProject"), anyList());
-        }
+    }
+
+    @Test
+    void delete_project_component_ends_successfully_for_existing_component() throws MarketplaceException {
+        componentsFacade.deleteProjectComponent("testProject", "testComponent");
+
+        verify(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
+    }
+
+    //TODO enable this test when the API behaves this way
+//    @Test
+//    void delete_project_component_throws_not_found_when_no_component_exists() throws MarketplaceException {
+//        assertThatThrownBy(() -> componentsFacade.deleteProjectComponent("testProject", "testComponent"))
+//                .isInstanceOf(ComponentDeletionException.class)
+//                .hasMessageContaining("Failed to delete component for project 'testProject'");
+//        verify(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
+//    }
 }

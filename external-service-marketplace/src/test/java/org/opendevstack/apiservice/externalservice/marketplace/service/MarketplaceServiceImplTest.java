@@ -448,4 +448,74 @@ class MarketplaceServiceImplTest {
         verify(clientFactory).getClient(instanceName);
     }
 
+
+    @Test
+    void testDeleteProjectComponent_RestClientException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String componentId = "test-component-id";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new RestClientException("Connection failed"));
+
+        // Act & Assert
+        assertThrows(MarketplaceException.class, () ->
+                marketplaceService.deleteProjectComponent(instanceName, componentId));
+
+        verify(clientFactory).getClient(instanceName);
+        verify(marketplaceApiClient).getApiClient();
+    }
+
+    @Test
+    void testDeleteProjectComponent_NotFound_ThrowsException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String componentId = "test-component-id";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        HttpClientErrorException notFoundEx = HttpClientErrorException.create(
+                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(notFoundEx);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+        // Act
+        assertThrows(MarketplaceException.class, () ->
+                marketplaceService.deleteProjectComponent(instanceName, componentId));
+
+        // Assert
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testDeleteProjectComponent_ComponentExists_NoExceptionThrown() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String componentId = "test-component-id";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        HttpClientErrorException notFoundEx = HttpClientErrorException.create(
+                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(ResponseEntity.ok(null));
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+        // Act
+        marketplaceService.deleteProjectComponent(instanceName, componentId);
+
+        // Assert
+        verify(clientFactory).getClient(instanceName);
+    }
+
 }
