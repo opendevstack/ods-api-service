@@ -33,7 +33,6 @@ import org.springframework.web.client.RestClientException;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -210,27 +209,88 @@ class MarketplaceServiceImplTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void testIsHealthy_NoInstancesConfigured_ReturnsFalse() {
-        // Arrange
-        when(clientFactory.getAvailableInstances()).thenReturn(Collections.emptySet());
+        void testIsHealthy_NoInstancesConfigured_ReturnsFalse() {
+                when(clientFactory.getAvailableInstances()).thenReturn(Set.of());
 
-        // Act
-        boolean result = marketplaceService.isHealthy();
+                MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+                        @Override
+                        protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
 
-        // Assert
-        assertFalse(result);
+                        @Override
+                        protected boolean isCatalogEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
+                };
+
+                boolean result = service.isHealthy();
+
+                assertFalse(result);
     }
 
     @Test
-    void testIsHealthy_InstancesConfigured_ReturnsTrue() {
-        // Arrange
-        when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
+        void testIsHealthy_BothEndpointsUp_ReturnsTrue() throws MarketplaceException {
+                when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
+                when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
+                when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
 
-        // Act
-        boolean result = marketplaceService.isHealthy();
+                MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+                        @Override
+                        protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
 
-        // Assert
-        assertTrue(result);
+                        @Override
+                        protected boolean isCatalogEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
+                };
+
+                boolean result = service.isHealthy();
+
+                assertTrue(result);
+        }
+
+        @Test
+        void testIsHealthy_ProvisionerDown_ReturnsFalse() throws MarketplaceException {
+                when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
+                when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
+                when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
+
+                MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+                        @Override
+                        protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return false;
+                        }
+                };
+
+                boolean result = service.isHealthy();
+
+                assertFalse(result);
+        }
+
+        @Test
+        void testIsHealthy_CatalogDown_ReturnsFalse() throws MarketplaceException {
+                when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
+                when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
+                when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
+
+                MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+                        @Override
+                        protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
+
+                        @Override
+                        protected boolean isCatalogEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return false;
+                        }
+                };
+
+                boolean result = service.isHealthy();
+
+                assertFalse(result);
     }
 
     // -------------------------------------------------------------------------
