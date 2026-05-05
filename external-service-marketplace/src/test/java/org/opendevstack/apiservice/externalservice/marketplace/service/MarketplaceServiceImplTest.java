@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.OngoingStubbing;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
@@ -16,7 +17,9 @@ import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.Cat
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionResponse;
 import org.opendevstack.apiservice.externalservice.marketplace.service.impl.MarketplaceServiceImpl;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,6 +55,15 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class MarketplaceServiceImplTest {
+
+    // Generated-API endpoint paths invoked by ApiClient#invokeAPI. These mirror the
+    // values produced by the OpenAPI generator so tests fail loudly if a path or
+    // HTTP method changes unexpectedly.
+    private static final String PATH_CATALOG_ITEM_BY_ID   = "/catalog-items/{id}";
+    private static final String PATH_PROJECT_COMPONENT    = "/project/{projectKey}/component/{componentId}";
+    private static final String PATH_PROVISION_ACTIONS    = "/provision-actions";
+    private static final String PATH_DELETE_COMPONENT     = "/support/delete/{projectKey}/{componentId}";
+    private static final String PATH_NOTIFY_PROVISIONING  = "/provision/{projectKey}/{status}";
 
     @Mock
     private MarketplaceApiClientFactory clientFactory;
@@ -100,6 +113,29 @@ class MarketplaceServiceImplTest {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Stubs {@code apiClient.invokeAPI(...)} for a specific endpoint path and HTTP method.
+     * Using {@code eq(path)} and {@code eq(method)} (instead of bare {@code any()} for every
+     * argument) makes the test assert that the service is calling the expected generated-API
+     * operation, while still being tolerant of the surrounding boilerplate arguments.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private OngoingStubbing<ResponseEntity<Object>> whenInvokeAPI(String path, HttpMethod method) {
+        return (OngoingStubbing) when(apiClient.invokeAPI(
+                eq(path),
+                eq(method),
+                any(),
+                any(),
+                any(),
+                any(HttpHeaders.class),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(ParameterizedTypeReference.class)));
+    }
+
     // -------------------------------------------------------------------------
     // getProjectComponent
     // -------------------------------------------------------------------------
@@ -134,7 +170,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET)
                 .thenThrow(new RestClientException("Connection failed"));
 
         // Act & Assert
@@ -158,8 +194,7 @@ class MarketplaceServiceImplTest {
 
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(notFoundEx);
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenThrow(notFoundEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         // Act
@@ -248,8 +283,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("default");
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.ok(null));
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenReturn(ResponseEntity.ok(null));
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(projectKey, componentId);
@@ -259,41 +293,34 @@ class MarketplaceServiceImplTest {
     }
 
     @Test
-    void testGetProjectComponent_NullInstanceName_UsesDefaultClient() throws MarketplaceException {
-        // Passing null explicitly as instanceName should resolve via getDefaultInstance -> getAuthenticatedClient
+    void testGetProjectComponent_NullInstanceName_PropagatesFactoryException() throws MarketplaceException {
+        // The factory rejects null/blank instance names; the service must surface that.
         String projectKey = "PROJ";
         String componentId = "test-component";
-        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setOboScope("api://test/scope");
 
-        when(clientFactory.getClient(null)).thenReturn(marketplaceApiClient);
-        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.ok(null));
-        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(clientFactory.getClient(null))
+                .thenThrow(new MarketplaceException("Provide instance name. Available instances: []"));
 
-        ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(null, projectKey, componentId);
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getProjectComponent(null, projectKey, componentId));
 
-        assertNull(result);
+        assertTrue(exception.getMessage().contains("Provide instance name"));
         verify(clientFactory).getClient(null);
     }
 
     @Test
-    void testGetProjectComponent_BlankInstanceName_UsesDefaultClient() throws MarketplaceException {
+    void testGetProjectComponent_BlankInstanceName_PropagatesFactoryException() throws MarketplaceException {
+        // The factory rejects null/blank instance names; the service must surface that.
         String projectKey = "PROJ";
         String componentId = "test-component";
-        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setOboScope("api://test/scope");
 
-        when(clientFactory.getClient("")).thenReturn(marketplaceApiClient);
-        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.ok(null));
-        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(clientFactory.getClient(""))
+                .thenThrow(new MarketplaceException("Provide instance name. Available instances: []"));
 
-        ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent("", projectKey, componentId);
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getProjectComponent("", projectKey, componentId));
 
-        assertNull(result);
+        assertTrue(exception.getMessage().contains("Provide instance name"));
         verify(clientFactory).getClient("");
     }
 
@@ -310,8 +337,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("default");
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(notFoundEx);
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenThrow(notFoundEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(projectKey, componentId);
@@ -327,8 +353,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("default");
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(new RestClientException("timeout"));
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenThrow(new RestClientException("timeout"));
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         assertThrows(MarketplaceException.class, () -> marketplaceService.getProjectComponent("PROJ",
@@ -372,8 +397,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-            .thenThrow(conflictEx);
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST).thenThrow(conflictEx);
 
         MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
             marketplaceService.provisionProjectComponent(instanceName, projectKey, List.of()));
@@ -392,7 +416,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_CATALOG_ITEM_BY_ID, HttpMethod.GET)
                 .thenThrow(new RestClientException("Connection failed"));
 
         // Act & Assert
@@ -415,8 +439,7 @@ class MarketplaceServiceImplTest {
 
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(notFoundEx);
+        whenInvokeAPI(PATH_CATALOG_ITEM_BY_ID, HttpMethod.GET).thenThrow(notFoundEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         // Act
@@ -439,8 +462,7 @@ class MarketplaceServiceImplTest {
 
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(forbiddenEx);
+        whenInvokeAPI(PATH_CATALOG_ITEM_BY_ID, HttpMethod.GET).thenThrow(forbiddenEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         // Act & Assert
@@ -462,8 +484,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("default");
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(notFoundEx);
+        whenInvokeAPI(PATH_CATALOG_ITEM_BY_ID, HttpMethod.GET).thenThrow(notFoundEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         // Act
@@ -492,8 +513,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(forbiddenEx);
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenThrow(forbiddenEx);
 
         // Act & Assert
         MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
@@ -521,7 +541,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST)
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         // Act
@@ -547,7 +567,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST)
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         // Act
@@ -569,7 +589,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST)
                 .thenThrow(new RestClientException("Connection refused"));
 
         // Act & Assert
@@ -593,8 +613,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(unauthorizedEx);
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST).thenThrow(unauthorizedEx);
 
         // Act & Assert
         MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
@@ -618,7 +637,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST)
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         // Act
@@ -668,7 +687,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST)
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         // Act
@@ -695,7 +714,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST)
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         // Act
@@ -718,7 +737,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST)
                 .thenThrow(new RestClientException("Connection refused"));
 
         // Act & Assert
@@ -743,8 +762,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(forbiddenEx);
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST).thenThrow(forbiddenEx);
 
         // Act & Assert
         MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
@@ -769,7 +787,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST)
                 .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         // Act
@@ -797,8 +815,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.ok(null));
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenReturn(ResponseEntity.ok(null));
 
         // Act — should not throw
         marketplaceService.registerProjectComponent(instanceName, projectKey, componentId);
@@ -820,7 +837,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT)
                 .thenThrow(new RestClientException("Connection refused"));
 
         // Act & Assert
@@ -845,8 +862,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(unauthorizedEx);
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenThrow(unauthorizedEx);
 
         // Act & Assert
         MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
@@ -868,8 +884,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.ok(null));
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenReturn(ResponseEntity.ok(null));
 
         // Act — should not throw
         marketplaceService.registerProjectComponent(projectKey, componentId);
