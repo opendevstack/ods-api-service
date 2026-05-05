@@ -106,13 +106,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>3.0.2</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5.14</version>
@@ -193,7 +186,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <openapiNormalizer>FILTER=operationId:triggerProvisionAction|notifyProvisioningStatusUpdate|createIncident</openapiNormalizer>
+                            <openapiNormalizer>FILTER=operationId:triggerProvisionAction|notifyProvisioningStatusUpdate|deleteProvisioningStatus</openapiNormalizer>
                             <generatorName>java</generatorName>
                             <output>${project.basedir}</output>
                             <library>resttemplate</library>

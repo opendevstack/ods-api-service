@@ -2,8 +2,8 @@ package org.opendevstack.apiservice.project.controller;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.project.api.ProjectComponentsApi;
+import org.opendevstack.apiservice.project.api.ProjectComponentsV0InternalApi;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.facade.ComponentsFacade;
 import org.opendevstack.apiservice.project.mapper.ComponentResponseMapper;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 @Slf4j
 @RequestMapping(ProjectComponentsController.API_BASE_PATH)
-public class ProjectComponentsController implements ProjectComponentsApi {
+public class ProjectComponentsController implements ProjectComponentsApi, ProjectComponentsV0InternalApi {
 
     public static final String API_BASE_PATH = "/api/pub/v0";
 
@@ -49,6 +49,13 @@ public class ProjectComponentsController implements ProjectComponentsApi {
 
         log.info("Retrieved component '{}' for project '{}': {}", componentId, projectId, component);
         return ResponseEntity.status(HttpStatus.OK).body(component);
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteProjectComponent(String projectId, String componentId) {
+        componentsFacade.deleteProjectComponent(projectId, componentId);
+        log.info("Deleted component with id '{}' for project '{}'", componentId, projectId);
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 
 }

@@ -12,6 +12,7 @@ import org.opendevstack.apiservice.project.exception.CatalogItemNotFoundExceptio
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
+import org.opendevstack.apiservice.project.exception.ComponentDeletionException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.exception.ComponentRetrievalException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
@@ -53,6 +54,7 @@ public class ComponentsFacade {
             return component;
         } catch (MarketplaceException e) {
             log.error("Failed to retrieve component with id {} for project with id {}: {}", componentId, projectId, e.getMessage(), e);
+            //TODO we need to improve throwing the appropriate error
             throw new ComponentRetrievalException(
                     String.format("Failed to retrieve component '%s' for project '%s': %s", componentId, projectId, e.getMessage()), e
             );
@@ -117,12 +119,14 @@ public class ComponentsFacade {
         return throwable.getMessage();
     }
 
-    public Boolean deleteProjectComponent(String projectId, String componentId) {
+    public void deleteProjectComponent(String projectId, String componentId) {
         try {
-            return marketplaceExternalService.deleteProjectComponent(projectId, componentId);
+            marketplaceExternalService.deleteProjectComponent(projectId, componentId);
         } catch (MarketplaceException e) {
             log.error("Failed to delete component with id {} for project with id {}", componentId, projectId, e);
-            return false;
+            throw new ComponentDeletionException(
+                    String.format("Failed to delete component for project '%s': %s", projectId, e.getMessage()), e
+            );
         }
     }
 

@@ -7,6 +7,7 @@ import org.opendevstack.apiservice.project.controller.ProjectComponentsControlle
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
+import org.opendevstack.apiservice.project.exception.ComponentDeletionException;
 import org.opendevstack.apiservice.project.exception.ComponentErrorKey;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.exception.ComponentRetrievalException;
@@ -140,6 +141,17 @@ public class ProjectComponentsExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(ComponentDeletionException.class)
+    public ResponseEntity<String> handleComponentDeletionException(
+            ComponentCreationException ex,
+            HttpServletRequest request) {
+
+        log.error("Component deletion failed: {}", ex.getMessage(), ex);
+        //TODO Align all these
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
     }
 
     @ExceptionHandler(ComponentRetrievalException.class)
