@@ -50,6 +50,4 @@ public class ProjectComponentsController implements ProjectComponentsApi {
         return ResponseEntity.status(HttpStatus.OK).body(component);
     }
 
-
-
 }

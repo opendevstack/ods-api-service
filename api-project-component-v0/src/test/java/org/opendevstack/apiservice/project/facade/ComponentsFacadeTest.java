@@ -1,6 +1,5 @@
 package org.opendevstack.apiservice.project.facade;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,17 +44,9 @@ class ComponentsFacadeTest {
 
     private ComponentsFacade componentsFacade;
 
-    private AutoCloseable openMocks;
-
     @BeforeEach
     void setup() {
-        openMocks = MockitoAnnotations.openMocks(this);
         componentsFacade = new ComponentsFacade(marketplaceExternalService, marketplaceMapper);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        openMocks.close();
     }
 
     @Test
@@ -92,14 +83,10 @@ class ComponentsFacadeTest {
         CreateComponentRequest request = buildTestCreateComponentRequest();
 
         when(marketplaceExternalService.provisionProjectComponent(eq("testProject"), anyList()))
-                .thenReturn(true); //TODO fix this to return more info
+                .thenReturn(true);
 
         componentsFacade.provisionProjectComponent("testProject", request);
 
-        //TODO fix this to return more info and assert on it
-//        assertThat(createdComponent).isNotNull();
-//        assertThat(createdComponent.getId()).isEqualTo(marketplaceComponent.getComponentId().toString());
-//        assertThat(createdComponent.getStatus()).isEqualTo(ComponentsStatusDTO.RUNNING);
         verify(marketplaceExternalService).provisionProjectComponent(eq("testProject"), anyList());
     }
 
@@ -108,7 +95,7 @@ class ComponentsFacadeTest {
         CreateComponentRequest request = buildTestCreateComponentRequest();
 
         when(marketplaceExternalService.provisionProjectComponent(eq("testProject"), anyList()))
-                .thenReturn(false); //TODO fix this to return more info
+                .thenReturn(false);
 
         assertThatThrownBy(() -> componentsFacade.provisionProjectComponent("testProject", request))
                 .isInstanceOf(ComponentCreationException.class)
@@ -116,25 +103,26 @@ class ComponentsFacadeTest {
         verify(marketplaceExternalService).provisionProjectComponent(eq("testProject"), anyList());
     }
 
-    @Test
-    void create_project_component_throws_already_exists_when_marketplace_returns_conflict() throws MarketplaceException {
+        @Test
+        void create_project_component_throws_already_exists_when_marketplace_returns_conflict() throws MarketplaceException {
         CreateComponentRequest request = buildTestCreateComponentRequest();
         HttpClientErrorException conflict = HttpClientErrorException.Conflict.create(
-                HttpStatus.CONFLICT,
-                "Conflict",
-                HttpHeaders.EMPTY,
-                new byte[0],
-                null
+            HttpStatus.CONFLICT,
+            "Conflict",
+            HttpHeaders.EMPTY,
+            new byte[0],
+            null
         );
 
         when(marketplaceExternalService.provisionProjectComponent(eq("testProject"), anyList()))
-                .thenThrow(new MarketplaceException("This component name already exists, please choose another name.", conflict));
+            .thenThrow(new MarketplaceException("This component name already exists, please choose another name.", conflict));
 
         assertThatThrownBy(() -> componentsFacade.provisionProjectComponent("testProject", request))
-                .isInstanceOf(ComponentAlreadyExistsException.class)
-                .hasMessage("This component name already exists, please choose another name.");
+            .isInstanceOf(ComponentAlreadyExistsException.class)
+            .hasMessage("This component name already exists, please choose another name.");
         verify(marketplaceExternalService).provisionProjectComponent(eq("testProject"), anyList());
-    }
+        }
+
 
     @Test
     void delete_project_component_ends_successfully_for_existing_component() throws MarketplaceException {

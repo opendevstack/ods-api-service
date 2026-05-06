@@ -13,6 +13,7 @@ import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsExcep
 import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentDeletionException;
+import org.opendevstack.apiservice.project.exception.ComponentDeletionException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.exception.ComponentRetrievalException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
@@ -54,16 +55,18 @@ public class ComponentsFacade {
             return component;
         } catch (MarketplaceException e) {
             log.error("Failed to retrieve component with id {} for project with id {}: {}", componentId, projectId, e.getMessage(), e);
-            //TODO we need to improve throwing the appropriate error
             throw new ComponentRetrievalException(
                     String.format("Failed to retrieve component '%s' for project '%s': %s", componentId, projectId, e.getMessage()), e
             );
         }
+        return marketplaceMapper.mapMarketplaceComponentToV0Component(marketplaceComponent);
     }
 
     public void provisionProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
         try {
-            List<ProvisionActionParameter> createComponentParameterList = marketplaceMapper.mapCreateComponentRequestToCreateComponentParameterList(createComponentRequest);
+            CatalogItem catalogItem = resolveCatalogItem(createComponentRequest);
+            List<ProvisionActionParameter> createComponentParameterList = marketplaceMapper
+                    .mapCreateComponentRequestToCreateComponentParameterList(createComponentRequest, catalogItem);
             boolean success = marketplaceExternalService.provisionProjectComponent(projectId, createComponentParameterList);
             if (!success) {
                 log.error("Failed to create component in marketplace for project with id {}", projectId);
@@ -82,6 +85,31 @@ public class ComponentsFacade {
             throw new ComponentCreationException(
                     String.format("Failed to create component for project '%s': %s", projectId, e.getMessage()), e
             );
+        }
+    }
+
+    /**
+     * Resolves the catalog item that matches the requested {@code productId} (interpreted as the
+     * Marketplace catalog item slug). Returns {@code null} when the request or product id is missing,
+     * when the catalog item cannot be found, or when the lookup fails – callers must tolerate a
+     * missing catalog item and fall back to default parameter handling.
+     */
+    private CatalogItem resolveCatalogItem(CreateComponentRequest createComponentRequest) {
+        if (createComponentRequest == null || createComponentRequest.getProductId() == null
+                || createComponentRequest.getProductId().isBlank()) {
+            return null;
+        }
+        String slug = createComponentRequest.getProductId();
+        try {
+            CatalogItem catalogItem = marketplaceExternalService.getCatalogItemBySlug(slug);
+            if (catalogItem == null) {
+                log.warn("No catalog item found for slug '{}'; provisioning will fall back to default parameter types", slug);
+            }
+            return catalogItem;
+        } catch (MarketplaceException e) {
+            log.warn("Failed to retrieve catalog item for slug '{}': {}. Provisioning will fall back to default parameter types",
+                    slug, e.getMessage());
+            return null;
         }
     }
 
@@ -119,35 +147,35 @@ public class ComponentsFacade {
         return throwable.getMessage();
     }
 
-     public void deleteProjectComponent(String projectId, String componentId) {
-         try {
-             marketplaceExternalService.deleteProjectComponent(projectId, componentId);
-             log.info("Successfully deleted component '{}' for project '{}'", componentId, projectId);
-         } catch (MarketplaceException e) {
-             log.error("Failed to delete component '{}' for project '{}': {}", componentId, projectId, e.getMessage(), e);
-             // Check if it's an access denied error
-             if (isAccessDeniedCause(e)) {
-                 throw new ComponentDeletionException(
-                         String.format("Access denied when deleting component '%s' from project '%s'", componentId, projectId), e);
-             }
-             // Generic deletion failure
-             throw new ComponentDeletionException(
-                     String.format("Failed to delete component '%s' for project '%s': %s", componentId, projectId, e.getMessage()), e
-             );
-         }
-     }
+    public void deleteProjectComponent(String projectId, String componentId) {
+        try {
+            marketplaceExternalService.deleteProjectComponent(projectId, componentId);
+            log.info("Successfully deleted component '{}' for project '{}'", componentId, projectId);
+        } catch (MarketplaceException e) {
+            log.error("Failed to delete component '{}' for project '{}': {}", componentId, projectId, e.getMessage(), e);
+            // Check if it's an access denied error
+            if (isAccessDeniedCause(e)) {
+                throw new ComponentDeletionException(
+                        String.format("Access denied when deleting component '%s' from project '%s'", componentId, projectId), e);
+            }
+            // Generic deletion failure
+            throw new ComponentDeletionException(
+                    String.format("Failed to delete component '%s' for project '%s': %s", componentId, projectId, e.getMessage()), e
+            );
+        }
+    }
 
-     private boolean isAccessDeniedCause(Throwable throwable) {
-         Throwable current = throwable;
-         while (current != null) {
-             if (current instanceof HttpClientErrorException.Unauthorized
-                     || current instanceof HttpClientErrorException.Forbidden) {
-                 return true;
-             }
-             current = current.getCause();
-         }
-         return false;
-     }
+    private boolean isAccessDeniedCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof HttpClientErrorException.Unauthorized
+                    || current instanceof HttpClientErrorException.Forbidden) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
 
     public boolean registerProjectComponent(String projectId, String componentId) {
         try {

@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.project.controller.ComponentsResponseFactory;
 import org.opendevstack.apiservice.project.controller.ProjectComponentsController;
+import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
+import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
 import org.opendevstack.apiservice.project.controller.ProjectComponentsInternalController;
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
@@ -26,8 +28,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = {ProjectComponentsController.class,
-        ProjectComponentsInternalController.class})
+@RestControllerAdvice(assignableTypes = ProjectComponentsController.class)
 @Slf4j
 public class ProjectComponentsExceptionHandler {
 
@@ -157,13 +158,19 @@ public class ProjectComponentsExceptionHandler {
     }
 
     @ExceptionHandler(ComponentRetrievalException.class)
-    public ResponseEntity<Component> handleComponentRetrievalException(
+    public ResponseEntity<CreateComponentResponse> handleComponentRetrievalException(
             ComponentRetrievalException ex,
             HttpServletRequest request) {
 
         log.error("Component retrieval failed: {}", ex.getMessage(), ex);
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        CreateComponentResponse response = ComponentsResponseFactory.internalError(
+                request.getRequestURI(),
+                ex.getMessage(),
+                ComponentErrorKey.INTERNAL_ERROR
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(ComponentAlreadyExistsException.class)

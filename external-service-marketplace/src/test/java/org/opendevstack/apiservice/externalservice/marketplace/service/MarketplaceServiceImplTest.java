@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -18,12 +19,19 @@ import org.opendevstack.apiservice.externalservice.marketplace.exception.Marketp
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.ApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionResponse;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.service.impl.MarketplaceServiceImpl;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
@@ -42,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,7 +62,14 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class MarketplaceServiceImplTest {
 
-    // TODO tests for the rest of the methods in MarketplaceServiceImpl
+    // Generated-API endpoint paths invoked by ApiClient#invokeAPI. These mirror the
+    // values produced by the OpenAPI generator so tests fail loudly if a path or
+    // HTTP method changes unexpectedly.
+    private static final String PATH_CATALOG_ITEM_BY_ID   = "/catalog-items/{id}";
+    private static final String PATH_PROJECT_COMPONENT    = "/project/{projectKey}/component/{componentId}";
+    private static final String PATH_PROVISION_ACTIONS    = "/provision-actions";
+    private static final String PATH_DELETE_COMPONENT     = "/support/delete/{projectKey}/{componentId}";
+    private static final String PATH_NOTIFY_PROVISIONING  = "/provision/{projectKey}/{status}";
 
     @Mock
     private MarketplaceApiClientFactory clientFactory;
@@ -103,6 +119,29 @@ class MarketplaceServiceImplTest {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Stubs {@code apiClient.invokeAPI(...)} for a specific endpoint path and HTTP method.
+     * Using {@code eq(path)} and {@code eq(method)} (instead of bare {@code any()} for every
+     * argument) makes the test assert that the service is calling the expected generated-API
+     * operation, while still being tolerant of the surrounding boilerplate arguments.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private OngoingStubbing<ResponseEntity<Object>> whenInvokeAPI(String path, HttpMethod method) {
+        return (OngoingStubbing) when(apiClient.invokeAPI(
+                eq(path),
+                eq(method),
+                any(),
+                any(),
+                any(),
+                any(HttpHeaders.class),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(ParameterizedTypeReference.class)));
+    }
+
     // -------------------------------------------------------------------------
     // getProjectComponent
     // -------------------------------------------------------------------------
@@ -137,7 +176,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET)
                 .thenThrow(new RestClientException("Connection failed"));
 
         // Act & Assert
@@ -161,8 +200,7 @@ class MarketplaceServiceImplTest {
 
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(notFoundEx);
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenThrow(notFoundEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         // Act
@@ -178,48 +216,82 @@ class MarketplaceServiceImplTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void testIsHealthy_NoInstancesConfigured_ReturnsFalse() {
-        // Arrange
-        when(clientFactory.getAvailableInstances()).thenReturn(Collections.emptySet());
+        void testIsHealthy_NoInstancesConfigured_ReturnsFalse() {
+                when(clientFactory.getAvailableInstances()).thenReturn(Set.of());
 
-        // Act
-        boolean result = marketplaceService.isHealthy();
+                MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+                        @Override
+                        protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
 
-        // Assert
-        assertFalse(result);
+                        @Override
+                        protected boolean isCatalogEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
+                };
+
+                boolean result = service.isHealthy();
+
+                assertFalse(result);
     }
 
-    // TODO reenable these tests when we implement the health check to actually call the Marketplace API.
-    //  For now, since isHealthy only checks if instances are configured, this test is not relevant
-    //  and fails due to the RestClientException being thrown by the mocked ApiClient when invokeAPI is called.
-//    @Test
-//    void testIsHealthy_RestClientException_ReturnsFalse() throws MarketplaceException {
-//        // Arrange
-//        when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
-//        when(clientFactory.getClient()).thenReturn(marketplaceApiClient);
-//        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-//        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-//                .thenThrow(new RestClientException("Connection refused"));
-//
-//        // Act
-//        boolean result = marketplaceService.isHealthy();
-//
-//        // Assert
-//        assertFalse(result);
-//    }
-//
-//    @Test
-//    void testIsHealthy_WhenException_ReturnsFalse() throws MarketplaceException {
-//        // Arrange
-//        when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
-//        when(clientFactory.getClient()).thenThrow(new MarketplaceException("No Marketplace instances configured"));
-//
-//        // Act
-//        boolean result = marketplaceService.isHealthy();
-//
-//        // Assert
-//        assertFalse(result);
-//    }
+    @Test
+        void testIsHealthy_BothEndpointsUp_ReturnsTrue() throws MarketplaceException {
+                when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
+                when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
+                when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
+
+                MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+                        @Override
+                        protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
+
+                        @Override
+                        protected boolean isCatalogEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
+                };
+
+                boolean result = service.isHealthy();
+
+                assertTrue(result);
+        }
+
+        @Test
+        void testIsHealthy_ProvisionerDown_ReturnsFalse() throws MarketplaceException {
+                when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
+                when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
+                when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
+
+                MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+                        @Override
+                        protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return false;
+                        }
+                };
+
+                boolean result = service.isHealthy();
+
+                assertFalse(result);
+        }
+
+        @Test
+        void testIsHealthy_CatalogDown_ReturnsFalse() throws MarketplaceException {
+                when(clientFactory.getAvailableInstances()).thenReturn(Set.of("dev"));
+                when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
+                when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
+
+                MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+                        @Override
+                        protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
+                                return true;
+                        }
+
+
+        assertFalse(result);
+    }
 
     // -------------------------------------------------------------------------
     // getAvailableInstances / hasInstance
@@ -271,8 +343,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("default");
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.ok(null));
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenReturn(ResponseEntity.ok(null));
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(projectKey, componentId);
@@ -282,41 +353,34 @@ class MarketplaceServiceImplTest {
     }
 
     @Test
-    void testGetProjectComponent_NullInstanceName_UsesDefaultClient() throws MarketplaceException {
-        // Passing null explicitly as instanceName should resolve via getDefaultInstance -> getAuthenticatedClient
+    void testGetProjectComponent_NullInstanceName_PropagatesFactoryException() throws MarketplaceException {
+        // The factory rejects null/blank instance names; the service must surface that.
         String projectKey = "PROJ";
         String componentId = "test-component";
-        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setOboScope("api://test/scope");
 
-        when(clientFactory.getClient(null)).thenReturn(marketplaceApiClient);
-        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.ok(null));
-        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(clientFactory.getClient(null))
+                .thenThrow(new MarketplaceException("Provide instance name. Available instances: []"));
 
-        ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(null, projectKey, componentId);
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getProjectComponent(null, projectKey, componentId));
 
-        assertNull(result);
+        assertTrue(exception.getMessage().contains("Provide instance name"));
         verify(clientFactory).getClient(null);
     }
 
     @Test
-    void testGetProjectComponent_BlankInstanceName_UsesDefaultClient() throws MarketplaceException {
+    void testGetProjectComponent_BlankInstanceName_PropagatesFactoryException() throws MarketplaceException {
+        // The factory rejects null/blank instance names; the service must surface that.
         String projectKey = "PROJ";
         String componentId = "test-component";
-        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setOboScope("api://test/scope");
 
-        when(clientFactory.getClient("")).thenReturn(marketplaceApiClient);
-        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.ok(null));
-        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(clientFactory.getClient(""))
+                .thenThrow(new MarketplaceException("Provide instance name. Available instances: []"));
 
-        ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent("", projectKey, componentId);
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getProjectComponent("", projectKey, componentId));
 
-        assertNull(result);
+        assertTrue(exception.getMessage().contains("Provide instance name"));
         verify(clientFactory).getClient("");
     }
 
@@ -333,8 +397,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("default");
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(notFoundEx);
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenThrow(notFoundEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         ProjectComponentExtendedInfo result = marketplaceService.getProjectComponent(projectKey, componentId);
@@ -350,8 +413,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("default");
         when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(new RestClientException("timeout"));
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenThrow(new RestClientException("timeout"));
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         assertThrows(MarketplaceException.class, () -> marketplaceService.getProjectComponent("PROJ",
@@ -395,8 +457,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-            .thenThrow(conflictEx);
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST).thenThrow(conflictEx);
 
         MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
             marketplaceService.provisionProjectComponent(instanceName, projectKey, List.of()));
@@ -410,11 +471,12 @@ class MarketplaceServiceImplTest {
         String instanceName = "dev";
         String catalogItemId = "test-catalog-item-base64-string";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+                instanceConfig.setOboScope("api://test/scope");
 
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        whenInvokeAPI(PATH_CATALOG_ITEM_BY_ID, HttpMethod.GET)
                 .thenThrow(new RestClientException("Connection failed"));
 
         // Act & Assert
@@ -431,13 +493,13 @@ class MarketplaceServiceImplTest {
         String instanceName = "dev";
         String catalogItemId = "test-catalog-item-base64-string";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+                instanceConfig.setOboScope("api://test/scope");
         HttpClientErrorException notFoundEx = HttpClientErrorException.create(
                 HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
 
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(notFoundEx);
+        whenInvokeAPI(PATH_CATALOG_ITEM_BY_ID, HttpMethod.GET).thenThrow(notFoundEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         // Act
@@ -448,72 +510,513 @@ class MarketplaceServiceImplTest {
         verify(clientFactory).getClient(instanceName);
     }
 
-
     @Test
-    void testDeleteProjectComponent_RestClientException() throws MarketplaceException {
+    void testGetCatalogItem_AuthError_ThrowsMarketplaceException() throws MarketplaceException {
         // Arrange
         String instanceName = "dev";
-        String componentId = "test-component-id";
+        String catalogItemId = "test-catalog-item-base64-string";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+                instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException forbiddenEx = HttpClientErrorException.create(
+                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY, new byte[0], null);
 
-        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        whenInvokeAPI(PATH_CATALOG_ITEM_BY_ID, HttpMethod.GET).thenThrow(forbiddenEx);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(new RestClientException("Connection failed"));
 
         // Act & Assert
-        assertThrows(MarketplaceException.class, () ->
-                marketplaceService.deleteProjectComponent(instanceName, componentId));
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getCatalogItem(instanceName, catalogItemId));
 
-        verify(clientFactory).getClient(instanceName);
-        verify(marketplaceApiClient).getApiClient();
+        assertTrue(exception.getMessage().contains("Access denied"));
     }
 
     @Test
-    void testDeleteProjectComponent_Unauthorized_ThrowsException() throws MarketplaceException {
+    void testGetCatalogItem_DefaultInstance() throws MarketplaceException {
+        // Arrange
+        String catalogItemId = "test-catalog-item-base64-string";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+                instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException notFoundEx = HttpClientErrorException.create(
+                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        whenInvokeAPI(PATH_CATALOG_ITEM_BY_ID, HttpMethod.GET).thenThrow(notFoundEx);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+        // Act
+        CatalogItem result = marketplaceService.getCatalogItem(catalogItemId);
+
+        // Assert
+        assertNull(result);
+        verify(clientFactory).getClient("default");
+    }
+
+    // -------------------------------------------------------------------------
+    // getProjectComponent — auth error
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testGetProjectComponent_AuthError_ThrowsMarketplaceException() throws MarketplaceException {
         // Arrange
         String instanceName = "dev";
-        String componentId = "test-component-id";
+        String projectKey = "PROJ";
+        String componentId = "test-component";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        HttpClientErrorException unauthorizedException = HttpClientErrorException.create(
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException forbiddenEx = HttpClientErrorException.create(
+                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROJECT_COMPONENT, HttpMethod.GET).thenThrow(forbiddenEx);
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getProjectComponent(instanceName, projectKey, componentId));
+
+        assertTrue(exception.getMessage().contains("Access denied"));
+    }
+
+    // -------------------------------------------------------------------------
+    // provisionProjectComponent — success, auth error, REST error, default instance
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testProvisionProjectComponent_Success_ReturnsTrue() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProvisionActionResponse mockResponse = new ProvisionActionResponse();
+        mockResponse.setFailed(false);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        // Act
+        boolean result = marketplaceService.provisionProjectComponent(instanceName, projectKey, List.of());
+
+        // Assert
+        assertTrue(result);
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testProvisionProjectComponent_Failed_ReturnsFalse() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProvisionActionResponse mockResponse = new ProvisionActionResponse();
+        mockResponse.setFailed(true);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        // Act
+        boolean result = marketplaceService.provisionProjectComponent(instanceName, projectKey, List.of());
+
+        // Assert
+        assertFalse(result);
+    }
+
+    @Test
+    void testProvisionProjectComponent_RestClientException_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST)
+                .thenThrow(new RestClientException("Connection refused"));
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.provisionProjectComponent(instanceName, projectKey, List.of()));
+
+        assertTrue(exception.getMessage().contains("Failed to provision"));
+    }
+
+    @Test
+    void testProvisionProjectComponent_AuthError_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException unauthorizedEx = HttpClientErrorException.create(
                 HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, new byte[0], null);
 
-        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(unauthorizedException);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST).thenThrow(unauthorizedEx);
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.provisionProjectComponent(instanceName, projectKey, List.of()));
+
+        assertTrue(exception.getMessage().contains("Access denied"));
+    }
+
+    @Test
+    void testProvisionProjectComponent_DefaultInstance_Success() throws MarketplaceException {
+        // Arrange
+        String projectKey = "PROJ";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProvisionActionResponse mockResponse = new ProvisionActionResponse();
+        mockResponse.setFailed(false);
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROVISION_ACTIONS, HttpMethod.POST)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
 
         // Act
-        assertThrows(MarketplaceException.class, () ->
-                marketplaceService.deleteProjectComponent(instanceName, componentId));
+        boolean result = marketplaceService.provisionProjectComponent(projectKey, List.of());
+
+        // Assert
+        assertTrue(result);
+        verify(clientFactory).getClient("default");
+    }
+
+    @Test
+    void testProvisionProjectComponent_OboScopeNotConfigured_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        // OBO scope is null
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.provisionProjectComponent(instanceName, projectKey, List.of()));
+
+        assertTrue(exception.getMessage().contains("OBO scope not configured"));
+    }
+
+    // -------------------------------------------------------------------------
+    // deleteProjectComponent
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testDeleteProjectComponent_Success_ReturnsTrue() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String componentId = "test-component";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProvisionActionResponse mockResponse = new ProvisionActionResponse();
+        mockResponse.setFailed(false);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        // Act
+        boolean result = marketplaceService.deleteProjectComponent(instanceName, projectKey, componentId);
+
+        // Assert
+        assertTrue(result);
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testDeleteProjectComponent_Failed_ReturnsFalse() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String componentId = "test-component";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProvisionActionResponse mockResponse = new ProvisionActionResponse();
+        mockResponse.setFailed(true);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        // Act
+        boolean result = marketplaceService.deleteProjectComponent(instanceName, projectKey, componentId);
+
+        // Assert
+        assertFalse(result);
+    }
+
+    @Test
+    void testDeleteProjectComponent_RestClientException_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String componentId = "test-component";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST)
+                .thenThrow(new RestClientException("Connection refused"));
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.deleteProjectComponent(instanceName, projectKey, componentId));
+
+        assertTrue(exception.getMessage().contains("Failed to delete"));
+    }
+
+    @Test
+    void testDeleteProjectComponent_AuthError_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String componentId = "test-component";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException forbiddenEx = HttpClientErrorException.create(
+                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST).thenThrow(forbiddenEx);
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.deleteProjectComponent(instanceName, projectKey, componentId));
+
+        assertTrue(exception.getMessage().contains("Access denied"));
+    }
+
+    @Test
+    void testDeleteProjectComponent_DefaultInstance() throws MarketplaceException {
+        // Arrange
+        String projectKey = "PROJ";
+        String componentId = "test-component";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProvisionActionResponse mockResponse = new ProvisionActionResponse();
+        mockResponse.setFailed(false);
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_DELETE_COMPONENT, HttpMethod.POST)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        // Act
+        boolean result = marketplaceService.deleteProjectComponent(projectKey, componentId);
+
+        // Assert
+        assertTrue(result);
+        verify(clientFactory).getClient("default");
+    }
+
+    // -------------------------------------------------------------------------
+    // registerProjectComponent
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testRegisterProjectComponent_Success() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String componentId = "test-component";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenReturn(ResponseEntity.ok(null));
+
+        // Act — should not throw
+        marketplaceService.registerProjectComponent(instanceName, projectKey, componentId);
 
         // Assert
         verify(clientFactory).getClient(instanceName);
     }
 
     @Test
-    void testDeleteProjectComponent_ComponentExists_NoExceptionThrown() throws MarketplaceException {
+    void testRegisterProjectComponent_RestClientException_ThrowsMarketplaceException() throws MarketplaceException {
         // Arrange
         String instanceName = "dev";
-        String componentId = "test-component-id";
+        String projectKey = "PROJ";
+        String componentId = "test-component";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
 
-        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT)
+                .thenThrow(new RestClientException("Connection refused"));
 
-        // Act
-        marketplaceService.deleteProjectComponent(instanceName, componentId);
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.registerProjectComponent(instanceName, projectKey, componentId));
 
-        // Assert
-        verify(clientFactory).getClient(instanceName);
+        assertTrue(exception.getMessage().contains("Failed to register"));
     }
 
+    @Test
+    void testRegisterProjectComponent_AuthError_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String componentId = "test-component";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException unauthorizedEx = HttpClientErrorException.create(
+                HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenThrow(unauthorizedEx);
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.registerProjectComponent(instanceName, projectKey, componentId));
+
+        assertTrue(exception.getMessage().contains("Access denied"));
+    }
+
+    @Test
+    void testRegisterProjectComponent_DefaultInstance() throws MarketplaceException {
+        // Arrange
+        String projectKey = "PROJ";
+        String componentId = "test-component";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
+        instanceConfig.setOboScope("api://test/scope");
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenReturn(ResponseEntity.ok(null));
+
+        // Act — should not throw
+        marketplaceService.registerProjectComponent(projectKey, componentId);
+
+        // Assert
+        verify(clientFactory).getClient("default");
+    }
+
+            @Test
+            void testDeleteProjectComponent_RestClientException() throws MarketplaceException {
+                // Arrange
+                String instanceName = "dev";
+                String componentId = "test-component-id";
+                MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+
+                when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+                when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+                when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+                when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+                when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                        .thenThrow(new RestClientException("Connection failed"));
+
+                // Act & Assert
+                assertThrows(MarketplaceException.class, () ->
+                        marketplaceService.deleteProjectComponent(instanceName, componentId));
+
+                verify(clientFactory).getClient(instanceName);
+                verify(marketplaceApiClient).getApiClient();
+            }
+
+            @Test
+            void testDeleteProjectComponent_Unauthorized_ThrowsException() throws MarketplaceException {
+                // Arrange
+                String instanceName = "dev";
+                String componentId = "test-component-id";
+                MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+                HttpClientErrorException unauthorizedException = HttpClientErrorException.create(
+                        HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, new byte[0], null);
+
+                when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+                when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+                when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+                when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                        .thenThrow(unauthorizedException);
+                when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+                // Act
+                assertThrows(MarketplaceException.class, () ->
+                        marketplaceService.deleteProjectComponent(instanceName, componentId));
+
+                // Assert
+                verify(clientFactory).getClient(instanceName);
+            }
+
+            @Test
+            void testDeleteProjectComponent_ComponentExists_NoExceptionThrown() throws MarketplaceException {
+                // Arrange
+                String instanceName = "dev";
+                String componentId = "test-component-id";
+                MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+
+                when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+                when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+                when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+                when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                        .thenReturn(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+                when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+                // Act
+                marketplaceService.deleteProjectComponent(instanceName, componentId);
+
+                // Assert
+                verify(clientFactory).getClient(instanceName);
+            }
 }

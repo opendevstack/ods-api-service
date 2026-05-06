@@ -45,7 +45,4 @@ public class MarketplaceInstanceConfig {
      * Example: {@code api://<marketplace-app-id>/Api.Access}
      */
     private String oboScope;
-    
-    private String catalogItemId;
-
 }

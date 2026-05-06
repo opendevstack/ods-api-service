@@ -22,6 +22,8 @@ servers:
 security:
   - bearerAuth: [ ]
 tags:
+  - name: CatalogHealth
+    description: Public actuator health endpoint.
   - name: CatalogItems
     description: CatalogItems operations.
   - name: CatalogFilters
@@ -35,6 +37,32 @@ tags:
   - name: ProvisionerActions
     description: Provisioning notifications from AWX/Provisioner
 paths:
+  /actuator/health:
+    get:
+      tags:
+        - CatalogHealth
+      summary: Health check endpoint
+      description: Public actuator health endpoint.
+      operationId: getCatalogHealth
+      security: []
+      responses:
+        "200":
+          description: Service health status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  groups:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - status
+
   /project/{projectKey}/components:
     get:
       tags:
