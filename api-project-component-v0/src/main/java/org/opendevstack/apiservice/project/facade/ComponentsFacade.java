@@ -13,7 +13,6 @@ import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsExcep
 import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentDeletionException;
-import org.opendevstack.apiservice.project.exception.ComponentDeletionException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.exception.ComponentRetrievalException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
@@ -59,7 +58,6 @@ public class ComponentsFacade {
                     String.format("Failed to retrieve component '%s' for project '%s': %s", componentId, projectId, e.getMessage()), e
             );
         }
-        return marketplaceMapper.mapMarketplaceComponentToV0Component(marketplaceComponent);
     }
 
     public void provisionProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {

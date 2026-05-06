@@ -15,7 +15,6 @@ import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.Provi
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.ProvisionerActionsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.ProvisionerHealthApi;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CreateIncidentAction;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.GetCatalogHealth200Response;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.GetProvisionerHealth200Response;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.NotifyProvisioningStatusUpdateRequest;
@@ -23,8 +22,6 @@ import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.Pro
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionAction;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionResponse;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisioningDeleteRequest;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisioningDeleteRequest;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.springframework.stereotype.Service;
@@ -225,7 +222,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             apiClient.setBasePath(marketplaceClient.getConfig().getProvisionerActionsBaseUrl());
             log.debug("Api client base path: {}", apiClient.getBasePath());
 
-            ProvisioningStatusUpdateRequest registerRequest = new ProvisioningStatusUpdateRequest();
+            NotifyProvisioningStatusUpdateRequest registerRequest = new NotifyProvisioningStatusUpdateRequest();
             registerRequest.setComponentId(componentId);
             provisionResultsApi.notifyProvisioningStatusUpdate(projectId, "CREATED", registerRequest);
         } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
