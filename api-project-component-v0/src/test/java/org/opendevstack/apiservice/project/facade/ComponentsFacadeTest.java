@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
@@ -23,11 +22,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestCatalogItem;
@@ -131,12 +131,14 @@ class ComponentsFacadeTest {
         verify(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
     }
 
-    //TODO enable this test when the API behaves this way
-//    @Test
-//    void delete_project_component_throws_not_found_when_no_component_exists() throws MarketplaceException {
-//        assertThatThrownBy(() -> componentsFacade.deleteProjectComponent("testProject", "testComponent"))
-//                .isInstanceOf(ComponentDeletionException.class)
-//                .hasMessageContaining("Failed to delete component for project 'testProject'");
-//        verify(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
-//    }
+    @Test
+    void delete_project_component_throws_not_found_when_no_component_exists() throws MarketplaceException {
+        doThrow(new MarketplaceException("Test exception"))
+                .when(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
+
+        assertThatThrownBy(() -> componentsFacade.deleteProjectComponent("testProject", "testComponent"))
+                .isInstanceOf(ComponentDeletionException.class)
+                .hasMessageContaining("Test exception");
+        verify(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
+    }
 }
