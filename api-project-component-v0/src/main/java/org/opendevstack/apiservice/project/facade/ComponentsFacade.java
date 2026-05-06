@@ -13,6 +13,7 @@ import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsExcep
 import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
+import org.opendevstack.apiservice.project.exception.ComponentRegistrationException;
 import org.opendevstack.apiservice.project.exception.ComponentRetrievalException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
@@ -153,13 +154,14 @@ public class ComponentsFacade {
         }
     }
 
-    public boolean registerProjectComponent(String projectId, String componentId) {
+    public void registerProjectComponent(String projectId, String componentId) {
         try {
             marketplaceExternalService.registerProjectComponent(projectId, componentId);
-            return true;
         } catch (MarketplaceException e) {
-            log.error("Failed to register component in marketplace for project with id {}", projectId, e);
-            return false;
+            throw new ComponentRegistrationException(
+                    String.format("Failed to register component '%s' in marketplace for project with id '%s': '%s'",
+                            componentId, projectId, e.getMessage()), e
+            );
         }
     }
 }

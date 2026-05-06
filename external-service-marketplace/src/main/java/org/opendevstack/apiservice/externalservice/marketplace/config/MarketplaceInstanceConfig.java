@@ -15,6 +15,11 @@ public class MarketplaceInstanceConfig {
     private String provisionerActionsBaseUrl;
 
     /**
+     * The Bitbucket base URL of the Marketplace project
+     */
+    private String bitbucketBaseUrl;
+
+    /**
      * Connection timeout in milliseconds (default: 30000)
      */
     private int connectionTimeout = 30000;
