@@ -13,12 +13,12 @@ import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.Proje
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.ProvisionResultsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.api.ProvisionerActionsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.NotifyProvisioningStatusUpdateRequest;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionAction;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionResponse;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisioningDeleteRequest;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -187,7 +187,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             apiClient.setBasePath(marketplaceClient.getConfig().getProvisionerActionsBaseUrl());
             log.debug("Api client base path: {}", apiClient.getBasePath());
 
-            NotifyProvisioningStatusUpdateRequest registerRequest = new NotifyProvisioningStatusUpdateRequest();
+            ProvisioningStatusUpdateRequest registerRequest = new ProvisioningStatusUpdateRequest();
             registerRequest.setComponentId(componentId);
             provisionResultsApi.notifyProvisioningStatusUpdate(projectId, "CREATED", registerRequest);
         } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {

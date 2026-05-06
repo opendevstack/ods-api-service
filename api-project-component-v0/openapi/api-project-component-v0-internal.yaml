@@ -37,8 +37,16 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Component information
+        "204":
+          description: Project component properly deleted or no component found for the provided componentId.
+        "400":
+          description: Bad request.
+        "401":
+          description: Invalid credentials on the request.
+        "403":
+          description: Insufficient permissions for the client to access the resource.
+        "500":
+          description: Server error.
 
 components:
   securitySchemes:
@@ -49,10 +57,4 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-  responses:
-    UnauthorizedError:
-      description: Authentication information is missing or invalid
-      headers:
-        WWW_Authenticate:
-          schema:
-            type: string
+

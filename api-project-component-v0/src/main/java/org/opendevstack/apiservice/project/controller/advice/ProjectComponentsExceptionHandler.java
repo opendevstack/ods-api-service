@@ -144,14 +144,14 @@ public class ProjectComponentsExceptionHandler {
     }
 
     @ExceptionHandler(ComponentDeletionException.class)
-    public ResponseEntity<String> handleComponentDeletionException(
+    public ResponseEntity<Void> handleComponentDeletionException(
             ComponentCreationException ex,
             HttpServletRequest request) {
 
         log.error("Component deletion failed: {}", ex.getMessage(), ex);
         //TODO Align all these
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
 
     @ExceptionHandler(ComponentRetrievalException.class)

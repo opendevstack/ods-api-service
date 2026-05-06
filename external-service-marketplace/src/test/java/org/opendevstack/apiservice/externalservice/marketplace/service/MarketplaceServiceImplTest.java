@@ -472,19 +472,19 @@ class MarketplaceServiceImplTest {
     }
 
     @Test
-    void testDeleteProjectComponent_NotFound_ThrowsException() throws MarketplaceException {
+    void testDeleteProjectComponent_Unauthorized_ThrowsException() throws MarketplaceException {
         // Arrange
         String instanceName = "dev";
         String componentId = "test-component-id";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        HttpClientErrorException notFoundEx = HttpClientErrorException.create(
-                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
+        HttpClientErrorException unauthorizedException = HttpClientErrorException.create(
+                HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, new byte[0], null);
 
         when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(notFoundEx);
+                .thenThrow(unauthorizedException);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         // Act
@@ -501,14 +501,12 @@ class MarketplaceServiceImplTest {
         String instanceName = "dev";
         String componentId = "test-component-id";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        HttpClientErrorException notFoundEx = HttpClientErrorException.create(
-                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
 
         when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(apiClient.invokeAPI(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(ResponseEntity.ok(null));
+                .thenReturn(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
 
         // Act
