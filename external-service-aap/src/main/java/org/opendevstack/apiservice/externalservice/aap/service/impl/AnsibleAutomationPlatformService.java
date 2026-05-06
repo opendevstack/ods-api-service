@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriUtils;
@@ -55,13 +56,13 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
             String encodedWorkflowName = UriUtils.encodePath(workflowName, StandardCharsets.UTF_8);
             String url = baseUrl + "/workflow_job_templates/" + encodedWorkflowName + "/launch/";
 
-            Map responseBody = restClient.post()
+            Map<String, Object> responseBody = restClient.post()
                     .uri(url)
                     .headers(this::applyAuthHeaders)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(requestBody)
                     .retrieve()
-                    .body(Map.class);
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {});
 
             if (responseBody != null) {
                 String jobId = String.valueOf(responseBody.get("id"));
@@ -119,11 +120,11 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
 
     private AutomationJobStatus fetchJobStatus(String jobId, String url) throws AutomationPlatformException {
         try {
-            Map responseBody = restClient.get()
+            Map<String, Object> responseBody = restClient.get()
                     .uri(url)
                     .headers(this::applyAuthHeaders)
                     .retrieve()
-                    .body(Map.class);
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {});
 
             if (responseBody != null) {
                 AutomationJobStatus status = new AutomationJobStatus();

@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationExecutionResult;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationJobStatus;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -81,7 +82,7 @@ class AnsibleAutomationPlatformServiceTest {
         responseBody.put("status", "pending");
         responseBody.put("url", BASE_URL + "/workflow_jobs/12345/");
 
-        when(postResponseSpec.body(Map.class)).thenReturn(responseBody);
+        doReturn(responseBody).when(postResponseSpec).body(any(ParameterizedTypeReference.class));
 
         AutomationExecutionResult result = service.executeWorkflow("test-workflow", Map.of("env", "dev"));
 
@@ -99,7 +100,7 @@ class AnsibleAutomationPlatformServiceTest {
         responseBody.put("id", "12345");
         responseBody.put("status", "pending");
 
-        when(postResponseSpec.body(Map.class)).thenReturn(responseBody);
+        doReturn(responseBody).when(postResponseSpec).body(any(ParameterizedTypeReference.class));
 
         AutomationExecutionResult result = service.executeWorkflow("test-workflow", null);
 
@@ -122,7 +123,7 @@ class AnsibleAutomationPlatformServiceTest {
 
     @Test
     void executeWorkflow_NullResponseBody() {
-        when(postResponseSpec.body(Map.class)).thenReturn(null);
+        doReturn(null).when(postResponseSpec).body(any(ParameterizedTypeReference.class));
 
         AutomationPlatformException.WorkflowExecutionException ex = assertThrows(
                 AutomationPlatformException.WorkflowExecutionException.class,
@@ -134,7 +135,7 @@ class AnsibleAutomationPlatformServiceTest {
     @Test
     void executeWorkflow_EmptyParameters() throws AutomationPlatformException {
         Map<String, Object> responseBody = Map.of("id", "12345", "status", "pending");
-        when(postResponseSpec.body(Map.class)).thenReturn(responseBody);
+        doReturn(responseBody).when(postResponseSpec).body(any(ParameterizedTypeReference.class));
 
         AutomationExecutionResult result = service.executeWorkflow("test-workflow", new HashMap<>());
         assertNotNull(result);
@@ -144,7 +145,7 @@ class AnsibleAutomationPlatformServiceTest {
     @Test
     void executeWorkflow_VerifyExtraVarsPassedCorrectly() throws AutomationPlatformException {
         Map<String, Object> responseBody = Map.of("id", "99999", "status", "pending");
-        when(postResponseSpec.body(Map.class)).thenReturn(responseBody);
+        doReturn(responseBody).when(postResponseSpec).body(any(ParameterizedTypeReference.class));
 
         Map<String, Object> params = new HashMap<>();
         params.put("app_name", "my-app");
@@ -163,7 +164,7 @@ class AnsibleAutomationPlatformServiceTest {
     @Test
     void executeWorkflowAsync_Success() throws ExecutionException, InterruptedException {
         Map<String, Object> responseBody = Map.of("id", "67890", "status", "running");
-        when(postResponseSpec.body(Map.class)).thenReturn(responseBody);
+        doReturn(responseBody).when(postResponseSpec).body(any(ParameterizedTypeReference.class));
 
         CompletableFuture<AutomationExecutionResult> future =
                 service.executeWorkflowAsync("test-workflow", Map.of("env", "prod"));
@@ -199,7 +200,7 @@ class AnsibleAutomationPlatformServiceTest {
         responseBody.put("status", "successful");
         responseBody.put("result_traceback", "Job completed successfully");
 
-        when(getResponseSpec.body(Map.class)).thenReturn(responseBody);
+        doReturn(responseBody).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
 
         AutomationJobStatus status = service.getJobStatus("12345");
 
@@ -212,37 +213,37 @@ class AnsibleAutomationPlatformServiceTest {
 
     @Test
     void getJobStatus_PendingStatus() throws AutomationPlatformException {
-        when(getResponseSpec.body(Map.class)).thenReturn(Map.of("status", "pending"));
+        doReturn(Map.of("status", "pending")).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
         assertEquals(AutomationJobStatus.Status.PENDING, service.getJobStatus("1").getStatus());
     }
 
     @Test
     void getJobStatus_RunningStatus() throws AutomationPlatformException {
-        when(getResponseSpec.body(Map.class)).thenReturn(Map.of("status", "running"));
+        doReturn(Map.of("status", "running")).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
         assertEquals(AutomationJobStatus.Status.RUNNING, service.getJobStatus("1").getStatus());
     }
 
     @Test
     void getJobStatus_FailedStatus() throws AutomationPlatformException {
-        when(getResponseSpec.body(Map.class)).thenReturn(Map.of("status", "failed"));
+        doReturn(Map.of("status", "failed")).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
         assertEquals(AutomationJobStatus.Status.FAILED, service.getJobStatus("1").getStatus());
     }
 
     @Test
     void getJobStatus_CancelledStatus() throws AutomationPlatformException {
-        when(getResponseSpec.body(Map.class)).thenReturn(Map.of("status", "canceled"));
+        doReturn(Map.of("status", "canceled")).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
         assertEquals(AutomationJobStatus.Status.CANCELLED, service.getJobStatus("1").getStatus());
     }
 
     @Test
     void getJobStatus_CancelledAlternativeSpelling() throws AutomationPlatformException {
-        when(getResponseSpec.body(Map.class)).thenReturn(Map.of("status", "cancelled"));
+        doReturn(Map.of("status", "cancelled")).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
         assertEquals(AutomationJobStatus.Status.CANCELLED, service.getJobStatus("1").getStatus());
     }
 
     @Test
     void getJobStatus_UnknownStatus() throws AutomationPlatformException {
-        when(getResponseSpec.body(Map.class)).thenReturn(Map.of("status", "unknown_status"));
+        doReturn(Map.of("status", "unknown_status")).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
         assertEquals(AutomationJobStatus.Status.ERROR, service.getJobStatus("1").getStatus());
     }
 
@@ -250,7 +251,7 @@ class AnsibleAutomationPlatformServiceTest {
     void getJobStatus_NullStatus() throws AutomationPlatformException {
         Map<String, Object> body = new HashMap<>();
         body.put("status", null);
-        when(getResponseSpec.body(Map.class)).thenReturn(body);
+        doReturn(body).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
         assertEquals(AutomationJobStatus.Status.ERROR, service.getJobStatus("1").getStatus());
     }
 
@@ -268,7 +269,7 @@ class AnsibleAutomationPlatformServiceTest {
 
     @Test
     void getJobStatus_NullResponseBody() {
-        when(getResponseSpec.body(Map.class)).thenReturn(null);
+        doReturn(null).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
 
         assertThrows(
                 AutomationPlatformException.JobNotFoundException.class,
@@ -286,7 +287,7 @@ class AnsibleAutomationPlatformServiceTest {
         responseBody.put("status", "successful");
         responseBody.put("result_traceback", "Workflow completed");
 
-        when(getResponseSpec.body(Map.class)).thenReturn(responseBody);
+        doReturn(responseBody).when(getResponseSpec).body(any(ParameterizedTypeReference.class));
 
         AutomationJobStatus status = service.getWorkflowJobStatus("67890");
 
@@ -295,7 +296,7 @@ class AnsibleAutomationPlatformServiceTest {
         assertEquals(AutomationJobStatus.Status.SUCCESSFUL, status.getStatus());
         assertEquals("Workflow completed", status.getStatusMessage());
 
-        verify(getUriSpec).uri(eq(BASE_URL + "/workflow_jobs/67890/"));
+        verify(getUriSpec, times(1)).uri(eq(BASE_URL + "/workflow_jobs/67890/"));
     }
 
     @Test
@@ -319,7 +320,7 @@ class AnsibleAutomationPlatformServiceTest {
         when(getResponseSpec.toBodilessEntity()).thenReturn(null); // any non-throw = success
 
         assertTrue(service.validateConnection());
-        verify(getUriSpec).uri(eq(BASE_URL + "/ping/"));
+        verify(getUriSpec, times(1)).uri(eq(BASE_URL + "/ping/"));
     }
 
     @Test
