@@ -303,8 +303,4 @@ externalservices:
         project-components-base-url: ${MARKETPLACE_PROJECT_COMPONENTS_BASE_URL}
         provisioner-actions-base-url: ${MARKETPLACE_PROVISIONER_ACTIONS_BASE_URL:}
         obo-scope: ${MARKETPLACE_OBO_SCOPE:}
-        trust-all-certificates: ${MARKETPLACE_TRUST_ALL_CERTS:true}
-        workflow: ${MARKETPLACE_WORKFLOW:}
-        ods-namespace: ${MARKETPLACE_ODS_NAMESPACE:}
-        quickstarter-repository: ${MARKETPLACE_QUICKSTARTER_REPO:}
-        catalog-item-id: ${MARKETPLACE_CATALOG_ITEM_ID:}
+        trust-all-certificates: ${MARKETPLACE_TRUST_ALL_CERTS:false}

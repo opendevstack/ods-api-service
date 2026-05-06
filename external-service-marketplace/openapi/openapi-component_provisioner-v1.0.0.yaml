@@ -20,6 +20,8 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - name: ProvisionerHealth
+    description: Public actuator health endpoint.
   - name: ProvisionerActions
     description: ProvisionerAction operations.
   - name: ProvisionerMessagesDefinitions
@@ -27,6 +29,32 @@ tags:
   - name: ProvisionResults
     description: Work with project components statuses
 paths:
+  /actuator/health:
+    get:
+      tags:
+        - ProvisionerHealth
+      summary: Health check endpoint
+      description: Public actuator health endpoint.
+      operationId: getProvisionerHealth
+      security: []
+      responses:
+        "200":
+          description: Service health status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  groups:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - status
+
   /provision-actions:
     post:
       tags:

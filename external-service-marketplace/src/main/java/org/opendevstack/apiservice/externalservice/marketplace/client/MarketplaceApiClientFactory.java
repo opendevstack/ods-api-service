@@ -13,6 +13,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import java.net.HttpURLConnection;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -155,48 +156,60 @@ public class MarketplaceApiClientFactory {
     private RestTemplate createRestTemplate(MarketplaceInstanceConfig config) {
         RestTemplate restTemplate = restTemplateBuilder.build();
 
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(config.getConnectionTimeout());
-        requestFactory.setReadTimeout(config.getReadTimeout());
-        restTemplate.setRequestFactory(requestFactory);
-
+        SimpleClientHttpRequestFactory requestFactory;
         if (config.isTrustAllCertificates()) {
             log.warn("Trust all certificates is enabled for Marketplace API connection. "
                     + "This should only be used in development environments!");
-            configureTrustAllCertificates();
+            requestFactory = createTrustAllRequestFactory();
+        } else {
+            requestFactory = new SimpleClientHttpRequestFactory();
         }
+        requestFactory.setConnectTimeout(config.getConnectionTimeout());
+        requestFactory.setReadTimeout(config.getReadTimeout());
+        restTemplate.setRequestFactory(requestFactory);
 
         return restTemplate;
     }
 
     /**
-     * Configure RestTemplate to trust all SSL certificates.
-     * WARNING: This should only be used in development environments.
+     * Builds a {@link SimpleClientHttpRequestFactory} that disables certificate and hostname
+     * verification only for the connections opened by this factory (no JVM-global side effects).
+     * WARNING: should only be used in development environments.
      */
-    @SuppressWarnings({"java:S4830", "java:S1186"})
-    private void configureTrustAllCertificates() {
+    @SuppressWarnings({"java:S4830", "java:S5527"})
+    private SimpleClientHttpRequestFactory createTrustAllRequestFactory() {
+        final javax.net.ssl.SSLSocketFactory socketFactory;
         try {
-            TrustManager[] trustAllCerttificates = new TrustManager[]{
+            TrustManager[] trustAllCertificates = new TrustManager[]{
                     new X509TrustManager() {
                         public X509Certificate[] getAcceptedIssuers() {
                             return new X509Certificate[0];
                         }
                         public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                            // Intentionally empty - dev only
                         }
-                        // Intentionally empty - trusting all certificates for development environments
                         public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                            // Intentionally empty - dev only
                         }
                     }
             };
             SSLContext context = SSLContext.getInstance("TLS");
-            context.init(null, trustAllCerttificates, new java.security.SecureRandom());
-
-            HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
-            // Intentionally disabling hostname verification for development environments
-            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-
+            context.init(null, trustAllCertificates, new java.security.SecureRandom());
+            socketFactory = context.getSocketFactory();
         } catch (NoSuchAlgorithmException | KeyManagementException ex) {
             log.error("Failed to configure SSL trust all certificates for Marketplace API", ex);
+            return new SimpleClientHttpRequestFactory();
         }
+
+        return new SimpleClientHttpRequestFactory() {
+            @Override
+            protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws java.io.IOException {
+                if (connection instanceof HttpsURLConnection httpsConnection) {
+                    httpsConnection.setSSLSocketFactory(socketFactory);
+                    httpsConnection.setHostnameVerifier((hostname, session) -> true);
+                }
+                super.prepareConnection(connection, httpMethod);
+            }
+        };
     }
 }

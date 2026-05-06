@@ -109,7 +109,6 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
             <version>3.0.2</version>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -137,12 +136,6 @@
             <version>17.0.0</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>3.0.2</version>
-            <scope>compile</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -157,7 +150,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <openapiNormalizer>FILTER=operationId:getProjectComponents|getProjectComponentById|getCatalogItemById</openapiNormalizer>
+                            <openapiNormalizer>FILTER=operationId:getProjectComponents|getProjectComponentById|getCatalogItemById|getCatalogItemBySlug|getCatalogHealth</openapiNormalizer>
                             <generatorName>java</generatorName>
                             <output>${project.basedir}</output>
                             <library>resttemplate</library>
@@ -193,7 +186,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <openapiNormalizer>FILTER=operationId:triggerProvisionAction|notifyProvisioningStatusUpdate|createIncident</openapiNormalizer>
+                            <openapiNormalizer>FILTER=operationId:triggerProvisionAction|notifyProvisioningStatusUpdate|createIncident|getProvisionerHealth</openapiNormalizer>
                             <generatorName>java</generatorName>
                             <output>${project.basedir}</output>
                             <library>resttemplate</library>

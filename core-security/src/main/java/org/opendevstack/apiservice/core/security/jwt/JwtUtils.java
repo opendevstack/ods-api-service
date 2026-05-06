@@ -18,11 +18,23 @@ public final class JwtUtils {
      * @throws InvalidBearerTokenException if the principal is not a JWT
      */
     public static String getTokenValue() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal = currentPrincipal();
         if (principal instanceof Jwt jwt) {
             return jwt.getTokenValue();
         }
         throw new InvalidBearerTokenException("Invalid authentication token");
+    }
+
+    private static Object currentPrincipal() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            throw new InvalidBearerTokenException("No authentication present in security context");
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal == null) {
+            throw new InvalidBearerTokenException("No principal present in security context");
+        }
+        return principal;
     }
 
     /**
@@ -33,7 +45,7 @@ public final class JwtUtils {
      * @throws InvalidBearerTokenException if the principal is not a JWT or no client ID claim is found
      */
     public static UUID getClientId() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal = currentPrincipal();
         if (principal instanceof Jwt jwt) {
             return extractClientId(jwt);
         }

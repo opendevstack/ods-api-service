@@ -61,7 +61,9 @@ public class ComponentsFacade {
 
     public void provisionProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
         try {
-            List<ProvisionActionParameter> createComponentParameterList = marketplaceMapper.mapCreateComponentRequestToCreateComponentParameterList(createComponentRequest);
+            CatalogItem catalogItem = resolveCatalogItem(createComponentRequest);
+            List<ProvisionActionParameter> createComponentParameterList = marketplaceMapper
+                    .mapCreateComponentRequestToCreateComponentParameterList(createComponentRequest, catalogItem);
             boolean success = marketplaceExternalService.provisionProjectComponent(projectId, createComponentParameterList);
             if (!success) {
                 log.error("Failed to create component in marketplace for project with id {}", projectId);
@@ -80,6 +82,31 @@ public class ComponentsFacade {
             throw new ComponentCreationException(
                     String.format("Failed to create component for project '%s': %s", projectId, e.getMessage()), e
             );
+        }
+    }
+
+    /**
+     * Resolves the catalog item that matches the requested {@code productId} (interpreted as the
+     * Marketplace catalog item slug). Returns {@code null} when the request or product id is missing,
+     * when the catalog item cannot be found, or when the lookup fails – callers must tolerate a
+     * missing catalog item and fall back to default parameter handling.
+     */
+    private CatalogItem resolveCatalogItem(CreateComponentRequest createComponentRequest) {
+        if (createComponentRequest == null || createComponentRequest.getProductId() == null
+                || createComponentRequest.getProductId().isBlank()) {
+            return null;
+        }
+        String slug = createComponentRequest.getProductId();
+        try {
+            CatalogItem catalogItem = marketplaceExternalService.getCatalogItemBySlug(slug);
+            if (catalogItem == null) {
+                log.warn("No catalog item found for slug '{}'; provisioning will fall back to default parameter types", slug);
+            }
+            return catalogItem;
+        } catch (MarketplaceException e) {
+            log.warn("Failed to retrieve catalog item for slug '{}': {}. Provisioning will fall back to default parameter types",
+                    slug, e.getMessage());
+            return null;
         }
     }
 
