@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.project.controller.ComponentsResponseFactory;
 import org.opendevstack.apiservice.project.controller.ProjectComponentsController;
+import org.opendevstack.apiservice.project.controller.ProjectComponentsInternalController;
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentBadRequestException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
@@ -25,7 +26,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = ProjectComponentsController.class)
+@RestControllerAdvice(assignableTypes = {ProjectComponentsController.class,
+        ProjectComponentsInternalController.class})
 @Slf4j
 public class ProjectComponentsExceptionHandler {
 

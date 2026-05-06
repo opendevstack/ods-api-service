@@ -6,20 +6,20 @@ info:
     name: ODS Team
   version: v0.0.1
 servers:
-  - url: http://{baseurl}/api/pub/v0
+  - url: http://{baseurl}/api/pub/v1
     variables:
       baseurl:
         default: localhost:8080
         description: Development environment
 tags:
-  - name: Project Components V0 Internal
+  - name: Project Components Internal
     description: API for managing project components with extended methods
 
 paths:
   /projects/{projectId}/components/{componentId}:
     delete:
       tags:
-        - Project Components v0 Internal
+        - Project Components Internal
       summary: Delete component information
       operationId: deleteProjectComponent
       description: Deletes a specific component
