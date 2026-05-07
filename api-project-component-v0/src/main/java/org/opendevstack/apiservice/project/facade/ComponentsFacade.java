@@ -157,10 +157,11 @@ public class ComponentsFacade {
     public void registerProjectComponent(String projectId, String componentId) {
         try {
             marketplaceExternalService.registerProjectComponent(projectId, componentId);
+            log.info("Successfully registered component '{}' for project '{}'", componentId, projectId);
         } catch (MarketplaceException e) {
+            log.error("Failed to register component '{}' for project '{}': {}", componentId, projectId, e.getMessage(), e);
             throw new ComponentRegistrationException(
-                    String.format("Failed to register component '%s' in marketplace for project with id '%s': '%s'",
-                            componentId, projectId, e.getMessage()), e
+                    String.format("Failed to register component '%s' for project '%s': %s", componentId, projectId, e.getMessage()), e
             );
         }
     }

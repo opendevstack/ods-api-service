@@ -13,6 +13,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.service.Marketpla
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
+import org.opendevstack.apiservice.project.exception.ComponentRegistrationException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.ComponentsStatusDTO;
@@ -26,6 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestCatalogItem;
@@ -101,8 +104,8 @@ class ComponentsFacadeTest {
         verify(marketplaceExternalService).provisionProjectComponent(eq("testProject"), anyList());
     }
 
-        @Test
-        void create_project_component_throws_already_exists_when_marketplace_returns_conflict() throws MarketplaceException {
+    @Test
+    void create_project_component_throws_already_exists_when_marketplace_returns_conflict() throws MarketplaceException {
         CreateComponentRequest request = buildTestCreateComponentRequest();
         HttpClientErrorException conflict = HttpClientErrorException.Conflict.create(
             HttpStatus.CONFLICT,
@@ -119,5 +122,33 @@ class ComponentsFacadeTest {
             .isInstanceOf(ComponentAlreadyExistsException.class)
             .hasMessage("This component name already exists, please choose another name.");
         verify(marketplaceExternalService).provisionProjectComponent(eq("testProject"), anyList());
-        }
+    }
+
+    @Test
+    void register_project_component_ends_successfully_when_marketplace_registration_succeeds() throws MarketplaceException {
+        String projectId = "testProjectId";
+        String componentId = "testComponentId";
+
+        doNothing().when(marketplaceExternalService).registerProjectComponent(eq(projectId), eq(componentId));
+
+        componentsFacade.registerProjectComponent(projectId, componentId);
+
+        verify(marketplaceExternalService).registerProjectComponent(projectId, componentId);
+    }
+
+    @Test
+    void register_project_component_throws_registration_exception_when_marketplace_registration_throws_exception() throws MarketplaceException {
+        String projectId = "testProjectId";
+        String componentId = "testComponentId";
+
+        doThrow(new MarketplaceException("Failed to register component", new RuntimeException("boom")))
+                .when(marketplaceExternalService)
+                .registerProjectComponent(eq(projectId), eq(componentId));
+
+        assertThatThrownBy(() -> componentsFacade.registerProjectComponent(projectId, componentId))
+                .isInstanceOf(ComponentRegistrationException.class)
+                .hasMessage("Failed to register component 'testComponentId' for project 'testProjectId': Failed to register component");
+
+        verify(marketplaceExternalService).registerProjectComponent(projectId, componentId);
+    }
 }
