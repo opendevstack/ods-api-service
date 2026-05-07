@@ -132,7 +132,7 @@ class ComponentsFacadeTest {
     }
 
     @Test
-    void delete_project_component_throws_not_found_when_no_component_exists() throws MarketplaceException {
+    void delete_project_component_throws_component_deletion_exception_when_marketplace_exception_is_thrown() throws MarketplaceException {
         doThrow(new MarketplaceException("Test exception"))
                 .when(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
 

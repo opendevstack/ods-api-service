@@ -30,12 +30,18 @@ paths:
           description: Project key
           schema:
             type: string
+            pattern: "^[A-Z]{2}[A-Z0-9]{1,8}$"
+            minLength: 3
+            maxLength: 10
         - name: componentId
           in: path
           required: true
           description: Component id
           schema:
             type: string
+            minLength: 2
+            maxLength: 52
+            pattern: "^[a-z]+(-?[a-z0-9]+)*$"
       responses:
         "204":
           description: Project component properly deleted or no component found for the provided componentId.
