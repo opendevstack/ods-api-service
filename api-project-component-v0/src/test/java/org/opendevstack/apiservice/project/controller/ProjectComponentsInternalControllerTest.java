@@ -38,19 +38,19 @@ class ProjectComponentsInternalControllerTest {
     }
 
     @Test
-    void delete_project_component_returns_no_content_when_component_delete_works() throws MarketplaceException {
+    void delete_project_component_returns_no_content_when_component_delete_works() {
         String projectId = "projectId";
         String componentId = "test-component-delete";
 
         ResponseEntity<Void> response = projectComponentsInternalController.deleteProjectComponent(projectId, componentId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(response.getBody()).isEqualTo(null);
+        assertThat(response.getBody()).isNull();
         verify(componentsFacade).deleteProjectComponent(projectId, componentId);
     }
 
     @Test
-    void delete_project_component_throws_exception_when_component_delete_api_throws_exception() throws MarketplaceException {
+    void delete_project_component_throws_exception_when_component_delete_api_throws_exception() {
         String projectId = "projectId";
         String componentId = "test-component-delete";
 
