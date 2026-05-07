@@ -40,7 +40,7 @@ public class MarketplaceApiClient {
         if (config.getUsername() != null && config.getPassword() != null) {
             this.apiClient.setUsername(config.getUsername());
             this.apiClient.setPassword(config.getPassword());
-            log.info("MarketplaceApiClient for instance '{}' uses also basic authentication", instanceName);
+            log.info("MarketplaceApiClient for instance '{}' uses basic authentication", instanceName);
         }
 
         log.info("MarketplaceApiClient initialized for instance '{}'", instanceName);
