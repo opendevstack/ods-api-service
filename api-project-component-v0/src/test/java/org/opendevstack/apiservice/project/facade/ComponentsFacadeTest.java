@@ -17,6 +17,7 @@ import org.opendevstack.apiservice.project.exception.ComponentDeletionException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.exception.ComponentRegistrationException;
 import org.opendevstack.apiservice.project.exception.ComponentReservedParamException;
+import org.opendevstack.apiservice.project.exception.ComponentReservedParamException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.ComponentsStatusDTO;
@@ -114,6 +115,7 @@ class ComponentsFacadeTest {
         verify(marketplaceExternalService).provisionProjectComponent(eq("testProject"), anyList());
     }
 
+    @Test
     void create_project_component_throws_bad_request_when_request_contains_reserved_param() {
         CreateComponentRequest request = buildTestCreateComponentRequest();
         request.putParamsItem("ods_namespace", "null");

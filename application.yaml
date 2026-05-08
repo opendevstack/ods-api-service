@@ -206,11 +206,7 @@ apis:
   project-components:
     create:
       # Parameters reserved for backend/system use. If provided by clients in params, request is rejected.
-      reserved-params:
-        - "workflow"
-        - "ods_namespace"
-        - "component_type"
-        - "quickstarter_repo"
+      reserved-params: ${API_PROJECT_COMPONENTS_RESERVED_PARAMS:}
 
   project-users:
     # Workflow name triggered for project user automation tasks.
