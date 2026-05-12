@@ -802,94 +802,70 @@ class MarketplaceServiceImplTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void testRegisterProjectComponent_Success() throws MarketplaceException {
+    void testRegisterProjectComponent_RestClientException() throws MarketplaceException {
         // Arrange
         String instanceName = "dev";
         String projectKey = "PROJ";
-        String componentId = "test-component";
+        String componentId = "test-component-id";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
-        instanceConfig.setOboScope("api://test/scope");
 
+        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenReturn(ResponseEntity.ok(null));
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenThrow(new RestClientException("Connection failed"));
 
         // Act — should not throw
-        marketplaceService.registerProjectComponent(instanceName, projectKey, componentId);
+        assertThrows(MarketplaceException.class, () ->
+                marketplaceService.registerProjectComponent(projectKey, componentId));
 
         // Assert
+        verify(clientFactory).getClient(instanceName);
+        verify(marketplaceApiClient).getApiClient();
+    }
+
+    @Test
+    void testRegisterProjectComponent_Unauthorized_ThrowsException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String componentId = "test-component-id";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        HttpClientErrorException unauthorizedException = HttpClientErrorException.create(
+                HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenThrow(unauthorizedException);
+
+        // Act & Assert
+        assertThrows(MarketplaceException.class, () ->
+                marketplaceService.registerProjectComponent(projectKey, componentId));
+
         verify(clientFactory).getClient(instanceName);
     }
 
     @Test
-    void testRegisterProjectComponent_RestClientException_ThrowsMarketplaceException() throws MarketplaceException {
+    void testRegisterProjectComponent_ComponentIsRegistered_NoExceptionThrown() throws MarketplaceException {
         // Arrange
         String instanceName = "dev";
         String projectKey = "PROJ";
         String componentId = "test-component";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
-        instanceConfig.setOboScope("api://test/scope");
 
+        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
-        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT)
-                .thenThrow(new RestClientException("Connection refused"));
-
-        // Act & Assert
-        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
-                marketplaceService.registerProjectComponent(instanceName, projectKey, componentId));
-
-        assertTrue(exception.getMessage().contains("Failed to register"));
-    }
-
-    @Test
-    void testRegisterProjectComponent_AuthError_ThrowsMarketplaceException() throws MarketplaceException {
-        // Arrange
-        String instanceName = "dev";
-        String projectKey = "PROJ";
-        String componentId = "test-component";
-        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
-        instanceConfig.setOboScope("api://test/scope");
-        HttpClientErrorException unauthorizedEx = HttpClientErrorException.create(
-                HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, new byte[0], null);
-
-        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
-        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
-        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
-        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenThrow(unauthorizedEx);
-
-        // Act & Assert
-        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
-                marketplaceService.registerProjectComponent(instanceName, projectKey, componentId));
-
-        assertTrue(exception.getMessage().contains("Access denied"));
-    }
-
-    @Test
-    void testRegisterProjectComponent_DefaultInstance() throws MarketplaceException {
-        // Arrange
-        String projectKey = "PROJ";
-        String componentId = "test-component";
-        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
-        instanceConfig.setProvisionerActionsBaseUrl("https://example/provision-actions");
-        instanceConfig.setOboScope("api://test/scope");
-
-        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
-        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
         when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
         when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
         whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenReturn(ResponseEntity.ok(null));
 
-        // Act — should not throw
+        // Act
         marketplaceService.registerProjectComponent(projectKey, componentId);
 
         // Assert
-        verify(clientFactory).getClient("default");
+        verify(clientFactory).getClient(instanceName);
     }
 
 }

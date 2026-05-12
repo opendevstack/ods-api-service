@@ -215,7 +215,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public void registerProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException {
         log.debug("Marketplace service REGISTER component {} for project {}: ", componentId, projectId);
         try {
-            MarketplaceApiClient marketplaceClient = getOboAuthenticatedClient(instanceName);
+            MarketplaceApiClient marketplaceClient = clientFactory.getClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
 
             ProvisionResultsApi provisionResultsApi = new ProvisionResultsApi(apiClient);
