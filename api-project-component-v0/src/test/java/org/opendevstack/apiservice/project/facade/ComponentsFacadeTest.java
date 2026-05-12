@@ -12,6 +12,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.Pro
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.opendevstack.apiservice.project.exception.ComponentAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ComponentCreationException;
+import org.opendevstack.apiservice.project.exception.ComponentDeletionException;
 import org.opendevstack.apiservice.project.exception.ComponentNotFoundException;
 import org.opendevstack.apiservice.project.exception.ComponentRegistrationException;
 import org.opendevstack.apiservice.project.mapper.MarketplaceMapper;
@@ -22,13 +23,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.opendevstack.apiservice.project.util.TestObjectsBuilder.buildTestCatalogItem;
@@ -150,5 +151,23 @@ class ComponentsFacadeTest {
                 .hasMessage("Failed to register component 'testComponentId' for project 'testProjectId': Failed to register component");
 
         verify(marketplaceExternalService).registerProjectComponent(projectId, componentId);
+    }
+
+    @Test
+    void delete_project_component_ends_successfully_for_existing_component() throws MarketplaceException {
+        componentsFacade.deleteProjectComponent("testProject", "testComponent");
+
+        verify(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
+    }
+
+    @Test
+    void delete_project_component_throws_component_deletion_exception_when_marketplace_exception_is_thrown() throws MarketplaceException {
+        doThrow(new MarketplaceException("Test exception"))
+                .when(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
+
+        assertThatThrownBy(() -> componentsFacade.deleteProjectComponent("testProject", "testComponent"))
+                .isInstanceOf(ComponentDeletionException.class)
+                .hasMessageContaining("Test exception");
+        verify(marketplaceExternalService).deleteProjectComponent("testProject", "testComponent");
     }
 }

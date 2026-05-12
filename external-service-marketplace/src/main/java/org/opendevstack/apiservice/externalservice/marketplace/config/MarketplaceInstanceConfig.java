@@ -20,6 +20,16 @@ public class MarketplaceInstanceConfig {
     private String bitbucketBaseUrl;
 
     /**
+     * The username used for basic auth
+     */
+    private String username;
+
+    /**
+     * The password used for basic auth
+     */
+    private String password;
+
+    /**
      * Connection timeout in milliseconds (default: 30000)
      */
     private int connectionTimeout = 30000;
