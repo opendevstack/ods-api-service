@@ -2,9 +2,9 @@ name: Build and Release Latest
 
 on:
   push:
-    branches: [ master ]
+    branches: [ develop ]
   pull_request:
-    branches: [ master, develop ]    
+    branches: [ develop ]    
   workflow_dispatch:
 permissions:
   contents: write
@@ -59,7 +59,7 @@ jobs:
   ods-api-service:
     needs: build
     name: Build and Push ods-api-service Docker Image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       -
         name: Checkout repository
@@ -77,14 +77,4 @@ jobs:
           --imagename ods-api-service \
           --dockerdir docker \
           --dockerfile Dockerfile
-     # - name: Push docker image
-     #   if: success() && github.repository == 'opendevstack/ods-api-service' && github.event_name == 'push'
-     #   shell: bash
-     #   env:
-     #     DOCKER_USER: ${{ secrets.DockerHubUser }}
-     #     DOCKER_PASS: ${{ secrets.DockerHubPass }}
-     #   run: |
-     #     ./.github/workflows/push-docker-image.sh \
-     #     --user "$DOCKER_USER" \
-     #     --password "$DOCKER_PASS" \
-     #     --imagename ods-api-service
+
