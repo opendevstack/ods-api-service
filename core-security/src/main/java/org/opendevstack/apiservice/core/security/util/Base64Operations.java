@@ -4,6 +4,8 @@ import java.util.Base64;
 
 public class Base64Operations {
 
+    private Base64Operations() {}
+
     /**
      * Encodes a string value using Base64 encoding.
      *
