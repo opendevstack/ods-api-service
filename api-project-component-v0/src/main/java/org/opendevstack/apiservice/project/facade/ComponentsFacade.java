@@ -51,7 +51,6 @@ public class ComponentsFacade {
                         String.format("Catalog item with id '%s' not found", catalogItemId)
                 );
             }
-            log.info("Catalog item retrieved: {}", catalogItem);
             Component component = marketplaceMapper.mapMarketplaceComponentToV0Component(marketplaceComponent, catalogItem);
             log.info("Marketplace v0 component retrieved: {}", component);
             return component;
