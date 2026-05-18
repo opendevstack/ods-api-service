@@ -4,12 +4,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisioningStatusUpdateRequest;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.client.ApiClient;
@@ -847,6 +849,46 @@ class MarketplaceServiceImplTest {
                 marketplaceService.registerProjectComponent(projectKey, componentId, catalogItemSlug, List.of()));
 
         verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testRegisterProjectComponent_BuildsCorrectComponentUrl_UsingBitbucketBaseUrl() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        String projectKey = "PROJ";
+        String componentId = "my-component";
+        String catalogItemSlug = "test-slug";
+        String bitbucketBaseUrl = "https://bitbucket.example.com";
+
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setBitbucketBaseUrl(bitbucketBaseUrl);
+
+        ArgumentCaptor<Object> bodyCaptor = ArgumentCaptor.forClass(Object.class);
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenReturn(ResponseEntity.ok(null));
+
+        // Act
+        marketplaceService.registerProjectComponent(projectKey, componentId, catalogItemSlug, List.of());
+
+        // Assert — capture the body passed to invokeAPI and verify its componentUrl
+        verify(apiClient).invokeAPI(
+                eq(PATH_NOTIFY_PROVISIONING),
+                eq(HttpMethod.PUT),
+                any(),
+                any(),
+                bodyCaptor.capture(),
+                any(HttpHeaders.class),
+                any(), any(), any(), any(), any(), any());
+
+        ProvisioningStatusUpdateRequest capturedRequest =
+                (ProvisioningStatusUpdateRequest) bodyCaptor.getValue();
+
+        String expectedUrl = bitbucketBaseUrl + "/projects/" + projectKey + "/repos/" + componentId + "/browse";
+        assertEquals(expectedUrl, capturedRequest.getComponentUrl());
     }
 
     @Test

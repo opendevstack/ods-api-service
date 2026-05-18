@@ -138,17 +138,34 @@ class ComponentsFacadeTest {
     }
 
     @Test
-    void register_project_component_throws_registration_exception_when_marketplace_registration_throws_exception() throws MarketplaceException {
+    void register_project_component_passes_correct_component_id_and_product_id_to_marketplace() throws MarketplaceException {
         CreateComponentRequest request = buildTestCreateComponentRequest();
+        // name = "testcomponent", productId = "testProductId"
         String projectId = "testProjectId";
 
-        doThrow(new MarketplaceException("Failed to register component", new RuntimeException("boom")))
+        doNothing().when(marketplaceExternalService).registerProjectComponent(
+                eq(projectId), eq("testcomponent"), eq("testProductId"), anyList());
+
+        componentsFacade.registerProjectComponent(projectId, request);
+
+        verify(marketplaceExternalService).registerProjectComponent(
+                eq(projectId), eq("testcomponent"), eq("testProductId"), anyList());
+    }
+
+    @Test
+    void register_project_component_throws_registration_exception_wrapping_original_cause() throws MarketplaceException {
+        CreateComponentRequest request = buildTestCreateComponentRequest();
+        String projectId = "testProjectId";
+        MarketplaceException originalCause = new MarketplaceException("downstream error", new RuntimeException("root"));
+
+        doThrow(originalCause)
                 .when(marketplaceExternalService)
                 .registerProjectComponent(eq(projectId), anyString(), anyString(), anyList());
 
         assertThatThrownBy(() -> componentsFacade.registerProjectComponent(projectId, request))
                 .isInstanceOf(ComponentRegistrationException.class)
-                .hasMessage("Failed to register component 'testcomponent' for project 'testProjectId': Failed to register component");
+                .hasMessage("Failed to register component 'testcomponent' for project 'testProjectId': downstream error")
+                .hasCause(originalCause);
 
         verify(marketplaceExternalService).registerProjectComponent(eq(projectId), anyString(), anyString(), anyList());
     }

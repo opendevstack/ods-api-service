@@ -67,7 +67,7 @@ class ProjectComponentsControllerTest {
     }
 
     @Test
-    void create_project_component_with_registration_only_returns_ok_with_component_name_in_path() {
+    void create_project_component_with_register_only_returns_ok_with_component_name_in_path() {
         String projectId = "testProjectId";
         CreateComponentRequest request = buildTestCreateComponentRequest(); // name = "testcomponent"
         request.setRegisterOnly(Boolean.TRUE);
@@ -100,7 +100,7 @@ class ProjectComponentsControllerTest {
     }
 
     @Test
-    void create_project_component_with_registration_only_propagates_exception_when_facade_throws_exception() {
+    void create_project_component_with_register_only_propagates_exception_when_facade_throws_exception() {
         String projectId = "testProjectId";
         CreateComponentRequest request = buildTestCreateComponentRequest();
         request.setRegisterOnly(Boolean.TRUE);
@@ -112,6 +112,23 @@ class ProjectComponentsControllerTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("boom");
         verify(componentsFacade).registerProjectComponent(projectId, request);
+    }
+
+    @Test
+    void create_project_component_with_register_only_false_delegates_to_provision_project_component() {
+        String projectId = "testProjectId";
+        CreateComponentRequest request = buildTestCreateComponentRequest();
+        request.setRegisterOnly(Boolean.FALSE);
+
+        doNothing().when(componentsFacade).provisionProjectComponent(eq(projectId), any(CreateComponentRequest.class));
+
+        ResponseEntity<CreateComponentResponse> response = projectComponentsController.createProjectComponent(projectId, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("Component created");
+        assertThat(response.getBody().getPath()).isEqualTo("/api/pub/v0/projects/testProjectId/components/testcomponent");
+        verify(componentsFacade).provisionProjectComponent(projectId, request);
     }
 
     @Test
