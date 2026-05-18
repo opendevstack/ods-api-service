@@ -2,10 +2,10 @@ package org.opendevstack.apiservice.project.mapper;
 
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItemUserAction;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItemUserActionParameter;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemUserAction;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemUserActionParameter;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionActionParameter;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 
 import java.util.List;

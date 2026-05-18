@@ -12,10 +12,10 @@ import org.opendevstack.apiservice.externalservice.marketplace.client.Marketplac
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.ApiClient;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionResponse;
+import org.opendevstack.apiservice.externalservice.marketplace.client.ApiClient;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentExtendedInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionActionResponse;
 import org.opendevstack.apiservice.externalservice.marketplace.service.impl.MarketplaceServiceImpl;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;

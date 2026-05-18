@@ -2,12 +2,12 @@ package org.opendevstack.apiservice.project.mapper;
 
 import org.mapstruct.Mapper;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItemUserAction;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItemUserActionParameter;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisioningStatusUpdateRequestAllOfParameters;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemUserAction;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemUserActionParameter;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentExtendedInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionActionParameter;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisioningStatusUpdateRequestAllOfParameters;
 import org.opendevstack.apiservice.project.model.Component;
 import org.opendevstack.apiservice.project.model.CreateComponentRequest;
 import org.opendevstack.apiservice.project.model.EnvironmentsDTO;

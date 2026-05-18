@@ -101,9 +101,6 @@ clean: check-maven
 		! -path "./external-service-marketplace/src/main/java/org/opendevstack/apiservice/externalservice/marketplace/model" \
 		! -path "./external-service-uipath/src/main/java/org/opendevstack/apiservice/externalservice/uipath/model" \
 		-prune -exec rm -rf {} +
-	@echo "$(BLUE)Removing generated OpenAPI openapi directories...$(NC)"
-	@find . -type d -path "*/src/main/java/*/openapi" \
-		-prune -exec rm -rf {} +
 	@echo "$(GREEN)✓ Clean complete$(NC)"
 
 ## Remove local Maven cache for org.opendevstack.apiservice
