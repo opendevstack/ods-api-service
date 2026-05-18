@@ -127,30 +127,30 @@ class ComponentsFacadeTest {
 
     @Test
     void register_project_component_ends_successfully_when_marketplace_registration_succeeds() throws MarketplaceException {
+        CreateComponentRequest request = buildTestCreateComponentRequest();
         String projectId = "testProjectId";
-        String componentId = "testComponentId";
 
-        doNothing().when(marketplaceExternalService).registerProjectComponent(eq(projectId), eq(componentId));
+        doNothing().when(marketplaceExternalService).registerProjectComponent(eq(projectId), anyString(), anyString(), anyList());
 
-        componentsFacade.registerProjectComponent(projectId, componentId);
+        componentsFacade.registerProjectComponent(projectId, request);
 
-        verify(marketplaceExternalService).registerProjectComponent(projectId, componentId);
+        verify(marketplaceExternalService).registerProjectComponent(eq(projectId), anyString(), anyString(), anyList());
     }
 
     @Test
     void register_project_component_throws_registration_exception_when_marketplace_registration_throws_exception() throws MarketplaceException {
+        CreateComponentRequest request = buildTestCreateComponentRequest();
         String projectId = "testProjectId";
-        String componentId = "testComponentId";
 
         doThrow(new MarketplaceException("Failed to register component", new RuntimeException("boom")))
                 .when(marketplaceExternalService)
-                .registerProjectComponent(eq(projectId), eq(componentId));
+                .registerProjectComponent(eq(projectId), anyString(), anyString(), anyList());
 
-        assertThatThrownBy(() -> componentsFacade.registerProjectComponent(projectId, componentId))
+        assertThatThrownBy(() -> componentsFacade.registerProjectComponent(projectId, request))
                 .isInstanceOf(ComponentRegistrationException.class)
-                .hasMessage("Failed to register component 'testComponentId' for project 'testProjectId': Failed to register component");
+                .hasMessage("Failed to register component 'testcomponent' for project 'testProjectId': Failed to register component");
 
-        verify(marketplaceExternalService).registerProjectComponent(projectId, componentId);
+        verify(marketplaceExternalService).registerProjectComponent(eq(projectId), anyString(), anyString(), anyList());
     }
 
     @Test

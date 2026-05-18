@@ -305,3 +305,5 @@ externalservices:
         bitbucket-base-url: ${MARKETPLACE_BITBUCKET_BASE_URL:}
         obo-scope: ${MARKETPLACE_OBO_SCOPE:}
         trust-all-certificates: ${MARKETPLACE_TRUST_ALL_CERTS:false}
+        username: ${MARKETPLACE_USERNAME:}
+        password: ${MARKETPLACE_PASSWORD:}

@@ -807,6 +807,7 @@ class MarketplaceServiceImplTest {
         String instanceName = "dev";
         String projectKey = "PROJ";
         String componentId = "test-component-id";
+        String catalogItemSlug = "test-catalog-item-slug";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
 
         when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
@@ -817,7 +818,7 @@ class MarketplaceServiceImplTest {
 
         // Act — should not throw
         assertThrows(MarketplaceException.class, () ->
-                marketplaceService.registerProjectComponent(projectKey, componentId));
+                marketplaceService.registerProjectComponent(projectKey, componentId, catalogItemSlug, List.of()));
 
         // Assert
         verify(clientFactory).getClient(instanceName);
@@ -830,6 +831,7 @@ class MarketplaceServiceImplTest {
         String instanceName = "dev";
         String projectKey = "PROJ";
         String componentId = "test-component-id";
+        String catalogItemSlug = "test-catalog-item-slug";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
         HttpClientErrorException unauthorizedException = HttpClientErrorException.create(
                 HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, new byte[0], null);
@@ -842,7 +844,7 @@ class MarketplaceServiceImplTest {
 
         // Act & Assert
         assertThrows(MarketplaceException.class, () ->
-                marketplaceService.registerProjectComponent(projectKey, componentId));
+                marketplaceService.registerProjectComponent(projectKey, componentId, catalogItemSlug, List.of()));
 
         verify(clientFactory).getClient(instanceName);
     }
@@ -853,6 +855,7 @@ class MarketplaceServiceImplTest {
         String instanceName = "dev";
         String projectKey = "PROJ";
         String componentId = "test-component";
+        String catalogItemSlug = "test-catalog-item-slug";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
 
         when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
@@ -862,7 +865,7 @@ class MarketplaceServiceImplTest {
         whenInvokeAPI(PATH_NOTIFY_PROVISIONING, HttpMethod.PUT).thenReturn(ResponseEntity.ok(null));
 
         // Act
-        marketplaceService.registerProjectComponent(projectKey, componentId);
+        marketplaceService.registerProjectComponent(projectKey, componentId, catalogItemSlug, List.of());
 
         // Assert
         verify(clientFactory).getClient(instanceName);

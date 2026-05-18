@@ -6,6 +6,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.exception.Marketp
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisionActionParameter;
+import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProvisioningStatusUpdateRequestAllOfParameters;
 import org.opendevstack.apiservice.externalservice.marketplace.service.CatalogItemOperations;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.opendevstack.apiservice.project.exception.CatalogItemNotFoundException;
@@ -50,6 +51,7 @@ public class ComponentsFacade {
                         String.format("Catalog item with id '%s' not found", catalogItemId)
                 );
             }
+            log.info("Catalog item retrieved: {}", catalogItem);
             Component component = marketplaceMapper.mapMarketplaceComponentToV0Component(marketplaceComponent, catalogItem);
             log.info("Marketplace v0 component retrieved: {}", component);
             return component;
@@ -176,9 +178,13 @@ public class ComponentsFacade {
         return false;
     }
 
-    public void registerProjectComponent(String projectId, String componentId) {
+    public void registerProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
+        String componentId = createComponentRequest.getName();
+        String productId = createComponentRequest.getProductId();
         try {
-            marketplaceExternalService.registerProjectComponent(projectId, componentId);
+            List<ProvisioningStatusUpdateRequestAllOfParameters> parameters = marketplaceMapper
+                    .mapCreateComponentRequestToRegisterComponentParameterList(createComponentRequest);
+            marketplaceExternalService.registerProjectComponent(projectId, componentId, productId, parameters);
             log.info("Successfully registered component '{}' for project '{}'", componentId, projectId);
         } catch (MarketplaceException e) {
             log.error("Failed to register component '{}' for project '{}': {}", componentId, projectId, e.getMessage(), e);

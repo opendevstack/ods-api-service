@@ -31,7 +31,7 @@ public class ProjectComponentsController implements ProjectComponentsApi {
     public ResponseEntity<CreateComponentResponse> createProjectComponent(String projectId, CreateComponentRequest createComponentRequest) {
 
         if (Boolean.TRUE.equals(createComponentRequest.getRegisterOnly())) {
-            componentsFacade.registerProjectComponent(projectId, createComponentRequest.getName());
+            componentsFacade.registerProjectComponent(projectId, createComponentRequest);
             log.info("Registered component '{}' for project '{}'", createComponentRequest.getName(), projectId);
         } else {
             componentsFacade.provisionProjectComponent(projectId, createComponentRequest);
