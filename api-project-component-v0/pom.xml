@@ -139,12 +139,12 @@
                         </goals>
                         <configuration>
                             <generatorName>spring</generatorName>
-                            <output>${project.basedir}</output>
+                            <output>${project.basedir}/target/generated-sources/openapi</output>
                             <library>spring-boot</library>
                             <inputSpec>${project.basedir}/openapi/api-project-component-v0.yaml</inputSpec>
-                            <apiPackage>org.opendevstack.apiservice.project.api</apiPackage>
-                            <modelPackage>org.opendevstack.apiservice.project.model</modelPackage>
-                            <invokerPackage>org.opendevstack.apiservice.project</invokerPackage>
+                            <apiPackage>org.opendevstack.apiservice.projectcomponent.client.api</apiPackage>
+                            <modelPackage>org.opendevstack.apiservice.projectcomponent.client.model</modelPackage>
+                            <invokerPackage>org.opendevstack.apiservice.projectcomponent.client</invokerPackage>
                             <skipOverwrite>false</skipOverwrite>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
@@ -168,12 +168,12 @@
                         </goals>
                         <configuration>
                             <generatorName>spring</generatorName>
-                            <output>${project.basedir}</output>
+                            <output>${project.basedir}/target/generated-sources/openapi</output>
                             <library>spring-boot</library>
                             <inputSpec>${project.basedir}/openapi/api-project-component-v0-internal.yaml</inputSpec>
-                            <apiPackage>org.opendevstack.apiservice.project.api</apiPackage>
-                            <modelPackage>org.opendevstack.apiservice.project.model</modelPackage>
-                            <invokerPackage>org.opendevstack.apiservice.project</invokerPackage>
+                            <apiPackage>org.opendevstack.apiservice.projectcomponent.client.api</apiPackage>
+                            <modelPackage>org.opendevstack.apiservice.projectcomponent.client.model</modelPackage>
+                            <invokerPackage>org.opendevstack.apiservice.projectcomponent.client</invokerPackage>
                             <skipOverwrite>false</skipOverwrite>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
