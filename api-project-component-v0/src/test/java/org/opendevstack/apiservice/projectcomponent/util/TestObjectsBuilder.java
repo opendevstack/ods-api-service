@@ -1,7 +1,7 @@
 package org.opendevstack.apiservice.projectcomponent.util;
 
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.CatalogItem;
-import org.opendevstack.apiservice.externalservice.marketplace.openapi.model.ProjectComponentExtendedInfo;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentExtendedInfo;
 import org.opendevstack.apiservice.projectcomponent.client.model.Component;
 import org.opendevstack.apiservice.projectcomponent.client.model.ComponentsStatusDTO;
 import org.opendevstack.apiservice.projectcomponent.client.model.CreateComponentRequest;
