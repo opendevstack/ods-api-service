@@ -5,6 +5,7 @@ import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.*;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.client.ApiClient;
@@ -14,16 +15,6 @@ import org.opendevstack.apiservice.externalservice.marketplace.client.api.Projec
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProvisionResultsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProvisionerActionsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProvisionerHealthApi;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.GetCatalogHealth200Response;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.GetProvisionerHealth200Response;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentProvisionStatus;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionAction;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionActionParameter;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionActionResponse;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisioningDeleteRequest;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisioningStatusUpdateRequest;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisioningStatusUpdateRequestAllOfParameters;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -109,6 +100,28 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     @Override
     public ProjectComponentProvisionStatus getProjectComponent(String projectId, String componentId) throws MarketplaceException {
         return getProjectComponent(getDefaultInstance(), projectId, componentId);
+    }
+
+    public ProjectComponentListResponse getAllProjectComponents(String instanceName, Integer page, Integer size) throws MarketplaceException {
+        log.debug("Marketplace service GET all components with page {} and size {} in instance {} ", page, size, instanceName);
+        try {
+            MarketplaceApiClient marketplaceClient = getOboAuthenticatedClient(instanceName);
+            ApiClient apiClient = marketplaceClient.getApiClient();
+            ProjectComponentsWithProvisionStatusApi projectComponentsApi = new ProjectComponentsWithProvisionStatusApi(apiClient);
+            apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
+            return projectComponentsApi.getAllProjectComponents(page, size);
+        }  catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
+            throw new MarketplaceException(
+                    String.format("Access denied when getting all project components in instance '%s'",
+                            instanceName), e);
+        } catch (RestClientException e) {
+            throw new MarketplaceException(
+                    String.format("Failed to retrieve all project components in instance '%s'", instanceName), e);
+        }
+    }
+
+    public ProjectComponentListResponse getAllProjectComponents(Integer page, Integer size) throws MarketplaceException {
+        return getAllProjectComponents(getDefaultInstance(), page, size);
     }
 
     @Override
