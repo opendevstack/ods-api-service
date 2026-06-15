@@ -369,6 +369,8 @@ paths:
 
   /project/components:
     get:
+      tags:
+        - Project-components-with-provision-status
       operationId: getAllProjectComponents
       parameters:
         - name: page
@@ -413,8 +415,6 @@ paths:
           description: Server error.
       summary: Returns the information of the project's components in the Bitbucket
         repository.
-      tags:
-        - Project-components-with-provision-status
       x-accepts:
         - application/json
 components:

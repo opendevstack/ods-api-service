@@ -186,7 +186,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <openapiNormalizer>FILTER=operationId:triggerProvisionAction|notifyProvisioningStatusUpdate|deleteProjectComponent|getProjectComponentProvisionStatusById|getProvisionerHealth</openapiNormalizer>
+                            <openapiNormalizer>FILTER=operationId:triggerProvisionAction|notifyProvisioningStatusUpdate|deleteProjectComponent|getProjectComponentProvisionStatusById|getAllProjectComponents|getProvisionerHealth</openapiNormalizer>
                             <generatorName>java</generatorName>
                             <output>${project.basedir}/target/generated-sources/openapi</output>
                             <library>resttemplate</library>
