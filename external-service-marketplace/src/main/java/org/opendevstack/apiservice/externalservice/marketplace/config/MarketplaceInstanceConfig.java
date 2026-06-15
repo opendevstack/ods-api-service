@@ -50,4 +50,15 @@ public class MarketplaceInstanceConfig {
      * Example: {@code api://<marketplace-app-id>/Api.Access}
      */
     private String oboScope;
+
+    /**
+     * The tenant ID used for JWT token request when calling this Marketplace instance.
+     */
+    private String tenantId;
+
+    /**
+     * OAuth2 scope used for JWT token exchange when calling this Marketplace instance.
+     * Example: {@code api://<marketplace-app-id>/Api.Access}
+     */
+    private String jwtScope;
 }
