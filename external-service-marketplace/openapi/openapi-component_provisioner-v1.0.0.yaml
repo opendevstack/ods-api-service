@@ -695,7 +695,7 @@ components:
           example: 1707043200000
           type: number
         updatedAt:
-          description: The timestamp of the last change of the catalog item.
+          description: The timestamp of the last change of the provisioned component.
           example: 1707043200000
           type: number
     Pagination:
