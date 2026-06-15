@@ -16,6 +16,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.config.Marketplac
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.client.ApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListResponse;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentProvisionStatus;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionActionResponse;
 import org.opendevstack.apiservice.externalservice.marketplace.service.impl.MarketplaceServiceImpl;
@@ -62,6 +63,7 @@ class MarketplaceServiceImplTest {
     // HTTP method changes unexpectedly.
     private static final String PATH_CATALOG_ITEM_BY_ID   = "/catalog-items/{id}";
     private static final String PATH_PROJECT_COMPONENT    = "/project/{projectKey}/component/{componentId}";
+    private static final String PATH_PROJECT_COMPONENTS   = "/project/components";
     private static final String PATH_PROVISION_ACTIONS    = "/provision-actions";
     private static final String PATH_DELETE_COMPONENT     = "/support/delete/{projectKey}/{componentId}";
     private static final String PATH_NOTIFY_PROVISIONING  = "/provision/{projectKey}/{status}";
@@ -158,6 +160,104 @@ class MarketplaceServiceImplTest {
 
         assertTrue(exception.getMessage().contains("not configured"));
         verify(clientFactory).getClient(instanceName);
+    }
+
+    // -------------------------------------------------------------------------
+    // getAllProjectComponents
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testGetAllProjectComponents_Success_ReturnsResponse() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        Integer page = 0;
+        Integer size = 10;
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProjectComponentListResponse mockResponse = new ProjectComponentListResponse();
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROJECT_COMPONENTS, HttpMethod.GET)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        // Act
+        ProjectComponentListResponse result = marketplaceService.getAllProjectComponents(instanceName, page, size);
+
+        // Assert
+        assertEquals(mockResponse, result);
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testGetAllProjectComponents_Unauthorized_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        Integer page = 0;
+        Integer size = 10;
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException forbiddenEx = HttpClientErrorException.create(
+                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROJECT_COMPONENTS, HttpMethod.GET).thenThrow(forbiddenEx);
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getAllProjectComponents(instanceName, page, size));
+
+        assertTrue(exception.getMessage().contains("Access denied"));
+    }
+
+    @Test
+    void testGetAllProjectComponents_RestClientException_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        Integer page = 0;
+        Integer size = 10;
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROJECT_COMPONENTS, HttpMethod.GET).thenThrow(new RestClientException("Connection failed"));
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getAllProjectComponents(instanceName, page, size));
+
+        assertTrue(exception.getMessage().contains("Failed to retrieve all project components"));
+    }
+
+    @Test
+    void testGetAllProjectComponents_DefaultInstance_UsesDefaultClient() throws MarketplaceException {
+        // Arrange
+        Integer page = 0;
+        Integer size = 10;
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProjectComponentListResponse mockResponse = new ProjectComponentListResponse();
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROJECT_COMPONENTS, HttpMethod.GET)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        // Act
+        ProjectComponentListResponse result = marketplaceService.getAllProjectComponents(page, size);
+
+        // Assert
+        assertEquals(mockResponse, result);
+        verify(clientFactory).getClient("default");
     }
 
     @Test
