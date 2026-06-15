@@ -1,6 +1,7 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service;
 
 import org.opendevstack.apiservice.externalservice.api.ExternalService;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListResponse;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentProvisionStatus;
@@ -21,6 +22,10 @@ public interface MarketplaceService extends ExternalService {
     ProjectComponentProvisionStatus getProjectComponent(String projectId, String componentId) throws MarketplaceException;
 
     ProjectComponentProvisionStatus getProjectComponent(String instanceName, String projectId, String componentId) throws MarketplaceException;
+
+    ProjectComponentListResponse getAllProjectComponents(Integer page, Integer size) throws MarketplaceException;
+
+    ProjectComponentListResponse getAllProjectComponents(String instanceName, Integer page, Integer size) throws MarketplaceException;
 
     CatalogItem getCatalogItem(String catalogItemId) throws MarketplaceException;
 
