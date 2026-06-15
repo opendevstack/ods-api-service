@@ -391,9 +391,7 @@ paths:
           content:
             application/json:
               schema:
-                items:
-                  $ref: "#/components/schemas/ProjectComponentListResponse"
-                type: array
+                $ref: "#/components/schemas/ProjectComponentListResponse"
           description: A paginated list of all the provisioned project components
         "401":
           content:
