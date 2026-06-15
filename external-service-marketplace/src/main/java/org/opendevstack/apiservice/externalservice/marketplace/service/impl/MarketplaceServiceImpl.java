@@ -1,6 +1,7 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.apiservice.core.security.jwt.JwtTokenService;
 import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
@@ -30,11 +31,14 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     private final MarketplaceApiClientFactory clientFactory;
     private final OboTokenService oboTokenService;
+    private final JwtTokenService jwtTokenService;
 
     public MarketplaceServiceImpl(MarketplaceApiClientFactory clientFactory,
-                                  OboTokenService oboTokenService) {
+                                  OboTokenService oboTokenService,
+                                  JwtTokenService jwtTokenService) {
         this.clientFactory = clientFactory;
         this.oboTokenService = oboTokenService;
+        this.jwtTokenService = jwtTokenService;
         log.info("MarketplaceServiceImpl initialized");
     }
 
@@ -105,7 +109,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public ProjectComponentListResponse getAllProjectComponents(String instanceName, Integer page, Integer size) throws MarketplaceException {
         log.debug("Marketplace service GET all components with page {} and size {} in instance {} ", page, size, instanceName);
         try {
-            MarketplaceApiClient marketplaceClient = getOboAuthenticatedClient(instanceName);
+            MarketplaceApiClient marketplaceClient = getJwtAuthenticatedClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
             ProjectComponentsWithProvisionStatusApi projectComponentsApi = new ProjectComponentsWithProvisionStatusApi(apiClient);
             apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
@@ -383,5 +387,30 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                             instanceName, oboScope),
                     ex);
         }
+    }
+
+    /**
+     * Creates a {@link MarketplaceApiClient} authenticated with an OBO token
+     * obtained from the current request's JWT.
+     */
+    private MarketplaceApiClient getJwtAuthenticatedClient(String instanceName) throws MarketplaceException {
+        MarketplaceApiClient client = clientFactory.getClient(instanceName);
+
+        String jwtToken;
+
+        try {
+            String scope = client.getConfig().getJwtScope();
+            String tenantId = client.getConfig().getTenantId();
+
+            jwtToken = jwtTokenService.requestToken(scope, tenantId);
+        } catch (RuntimeException ex) {
+            throw new MarketplaceException(
+                    String.format(
+                            "Failed to obtain JWT token for Marketplace instance '%s'", instanceName),
+                    ex);
+        }
+
+        client.setBearerToken(jwtToken);
+        return client;
     }
 }

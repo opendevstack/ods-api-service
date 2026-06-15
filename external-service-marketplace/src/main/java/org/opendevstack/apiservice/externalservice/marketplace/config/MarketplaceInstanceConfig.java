@@ -52,6 +52,17 @@ public class MarketplaceInstanceConfig {
     private String oboScope;
 
     /**
+     * The tenant ID used for JWT token request when calling this Marketplace instance.
+     */
+    private String tenantId;
+
+    /**
+     * OAuth2 scope used for JWT token exchange when calling this Marketplace instance.
+     * Example: {@code api://<marketplace-app-id>/Api.Access}
+     */
+    private String jwtScope;
+
+    /**
      * Bypass configuration. When the incoming token already targets the configured bypass
      * audience and scope, the OBO token exchange is skipped and the token is forwarded as-is.
      */
