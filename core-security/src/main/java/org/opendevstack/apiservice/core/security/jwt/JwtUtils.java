@@ -76,19 +76,10 @@ public final class JwtUtils {
         List<String> audiences = new ArrayList<>();
 
         if (audClaim instanceof String audString) {
-            for (String audiencePart : audString.trim().split("\\s+")) {
-                if (!audiencePart.isBlank()) {
-                    audiences.add(audiencePart);
-                }
-            }
+            addNonBlank(audiences, audString.trim().split("\\s+"));
         } else if (audClaim instanceof List<?> audList) {
             for (Object value : audList) {
-                if (value != null) {
-                    String audience = value.toString().trim();
-                    if (!audience.isBlank()) {
-                        audiences.add(audience);
-                    }
-                }
+                addNonBlank(audiences, value);
             }
         }
 
@@ -96,6 +87,22 @@ public final class JwtUtils {
             throw new InvalidBearerTokenException("Audience not found in token claims");
         }
         return audiences;
+    }
+
+    private static void addNonBlank(List<String> audiences, String[] values) {
+        for (String value : values) {
+            addNonBlank(audiences, value);
+        }
+    }
+
+    private static void addNonBlank(List<String> audiences, Object value) {
+        if (value == null) {
+            return;
+        }
+        String audience = value.toString().trim();
+        if (!audience.isBlank()) {
+            audiences.add(audience);
+        }
     }
 
 
