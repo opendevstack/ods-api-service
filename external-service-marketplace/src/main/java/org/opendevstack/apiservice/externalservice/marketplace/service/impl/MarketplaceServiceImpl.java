@@ -112,7 +112,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             MarketplaceApiClient marketplaceClient = getJwtAuthenticatedClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
             ProjectComponentsWithProvisionStatusApi projectComponentsApi = new ProjectComponentsWithProvisionStatusApi(apiClient);
-            apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
+            apiClient.setBasePath(marketplaceClient.getConfig().getProvisionerActionsBaseUrl());
             return projectComponentsApi.getAllProjectComponents(page, size);
         }  catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
             throw new MarketplaceException(
