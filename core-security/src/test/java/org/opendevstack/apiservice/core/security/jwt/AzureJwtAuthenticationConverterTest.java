@@ -2,7 +2,6 @@ package org.opendevstack.apiservice.core.security.jwt;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opendevstack.apiservice.core.security.client.crendentials.AzureClientCredentialsAuthenticationConverter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,13 +16,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class AzureClientCredentialsAuthenticationConverterTest {
+class AzureJwtAuthenticationConverterTest {
 
-    private AzureClientCredentialsAuthenticationConverter converter;
+    private AzureJwtAuthenticationConverter converter;
 
     @BeforeEach
     void setUp() {
-        converter = new AzureClientCredentialsAuthenticationConverter();
+        converter = new AzureJwtAuthenticationConverter();
     }
 
     // ── Authority extraction ──
@@ -107,25 +106,25 @@ class AzureClientCredentialsAuthenticationConverterTest {
     @Test
     void extractClientId_withAzp_returnsAzp() {
         Jwt jwt = buildJwt(Map.of("azp", "client-a"));
-        assertEquals("client-a", AzureClientCredentialsAuthenticationConverter.extractClientId(jwt));
+        assertEquals("client-a", AzureJwtAuthenticationConverter.extractClientId(jwt));
     }
 
     @Test
     void extractClientId_withAzpBlank_fallsBackToAppid() {
         Jwt jwt = buildJwt(Map.of("azp", "", "appid", "client-b"));
-        assertEquals("client-b", AzureClientCredentialsAuthenticationConverter.extractClientId(jwt));
+        assertEquals("client-b", AzureJwtAuthenticationConverter.extractClientId(jwt));
     }
 
     @Test
     void extractClientId_withAzpNull_fallsBackToAppid() {
         Jwt jwt = buildJwt(Map.of("appid", "client-b"));
-        assertEquals("client-b", AzureClientCredentialsAuthenticationConverter.extractClientId(jwt));
+        assertEquals("client-b", AzureJwtAuthenticationConverter.extractClientId(jwt));
     }
 
     @Test
     void extractClientId_withNeitherClaim_returnsNull() {
         Jwt jwt = buildJwt(Map.of());
-        assertNull(AzureClientCredentialsAuthenticationConverter.extractClientId(jwt));
+        assertNull(AzureJwtAuthenticationConverter.extractClientId(jwt));
     }
 
     // ── helpers ──

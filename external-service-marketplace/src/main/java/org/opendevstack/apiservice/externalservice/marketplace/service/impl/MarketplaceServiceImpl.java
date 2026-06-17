@@ -2,7 +2,7 @@ package org.opendevstack.apiservice.externalservice.marketplace.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsTokenService;
-import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsUtils;
+import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
@@ -367,7 +367,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new MarketplaceException(
                     String.format("OBO scope not configured for Marketplace instance '%s'", instanceName));
         }
-        String assertion = ClientCredentialsUtils.getTokenValue();
+        String assertion = JwtUtils.getTokenValue();
         final String oboToken;
         try {
             oboToken = oboTokenService.exchangeToken(assertion, oboScope);

@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opendevstack.apiservice.core.security.authorization.PolicyAuthorizationManager;
 import org.opendevstack.apiservice.core.security.filter.CachedBodyRequestFilter;
-import org.opendevstack.apiservice.core.security.client.crendentials.AzureClientCredentialsAuthenticationConverter;
+import org.opendevstack.apiservice.core.security.jwt.AzureJwtAuthenticationConverter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -17,7 +17,7 @@ class SecurityConfigTest {
 
     private SecurityProperties securityProperties;
     private PolicyAuthorizationManager policyAuthorizationManager;
-    private AzureClientCredentialsAuthenticationConverter azureClientCredentialsAuthenticationConverter;
+    private AzureJwtAuthenticationConverter azureJwtAuthenticationConverter;
     private CachedBodyRequestFilter cachedBodyRequestFilter;
     private SecurityConfig securityConfig;
 
@@ -25,12 +25,12 @@ class SecurityConfigTest {
     void setUp() {
         securityProperties = mock(SecurityProperties.class);
         policyAuthorizationManager = mock(PolicyAuthorizationManager.class);
-        azureClientCredentialsAuthenticationConverter = new AzureClientCredentialsAuthenticationConverter();
+        azureJwtAuthenticationConverter = new AzureJwtAuthenticationConverter();
         cachedBodyRequestFilter = mock(CachedBodyRequestFilter.class);
         securityConfig = new SecurityConfig(
             securityProperties,
             policyAuthorizationManager,
-                azureClientCredentialsAuthenticationConverter,
+                azureJwtAuthenticationConverter,
             cachedBodyRequestFilter
         );
     }
