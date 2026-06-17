@@ -2,6 +2,7 @@ package org.opendevstack.apiservice.core.security.jwt;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class JwtUtilsTest {
+class ClientCredentialsUtilsTest {
 
     @AfterEach
     void tearDown() {
@@ -31,7 +32,7 @@ class JwtUtilsTest {
         setSecurityContext(jwt);
 
         // WHEN
-        String token = JwtUtils.getTokenValue();
+        String token = ClientCredentialsUtils.getTokenValue();
 
         // THEN
         assertEquals("eyJhbGciOiJSUzI1NiJ9.test", token);
@@ -47,7 +48,7 @@ class JwtUtilsTest {
         SecurityContextHolder.setContext(ctx);
 
         // WHEN / THEN
-        assertThrows(InvalidBearerTokenException.class, JwtUtils::getTokenValue);
+        assertThrows(InvalidBearerTokenException.class, ClientCredentialsUtils::getTokenValue);
     }
 
     @Test
@@ -58,7 +59,7 @@ class JwtUtilsTest {
         setSecurityContext(jwt);
 
         // WHEN
-        UUID result = JwtUtils.getClientId();
+        UUID result = ClientCredentialsUtils.getClientId();
 
         // THEN
         assertEquals(UUID.fromString(clientId), result);
@@ -72,7 +73,7 @@ class JwtUtilsTest {
         setSecurityContext(jwt);
 
         // WHEN
-        UUID result = JwtUtils.getClientId();
+        UUID result = ClientCredentialsUtils.getClientId();
 
         // THEN
         assertEquals(UUID.fromString(clientId), result);
@@ -85,7 +86,7 @@ class JwtUtilsTest {
         setSecurityContext(jwt);
 
         // WHEN / THEN
-        assertThrows(InvalidBearerTokenException.class, JwtUtils::getClientId);
+        assertThrows(InvalidBearerTokenException.class, ClientCredentialsUtils::getClientId);
     }
 
     @Test
@@ -95,7 +96,7 @@ class JwtUtilsTest {
         Jwt jwt = buildJwt("token", Map.of("azp", clientId));
 
         // WHEN
-        UUID result = JwtUtils.extractClientId(jwt);
+        UUID result = ClientCredentialsUtils.extractClientId(jwt);
 
         // THEN
         assertEquals(UUID.fromString(clientId), result);
@@ -108,7 +109,7 @@ class JwtUtilsTest {
         Jwt jwt = buildJwt("token", Map.of("appid", clientId));
 
         // WHEN
-        UUID result = JwtUtils.extractClientId(jwt);
+        UUID result = ClientCredentialsUtils.extractClientId(jwt);
 
         // THEN
         assertEquals(UUID.fromString(clientId), result);

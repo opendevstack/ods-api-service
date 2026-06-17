@@ -4,7 +4,7 @@ package org.opendevstack.apiservice.core.security.authorization;
 import jakarta.servlet.http.HttpServletRequest;
 import org.opendevstack.apiservice.core.contracts.policy.PolicyContext;
 import org.opendevstack.apiservice.core.contracts.registry.ApiDefinition;
-import org.opendevstack.apiservice.core.security.jwt.AzureJwtAuthenticationConverter;
+import org.opendevstack.apiservice.core.security.client.crendentials.AzureClientCredentialsAuthenticationConverter;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,7 +24,7 @@ public class PolicyContextFactory {
 
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
             Jwt jwt = jwtAuth.getToken();
-            clientId = AzureJwtAuthenticationConverter.extractClientId(jwt);
+            clientId = AzureClientCredentialsAuthenticationConverter.extractClientId(jwt);
             subject = jwt.getClaimAsString("sub");
             claims = jwt.getClaims();
         }

@@ -1,4 +1,4 @@
-package org.opendevstack.apiservice.core.security.jwt;
+package org.opendevstack.apiservice.core.security.client.crendentials;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -6,9 +6,9 @@ import org.springframework.security.oauth2.server.resource.InvalidBearerTokenExc
 
 import java.util.UUID;
 
-public final class JwtUtils {
+public final class ClientCredentialsUtils {
 
-    private JwtUtils() {
+    private ClientCredentialsUtils() {
     }
 
     /**

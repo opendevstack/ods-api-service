@@ -3,7 +3,7 @@ package org.opendevstack.apiservice.project.controller;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
+import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsUtils;
 import org.opendevstack.apiservice.project.api.ProjectsApi;
 import org.opendevstack.apiservice.project.facade.ProjectsFacade;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
@@ -38,7 +38,7 @@ public class ProjectController implements ProjectsApi {
     @Override
     public ResponseEntity<CreateProjectResponse> createProject(@Valid @RequestBody CreateProjectRequest createProjectRequest) {
         projectRequestValidator.validate(createProjectRequest);
-        UUID clientId = JwtUtils.getClientId();
+        UUID clientId = ClientCredentialsUtils.getClientId();
 
         CreateProjectResponse projectResponse = projectsFacade.createProject(createProjectRequest, clientId);
         projectResponse.setLocation(API_BASE_PATH + "/" + projectResponse.getProjectKey());

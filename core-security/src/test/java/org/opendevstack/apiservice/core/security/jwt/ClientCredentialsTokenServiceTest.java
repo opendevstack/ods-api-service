@@ -5,6 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsTokenException;
+import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsTokenProperties;
+import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsTokenResponse;
+import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsTokenService;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,23 +27,23 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class JwtTokenServiceTest {
+class ClientCredentialsTokenServiceTest {
 
     @Mock
     private RestTemplate restTemplate;
 
-    private JwtTokenProperties properties;
+    private ClientCredentialsTokenProperties properties;
 
-    private JwtTokenService sut;
+    private ClientCredentialsTokenService sut;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        properties = new JwtTokenProperties();
+        properties = new ClientCredentialsTokenProperties();
         properties.setTokenUrl("https://login.microsoftonline.com/<app-tenant-id>/oauth2/v2.0/token");
         properties.setClientId("test-client-id");
         properties.setClientSecret("test-client-secret");
-        sut = new JwtTokenService(properties, restTemplate);
+        sut = new ClientCredentialsTokenService(properties, restTemplate);
     }
 
     @Test
@@ -47,7 +51,7 @@ class JwtTokenServiceTest {
         // GIVEN
         String tenantId = "tenant-id";
         String scope = "api://target-app/Api.Access";
-        JwtTokenResponse tokenResponse = new JwtTokenResponse();
+        ClientCredentialsTokenResponse tokenResponse = new ClientCredentialsTokenResponse();
         tokenResponse.setAccessToken("jwt-access-token");
         tokenResponse.setTokenType("Bearer");
         tokenResponse.setExpiresIn(3600);
@@ -55,7 +59,7 @@ class JwtTokenServiceTest {
 
         String expectedUrl = properties.getTokenUrl().replace("<app-tenant-id>", tenantId);
 
-        when(restTemplate.postForEntity(eq(expectedUrl), any(HttpEntity.class), eq(JwtTokenResponse.class)))
+        when(restTemplate.postForEntity(eq(expectedUrl), any(HttpEntity.class), eq(ClientCredentialsTokenResponse.class)))
                 .thenReturn(new ResponseEntity<>(tokenResponse, HttpStatus.OK));
 
         // WHEN
@@ -63,7 +67,7 @@ class JwtTokenServiceTest {
 
         // THEN
         assertEquals("jwt-access-token", result);
-        verify(restTemplate).postForEntity(eq(expectedUrl), any(HttpEntity.class), eq(JwtTokenResponse.class));
+        verify(restTemplate).postForEntity(eq(expectedUrl), any(HttpEntity.class), eq(ClientCredentialsTokenResponse.class));
     }
 
     @Test
@@ -72,11 +76,11 @@ class JwtTokenServiceTest {
         // GIVEN
         String tenantId = "t-1";
         String scope = "api://app/scope";
-        JwtTokenResponse tokenResponse = new JwtTokenResponse();
+        ClientCredentialsTokenResponse tokenResponse = new ClientCredentialsTokenResponse();
         tokenResponse.setAccessToken("token");
 
         ArgumentCaptor<HttpEntity<MultiValueMap<String, String>>> captor = ArgumentCaptor.forClass(HttpEntity.class);
-        when(restTemplate.postForEntity(anyString(), captor.capture(), eq(JwtTokenResponse.class)))
+        when(restTemplate.postForEntity(anyString(), captor.capture(), eq(ClientCredentialsTokenResponse.class)))
                 .thenReturn(new ResponseEntity<>(tokenResponse, HttpStatus.OK));
 
         // WHEN
@@ -98,11 +102,11 @@ class JwtTokenServiceTest {
     @Test
     void request_token_throws_jwt_exception_when_response_body_is_null() {
         // GIVEN
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(JwtTokenResponse.class)))
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(ClientCredentialsTokenResponse.class)))
                 .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
         // WHEN / THEN
-        JwtTokenException ex = assertThrows(JwtTokenException.class,
+        ClientCredentialsTokenException ex = assertThrows(ClientCredentialsTokenException.class,
                 () -> sut.requestToken("scope", "tenant"));
         assertTrue(ex.getMessage().contains("null"));
     }
@@ -110,24 +114,24 @@ class JwtTokenServiceTest {
     @Test
     void request_token_throws_jwt_exception_when_access_token_is_null() {
         // GIVEN
-        JwtTokenResponse response = new JwtTokenResponse();
+        ClientCredentialsTokenResponse response = new ClientCredentialsTokenResponse();
         response.setAccessToken(null);
 
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(JwtTokenResponse.class)))
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(ClientCredentialsTokenResponse.class)))
                 .thenReturn(new ResponseEntity<>(response, HttpStatus.OK));
 
         // WHEN / THEN
-        assertThrows(JwtTokenException.class, () -> sut.requestToken("scope", "tenant"));
+        assertThrows(ClientCredentialsTokenException.class, () -> sut.requestToken("scope", "tenant"));
     }
 
     @Test
     void request_token_throws_jwt_exception_on_rest_client_error() {
         // GIVEN
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(JwtTokenResponse.class)))
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(ClientCredentialsTokenResponse.class)))
                 .thenThrow(new RestClientException("Connection refused"));
 
         // WHEN / THEN
-        JwtTokenException ex = assertThrows(JwtTokenException.class,
+        ClientCredentialsTokenException ex = assertThrows(ClientCredentialsTokenException.class,
                 () -> sut.requestToken("scope", "tenant"));
         assertTrue(ex.getMessage().contains("Connection refused"));
     }

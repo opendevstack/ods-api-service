@@ -2,7 +2,7 @@ package org.opendevstack.apiservice.core.security.config;
 
 import org.opendevstack.apiservice.core.security.authorization.PolicyAuthorizationManager;
 import org.opendevstack.apiservice.core.security.filter.CachedBodyRequestFilter;
-import org.opendevstack.apiservice.core.security.jwt.AzureJwtAuthenticationConverter;
+import org.opendevstack.apiservice.core.security.client.crendentials.AzureClientCredentialsAuthenticationConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -21,17 +21,17 @@ public class SecurityConfig {
 
     private final SecurityProperties securityProperties;
     private final PolicyAuthorizationManager policyAuthorizationManager;
-    private final AzureJwtAuthenticationConverter azureJwtAuthenticationConverter;
+    private final AzureClientCredentialsAuthenticationConverter azureClientCredentialsAuthenticationConverter;
     private final CachedBodyRequestFilter cachedBodyRequestFilter;
 
 
     public SecurityConfig(SecurityProperties securityProperties,
                           PolicyAuthorizationManager policyAuthorizationManager,
-                          AzureJwtAuthenticationConverter azureJwtAuthenticationConverter,
+                          AzureClientCredentialsAuthenticationConverter azureClientCredentialsAuthenticationConverter,
                           CachedBodyRequestFilter cachedBodyRequestFilter) {
         this.securityProperties = securityProperties;
         this.policyAuthorizationManager = policyAuthorizationManager;
-        this.azureJwtAuthenticationConverter = azureJwtAuthenticationConverter;
+        this.azureClientCredentialsAuthenticationConverter = azureClientCredentialsAuthenticationConverter;
         this.cachedBodyRequestFilter = cachedBodyRequestFilter;
     }
 
@@ -50,7 +50,7 @@ public class SecurityConfig {
                 authz.anyRequest().access(policyAuthorizationManager);
             })
             .oauth2ResourceServer((oauth2) ->
-                oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(azureJwtAuthenticationConverter))
+                oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(azureClientCredentialsAuthenticationConverter))
             )
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))
             .csrf(csrf -> csrf.disable());

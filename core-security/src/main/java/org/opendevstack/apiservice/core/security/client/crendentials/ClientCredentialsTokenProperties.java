@@ -1,4 +1,4 @@
-package org.opendevstack.apiservice.core.security.jwt;
+package org.opendevstack.apiservice.core.security.client.crendentials;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "app.security.jwt")
 @Data
-public class JwtTokenProperties {
+public class ClientCredentialsTokenProperties {
 
     private String tokenUrl;
 

@@ -1,4 +1,4 @@
-package org.opendevstack.apiservice.core.security.jwt;
+package org.opendevstack.apiservice.core.security.client.crendentials;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Component
-public class AzureJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+public class AzureClientCredentialsAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
