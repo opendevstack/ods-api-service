@@ -68,6 +68,7 @@ app:
       - /actuator/health
       - /actuator/info
       - /api/v1/projects/*/platforms
+      - /api/v1/projects/metrics/marketplace/project-components
     jwt:
       # Azure AD token endpoint used for request a token.
       token-url: ${OBO_TOKEN_URL:https://login.microsoftonline.com/<app-tenant-id>/oauth2/v2.0/token}
@@ -322,5 +323,5 @@ externalservices:
         trust-all-certificates: ${MARKETPLACE_TRUST_ALL_CERTS:false}
         username: ${MARKETPLACE_USERNAME:}
         password: ${MARKETPLACE_PASSWORD:}
-        tenant-id: ${MARKETPLACE_TENANT_ID:}
-        jwt-scope: ${MARKETPLACE_JWT_SCOPE:}
+        tenant-id: ${AZURE_TENANT_ID:}
+        jwt-scope: ${MARKETPLACE_OBO_SCOPE:}
