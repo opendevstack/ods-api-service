@@ -8,7 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
-import org.opendevstack.apiservice.core.security.jwt.JwtTokenService;
+import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsTokenService;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
@@ -82,13 +82,13 @@ class MarketplaceServiceImplTest {
     private OboTokenService oboTokenService;
 
     @Mock
-    private JwtTokenService jwtTokenService;
+    private ClientCredentialsTokenService clientCredentialsTokenService;
 
     private MarketplaceService marketplaceService;
 
     @BeforeEach
     void setUp() {
-        marketplaceService = new MarketplaceServiceImpl(clientFactory, oboTokenService, jwtTokenService);
+        marketplaceService = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService);
 
         // Set up a fake SecurityContext so JwtUtils.getTokenValue() works
         Jwt jwt = Jwt.withTokenValue("test-jwt-assertion")
@@ -319,7 +319,7 @@ class MarketplaceServiceImplTest {
     void testIsHealthy_NoInstancesConfigured_ReturnsFalse() {
         when(clientFactory.getAvailableInstances()).thenReturn(Set.of());
 
-        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, jwtTokenService) {
+        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService) {
             @Override
             protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
                 return true;
@@ -342,7 +342,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
         when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
 
-        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, jwtTokenService) {
+        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService) {
             @Override
             protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
                 return true;
@@ -365,7 +365,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
         when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
 
-        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, jwtTokenService) {
+        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService) {
             @Override
             protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
                 return false;
@@ -383,7 +383,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
         when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
 
-        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, jwtTokenService) {
+        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService) {
             @Override
             protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
                 return true;

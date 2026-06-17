@@ -1,7 +1,7 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.apiservice.core.security.jwt.JwtTokenService;
+import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsTokenService;
 import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
@@ -31,14 +31,14 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     private final MarketplaceApiClientFactory clientFactory;
     private final OboTokenService oboTokenService;
-    private final JwtTokenService jwtTokenService;
+    private final ClientCredentialsTokenService clientCredentialsTokenService;
 
     public MarketplaceServiceImpl(MarketplaceApiClientFactory clientFactory,
                                   OboTokenService oboTokenService,
-                                  JwtTokenService jwtTokenService) {
+                                  ClientCredentialsTokenService clientCredentialsTokenService) {
         this.clientFactory = clientFactory;
         this.oboTokenService = oboTokenService;
-        this.jwtTokenService = jwtTokenService;
+        this.clientCredentialsTokenService = clientCredentialsTokenService;
         log.info("MarketplaceServiceImpl initialized");
     }
 
@@ -402,7 +402,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             String scope = client.getConfig().getJwtScope();
             String tenantId = client.getConfig().getTenantId();
 
-            jwtToken = jwtTokenService.requestToken(scope, tenantId);
+            jwtToken = clientCredentialsTokenService.requestToken(scope, tenantId);
         } catch (RuntimeException ex) {
             throw new MarketplaceException(
                     String.format(

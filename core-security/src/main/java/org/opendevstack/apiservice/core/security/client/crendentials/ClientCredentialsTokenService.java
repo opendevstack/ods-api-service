@@ -1,4 +1,4 @@
-package org.opendevstack.apiservice.core.security.jwt;
+package org.opendevstack.apiservice.core.security.client.crendentials;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,15 +14,15 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 @Slf4j
-public class JwtTokenService {
+public class ClientCredentialsTokenService {
 
     private static final String GRANT_TYPE = "client_credentials";
 
-    private final JwtTokenProperties properties;
+    private final ClientCredentialsTokenProperties properties;
     private final RestTemplate restTemplate;
 
     @Autowired
-    public JwtTokenService(JwtTokenProperties properties, RestTemplate restTemplate) {
+    public ClientCredentialsTokenService(ClientCredentialsTokenProperties properties, RestTemplate restTemplate) {
         this.properties = properties;
         this.restTemplate = restTemplate;
     }
@@ -33,7 +33,7 @@ public class JwtTokenService {
      * @param scope the target API scope (e.g. {@code api://<app-id>/Api.Access})
      *
      * @return the access token string
-     * @throws JwtTokenException if the token request fails
+     * @throws ClientCredentialsTokenException if the token request fails
      */
     public String requestToken(String scope, String tenantId) {
         log.debug("Requesting access token using JWT assertion");
@@ -52,17 +52,17 @@ public class JwtTokenService {
         try {
             String urlWithTenant = properties.getTokenUrl().replace("<app-tenant-id>", tenantId);
 
-            ResponseEntity<JwtTokenResponse> response =
-                    restTemplate.postForEntity(urlWithTenant, request, JwtTokenResponse.class);
+            ResponseEntity<ClientCredentialsTokenResponse> response =
+                    restTemplate.postForEntity(urlWithTenant, request, ClientCredentialsTokenResponse.class);
 
             if (response.getBody() == null || response.getBody().getAccessToken() == null) {
-                throw new JwtTokenException("JWT token response body or access_token is null");
+                throw new ClientCredentialsTokenException("JWT token response body or access_token is null");
             }
 
             log.debug("JWT token obtained successfully, expires in {} seconds", response.getBody().getExpiresIn());
             return response.getBody().getAccessToken();
         } catch (RestClientException e) {
-            throw new JwtTokenException("Failed to exchange JWT for JWT token: " + e.getMessage(), e);
+            throw new ClientCredentialsTokenException("Failed to exchange JWT for JWT token: " + e.getMessage(), e);
         }
     }
 }

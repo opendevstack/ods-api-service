@@ -35,7 +35,7 @@ class SecurityConfigTest {
         securityConfig = new SecurityConfig(
             securityProperties,
             policyAuthorizationManager,
-            azureJwtAuthenticationConverter,
+                azureJwtAuthenticationConverter,
             cachedBodyRequestFilter
         );
     }
