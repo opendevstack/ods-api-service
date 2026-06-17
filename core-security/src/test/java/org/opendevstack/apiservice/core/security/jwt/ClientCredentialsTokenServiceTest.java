@@ -50,7 +50,7 @@ class ClientCredentialsTokenServiceTest {
     void request_token_returns_access_token_on_success() {
         // GIVEN
         String tenantId = "tenant-id";
-        String scope = "api://target-app/Api.Access";
+        String scope = "api://target-app/.default";
         ClientCredentialsTokenResponse tokenResponse = new ClientCredentialsTokenResponse();
         tokenResponse.setAccessToken("jwt-access-token");
         tokenResponse.setTokenType("Bearer");
