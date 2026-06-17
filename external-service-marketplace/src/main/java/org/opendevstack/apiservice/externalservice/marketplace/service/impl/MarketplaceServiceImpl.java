@@ -351,7 +351,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new MarketplaceException(
                     String.format("OBO scope not configured for Marketplace instance '%s'", instanceName));
         }
-        if (JwtUtils.tokenMatchesScopeAudience(oboScope)) {
+        MarketplaceInstanceConfig.Bypass bypass = client.getConfig().getBypass();
+        if (bypass != null && JwtUtils.tokenMatchesScopeAudience(bypass.getAudience(), bypass.getScope())) {
             client.setBearerToken(assertion);
         } else {
             client.setBearerToken(getOboToken(instanceName, assertion, oboScope));

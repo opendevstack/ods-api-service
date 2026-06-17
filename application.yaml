@@ -309,6 +309,9 @@ externalservices:
         provisioner-actions-base-url: ${MARKETPLACE_PROVISIONER_ACTIONS_BASE_URL:}
         bitbucket-base-url: ${MARKETPLACE_BITBUCKET_BASE_URL:}
         obo-scope: ${MARKETPLACE_OBO_SCOPE:}
+        bypass:
+          audience: ${MARKETPLACE_BYPASS_AUDIENCE:}
+          scope: ${MARKETPLACE_BYPASS_SCOPE:}
         trust-all-certificates: ${MARKETPLACE_TRUST_ALL_CERTS:false}
         username: ${MARKETPLACE_USERNAME:}
         password: ${MARKETPLACE_PASSWORD:}

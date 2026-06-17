@@ -4,10 +4,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -72,37 +70,11 @@ public final class JwtUtils {
     }
 
     public static List<String> extractAudiences(Jwt jwt) {
-        Object audClaim = jwt.getClaims().get("aud");
-        List<String> audiences = new ArrayList<>();
-
-        if (audClaim instanceof String audString) {
-            addNonBlank(audiences, audString.trim().split("\\s+"));
-        } else if (audClaim instanceof List<?> audList) {
-            for (Object value : audList) {
-                addNonBlank(audiences, value);
-            }
-        }
-
-        if (audiences.isEmpty()) {
+        List<String> audiences = jwt.getAudience();
+        if (audiences == null || audiences.isEmpty()) {
             throw new InvalidBearerTokenException("Audience not found in token claims");
         }
         return audiences;
-    }
-
-    private static void addNonBlank(List<String> audiences, String[] values) {
-        for (String value : values) {
-            addNonBlank(audiences, value);
-        }
-    }
-
-    private static void addNonBlank(List<String> audiences, Object value) {
-        if (value == null) {
-            return;
-        }
-        String audience = value.toString().trim();
-        if (!audience.isBlank()) {
-            audiences.add(audience);
-        }
     }
 
 
@@ -114,43 +86,55 @@ public final class JwtUtils {
         throw new InvalidBearerTokenException("Invalid authentication token");
     }
 
-    public static boolean tokenMatchesScopeAudience(String oboScope) {
+    /**
+     * Determines whether the current SecurityContext JWT already targets the configured bypass
+     * audience and scope, meaning the incoming token can be forwarded as-is without an OBO exchange.
+     *
+     * @param bypassAudience the configured bypass audience that must be present in the token {@code aud} claim
+     * @param bypassScope    the configured bypass scope that must be present in the token {@code scp} claim
+     * @return {@code true} only when both the bypass audience and scope match the token claims
+     */
+    public static boolean tokenMatchesScopeAudience(String bypassAudience, String bypassScope) {
+        if (bypassAudience == null || bypassAudience.isBlank()
+                || bypassScope == null || bypassScope.isBlank()) {
+            return false;
+        }
         Set<String> tokenAudiences = new LinkedHashSet<>(getAudiences());
-        Set<String> scopeAudienceCandidates = extractAudienceCandidatesFromScope(oboScope);
-        return tokenAudiences.stream().anyMatch(scopeAudienceCandidates::contains);
+        if (!tokenAudiences.contains(bypassAudience)) {
+            return false;
+        }
+        return getScopes().contains(bypassScope);
     }
 
-    private static Set<String> extractAudienceCandidatesFromScope(String oboScope) {
-        if (oboScope == null || oboScope.isBlank()) {
-            return Set.of();
+    /**
+     * Extracts the delegated scopes from the current SecurityContext JWT {@code scp} claim.
+     *
+     * @return the set of scopes, empty when the {@code scp} claim is absent
+     * @throws InvalidBearerTokenException if the principal is not a JWT
+     */
+    public static Set<String> getScopes() {
+        Object principal = currentPrincipal();
+        if (principal instanceof Jwt jwt) {
+            return extractScopes(jwt);
         }
+        throw new InvalidBearerTokenException("Invalid authentication token");
+    }
 
-        Set<String> candidates = new LinkedHashSet<>();
-        String[] scopes = oboScope.trim().split("\\s+");
-
-        for (String scope : scopes) {
-            if (scope.isBlank()) {
-                continue;
-            }
-            candidates.add(scope);
-
-            int lastSlash = scope.lastIndexOf('/');
-            if (lastSlash > 0) {
-                candidates.add(scope.substring(0, lastSlash));
-            }
-
-            if (scope.startsWith("api://")) {
-                String scopeWithoutPrefix = scope.substring("api://".length());
-                int firstSlash = scopeWithoutPrefix.indexOf('/');
-                if (firstSlash > 0) {
-                    candidates.add(scopeWithoutPrefix.substring(0, firstSlash));
-                } else {
-                    candidates.add(scopeWithoutPrefix);
+    /**
+     * Extracts the delegated scopes from the given JWT {@code scp} claim.
+     * Entra ID exposes delegated permissions as a space-separated {@code scp} claim;
+     * there is no dedicated accessor for it in Spring's {@code JwtClaimAccessor}.
+     */
+    public static Set<String> extractScopes(Jwt jwt) {
+        String scp = jwt.getClaimAsString("scp");
+        Set<String> scopes = new LinkedHashSet<>();
+        if (scp != null && !scp.isBlank()) {
+            for (String scope : scp.trim().split("\\s+")) {
+                if (!scope.isBlank()) {
+                    scopes.add(scope);
                 }
             }
         }
-
-        candidates.removeIf(Objects::isNull);
-        return candidates;
+        return scopes;
     }
 }
