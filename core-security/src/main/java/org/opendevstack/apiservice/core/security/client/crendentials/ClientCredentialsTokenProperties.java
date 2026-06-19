@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "app.security.jwt")
+@ConfigurationProperties(prefix = "app.security.client-credentials")
 @Data
 public class ClientCredentialsTokenProperties {
 

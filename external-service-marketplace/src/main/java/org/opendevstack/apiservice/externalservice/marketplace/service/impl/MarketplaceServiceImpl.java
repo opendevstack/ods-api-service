@@ -109,7 +109,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public ProjectComponentListResponse getAllProjectComponents(String instanceName, Integer page, Integer size) throws MarketplaceException {
         log.debug("Marketplace service GET all components with page {} and size {} in instance {} ", page, size, instanceName);
         try {
-            MarketplaceApiClient marketplaceClient = getJwtAuthenticatedClient(instanceName);
+            MarketplaceApiClient marketplaceClient = getClientCredentialsAuthenticatedClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
             ProjectComponentsWithProvisionStatusApi projectComponentsApi = new ProjectComponentsWithProvisionStatusApi(apiClient);
             apiClient.setBasePath(marketplaceClient.getConfig().getProvisionerActionsBaseUrl());
@@ -390,23 +390,23 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     /**
-     * Creates a {@link MarketplaceApiClient} authenticated with an OBO token
-     * obtained from the current request's JWT.
+     * Creates a {@link MarketplaceApiClient} authenticated with a JWT token
+     * obtained using the client credentials flow.
      */
-    private MarketplaceApiClient getJwtAuthenticatedClient(String instanceName) throws MarketplaceException {
+    private MarketplaceApiClient getClientCredentialsAuthenticatedClient(String instanceName) throws MarketplaceException {
         MarketplaceApiClient client = clientFactory.getClient(instanceName);
 
         String jwtToken;
 
         try {
-            String scope = client.getConfig().getJwtScope();
+            String scope = client.getConfig().getClientCredentialsScope();
             String tenantId = client.getConfig().getTenantId();
 
             jwtToken = clientCredentialsTokenService.requestToken(scope, tenantId);
         } catch (RuntimeException ex) {
             throw new MarketplaceException(
                     String.format(
-                            "Failed to obtain JWT token for Marketplace instance '%s'", instanceName),
+                            "Failed to obtain JWT token for Marketplace instance '%s' using the client credentials flow.", instanceName),
                     ex);
         }
 

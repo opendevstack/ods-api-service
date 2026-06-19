@@ -57,10 +57,10 @@ public class MarketplaceInstanceConfig {
     private String tenantId;
 
     /**
-     * OAuth2 scope used for JWT token exchange when calling this Marketplace instance.
-     * Example: {@code api://<marketplace-app-id>/Api.Access}
+     * OAuth2 scope used for Client Credentials token exchange when calling this Marketplace instance.
+     * Example: {@code api://<marketplace-app-id>/.default}
      */
-    private String jwtScope;
+    private String clientCredentialsScope;
 
     /**
      * Bypass configuration. When the incoming token already targets the configured bypass

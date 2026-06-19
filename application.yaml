@@ -68,13 +68,13 @@ app:
       - /actuator/health
       - /actuator/info
       - /api/v1/projects/*/platforms
-    jwt:
+    client-credentials:
       # Azure AD token endpoint used for request a token.
-      token-url: ${OBO_TOKEN_URL:https://login.microsoftonline.com/<app-tenant-id>/oauth2/v2.0/token}
+      token-url: ${CLIENT_CREDENTIALS_TOKEN_URL:https://login.microsoftonline.com/<app-tenant-id>/oauth2/v2.0/token}
       # Client ID of this application's Azure AD app registration.
-      client-id: ${OBO_CLIENT_ID}
+      client-id: ${CLIENT_CREDENTIALS_CLIENT_ID}
       # Client secret for token request. Must be injected via environment variable or secret store.
-      client-secret: ${OBO_CLIENT_SECRET}
+      client-secret: ${CLIENT_CREDENTIALS_CLIENT_SECRET}
     obo:
       # Azure AD token endpoint used for On-Behalf-Of token exchange.
       token-url: ${OBO_TOKEN_URL:https://login.microsoftonline.com/${AZURE_TENANT_ID:}/oauth2/v2.0/token}
@@ -323,4 +323,4 @@ externalservices:
         username: ${MARKETPLACE_USERNAME:}
         password: ${MARKETPLACE_PASSWORD:}
         tenant-id: ${AZURE_TENANT_ID:}
-        jwt-scope: ${MARKETPLACE_OBO_SCOPE:}
+        client-credentials-scope: ${MARKETPLACE_CLIENT_CREDENTIALS_SCOPE:}
