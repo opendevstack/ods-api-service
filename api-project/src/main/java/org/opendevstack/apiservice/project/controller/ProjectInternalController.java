@@ -25,7 +25,7 @@ import java.util.UUID;
 @Slf4j
 public class ProjectInternalController implements ProjectsInternalApi {
     
-    public static final String API_BASE_PATH = "/api/pub/v0/projects";
+    public static final String API_BASE_PATH = "/api/pub/v1/projects";
 
     private static final String HTTP_HEADER_LOCATION = "Location";
 
