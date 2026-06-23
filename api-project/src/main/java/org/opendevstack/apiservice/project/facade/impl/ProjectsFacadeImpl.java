@@ -86,12 +86,8 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
     }
 
     @Override
-    public boolean updateProject(String projectKey, UpdateProjectRequest request) {
-        ProjectResponse project = projectService.getProject(projectKey);
-        if (project == null) return false;
-
+    public void updateProject(String projectKey, UpdateProjectRequest request) {
         projectService.updateProjectStatus(projectKey, request.getStatus());
-        return true;
     }
 
     private ProjectResponse registerProject(ProjectCreationCommand command) {

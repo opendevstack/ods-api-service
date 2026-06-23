@@ -1,6 +1,7 @@
 package org.opendevstack.apiservice.project.validation;
 
 import org.opendevstack.apiservice.project.exception.ErrorKey;
+import org.opendevstack.apiservice.project.exception.ProjectUpdateValidationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
 import org.opendevstack.apiservice.project.model.UpdateProjectRequest;
@@ -79,7 +80,7 @@ public class ProjectRequestValidator {
                 .map(e -> e.getDbValue())
                 .toList();
         if (!statusList.contains(status)) {
-            throw new ProjectValidationException(ErrorKey.INVALID_STATUS,
+            throw new ProjectUpdateValidationException(ErrorKey.INVALID_STATUS,
                 String.join(", ", statusList));
         }
     }

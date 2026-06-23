@@ -71,7 +71,6 @@ public class ProjectServiceImpl implements ProjectService {
             entity.setStatus(status);
             projectRepository.save(entity);
         }
-
     }
 
     @Override

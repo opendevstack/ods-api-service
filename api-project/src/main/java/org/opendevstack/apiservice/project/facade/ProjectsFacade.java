@@ -12,5 +12,5 @@ public interface ProjectsFacade {
 
     CreateProjectResponse getProject(String projectKey);
 
-    boolean updateProject(String projectKey, UpdateProjectRequest request);
+    void updateProject(String projectKey, UpdateProjectRequest request);
 }

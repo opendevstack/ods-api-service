@@ -56,11 +56,9 @@ class ProjectInternalControllerTest {
     }
 
     @Test
-    void update_project_returns_no_content_when_project_exists() {
+    void update_project_returns_no_content() {
         UpdateProjectRequest request = new UpdateProjectRequest();
         request.setStatus("Running");
-
-        when(projectsFacade.updateProject("PROJ01", request)).thenReturn(true);
 
         ResponseEntity<Void> result = sut.updateProject("PROJ01", request);
 
@@ -70,23 +68,6 @@ class ProjectInternalControllerTest {
                 .isEqualTo(ProjectInternalController.API_BASE_PATH + "/PROJ01");
         verify(projectRequestValidator).validateUpdateRequest(request);
         verify(projectsFacade).updateProject("PROJ01", request);
-    }
-
-    @Test
-    void update_project_returns_not_found_when_project_does_not_exist() {
-        UpdateProjectRequest request = new UpdateProjectRequest();
-        request.setStatus("Running");
-
-        when(projectsFacade.updateProject("UNKNOWN", request)).thenReturn(false);
-
-        ResponseEntity<Void> result = sut.updateProject("UNKNOWN", request);
-
-        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(result.getBody()).isNull();
-        assertThat(result.getHeaders().getFirst("Location"))
-                .isEqualTo(ProjectInternalController.API_BASE_PATH + "/UNKNOWN");
-        verify(projectRequestValidator).validateUpdateRequest(request);
-        verify(projectsFacade).updateProject("UNKNOWN", request);
     }
 
     @Test

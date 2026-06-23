@@ -7,6 +7,7 @@ import org.opendevstack.apiservice.project.exception.ClientAppNotRegisteredExcep
 import org.opendevstack.apiservice.project.exception.ErrorKey;
 import org.opendevstack.apiservice.project.exception.ProjectAlreadyExistsException;
 import org.opendevstack.apiservice.project.exception.ProjectCreationException;
+import org.opendevstack.apiservice.project.exception.ProjectUpdateValidationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
 import org.springframework.http.HttpStatus;
@@ -84,6 +85,12 @@ public class ProjectExceptionHandler {
         response.setErrorKey(errorKey.getKey());
         response.setMessage(ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(ProjectUpdateValidationException.class)
+    public ResponseEntity<Void> handleUpdateValidationException(ProjectUpdateValidationException ex) {
+        log.warn("Validation error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
 
     @ExceptionHandler(ProjectAlreadyExistsException.class)

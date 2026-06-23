@@ -37,9 +37,9 @@ paths:
               $ref: '#/components/schemas/UpdateProjectRequest'
       responses:
         '204':
-          description: Project information updated successfully.
-        '404':
-          description: Project not found.
+          description: Project information updated successfully or no project found for the provided projectKey.
+        "400":
+          description: Bad Request.
         "401":
           description: Invalid client token on the request.
         "403":

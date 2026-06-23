@@ -40,15 +40,8 @@ public class ProjectInternalController implements ProjectsInternalApi {
         String location = API_BASE_PATH + "/" + projectKey;
         projectRequestValidator.validateUpdateRequest(updateProjectRequest);
 
-        Boolean updated = projectsFacade.updateProject(projectKey, updateProjectRequest);
+        projectsFacade.updateProject(projectKey, updateProjectRequest);
 
-        if (updated.equals(Boolean.FALSE)) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .header(HTTP_HEADER_LOCATION, location)
-                    .build();
-                    // .body(ProjectResponseFactory.notFound(projectKey, location));
-        }
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .header(HTTP_HEADER_LOCATION, location)

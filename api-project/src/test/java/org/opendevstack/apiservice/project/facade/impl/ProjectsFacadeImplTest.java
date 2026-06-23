@@ -211,7 +211,7 @@ class ProjectsFacadeImplTest {
     }
 
     @Test
-    void update_project_returns_true_and_calls_update_status_when_project_exists() {
+    void update_project_calls_update_status() {
         UpdateProjectRequest request = new UpdateProjectRequest();
         request.setStatus("Running");
         ProjectResponse projectResponse = ProjectResponse.builder()
@@ -221,24 +221,8 @@ class ProjectsFacadeImplTest {
 
         when(projectService.getProject("PROJ01")).thenReturn(projectResponse);
 
-        boolean result = sut.updateProject("PROJ01", request);
+        sut.updateProject("PROJ01", request);
 
-        assertEquals(true, result);
-        verify(projectService).getProject("PROJ01");
         verify(projectService).updateProjectStatus("PROJ01", "Running");
-    }
-
-    @Test
-    void update_project_returns_false_and_does_not_call_update_status_when_project_not_found() {
-        UpdateProjectRequest request = new UpdateProjectRequest();
-        request.setStatus("Running");
-
-        when(projectService.getProject("UNKNOWN")).thenReturn(null);
-
-        boolean result = sut.updateProject("UNKNOWN", request);
-
-        assertEquals(false, result);
-        verify(projectService).getProject("UNKNOWN");
-        verify(projectService, never()).updateProjectStatus(anyString(), anyString());
     }
 }

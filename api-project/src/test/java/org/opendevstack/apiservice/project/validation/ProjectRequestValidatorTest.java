@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
+import org.opendevstack.apiservice.project.exception.ProjectUpdateValidationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
 import org.opendevstack.apiservice.project.model.UpdateProjectRequest;
@@ -194,8 +195,8 @@ class ProjectRequestValidatorTest {
         UpdateProjectRequest request = new UpdateProjectRequest();
         request.setStatus("INVALID_STATUS");
 
-        ProjectValidationException exception =
-                assertThrows(ProjectValidationException.class, () -> sut.validateUpdateRequest(request));
+        ProjectUpdateValidationException exception =
+                assertThrows(ProjectUpdateValidationException.class, () -> sut.validateUpdateRequest(request));
 
         assertEquals(ErrorKey.INVALID_STATUS, exception.getErrorKey());
     }
