@@ -14,6 +14,7 @@ import org.opendevstack.apiservice.project.mapper.ProjectCreationResponseMapper;
 import org.opendevstack.apiservice.project.mapper.ProjectMapper;
 import org.opendevstack.apiservice.project.model.CreateProjectRequest;
 import org.opendevstack.apiservice.project.model.CreateProjectResponse;
+import org.opendevstack.apiservice.project.model.UpdateProjectRequest;
 import org.opendevstack.apiservice.project.service.ClientAppService;
 import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
@@ -207,5 +208,37 @@ class ProjectsFacadeImplTest {
         CreateProjectResponse result = sut.getProject("UNKNOWN");
 
         assertNull(result);
+    }
+
+    @Test
+    void update_project_returns_true_and_calls_update_status_when_project_exists() {
+        UpdateProjectRequest request = new UpdateProjectRequest();
+        request.setStatus("Running");
+        ProjectResponse projectResponse = ProjectResponse.builder()
+                .projectKey("PROJ01")
+                .status(Status.PENDING)
+                .build();
+
+        when(projectService.getProject("PROJ01")).thenReturn(projectResponse);
+
+        boolean result = sut.updateProject("PROJ01", request);
+
+        assertEquals(true, result);
+        verify(projectService).getProject("PROJ01");
+        verify(projectService).updateProjectStatus("PROJ01", "Running");
+    }
+
+    @Test
+    void update_project_returns_false_and_does_not_call_update_status_when_project_not_found() {
+        UpdateProjectRequest request = new UpdateProjectRequest();
+        request.setStatus("Running");
+
+        when(projectService.getProject("UNKNOWN")).thenReturn(null);
+
+        boolean result = sut.updateProject("UNKNOWN", request);
+
+        assertEquals(false, result);
+        verify(projectService).getProject("UNKNOWN");
+        verify(projectService, never()).updateProjectStatus(anyString(), anyString());
     }
 }

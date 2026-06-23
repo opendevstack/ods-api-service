@@ -16,9 +16,6 @@ public class ProjectRequestValidator {
     
     @Value("${apis.projects.locations}")
     private List<String> locations;
-
-    @Value("${apis.projects.status}")
-    private List<String> statusList;
     
     public void validateCreateRequest(CreateProjectRequest request) {
         validateFlavorOrConfigItem(request);

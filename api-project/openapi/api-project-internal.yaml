@@ -40,28 +40,12 @@ paths:
           description: Project information updated successfully.
         '404':
           description: Project not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CreateProjectResponse'
         "401":
           description: Invalid client token on the request.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RestErrorMessage'
         "403":
           description: Insufficient permissions for the client to access the resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RestErrorMessage'
         '500':
           description: Internal server error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CreateProjectResponse'
 components:
   schemas:
     RestErrorMessage:
@@ -77,24 +61,3 @@ components:
           type: string
           description: Status of the project. If not in the allowed list, error INVALID_STATUS (030) is returned.
       additionalProperties: false
-    CreateProjectResponse:
-      type: object
-      properties:
-        projectKey:
-          type: string
-        httStatus:
-          type: string
-        status:
-          type: string
-        projectFlavor:
-          type: string
-        message:
-          type: string
-        error:
-          type: string
-        errorKey:
-          type: string
-        errorDescription:
-          type: string
-        location:
-          type: string
