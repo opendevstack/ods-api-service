@@ -222,6 +222,7 @@ apis:
     ansible-workflow-name: ${API_PROJECTS_MINIEDP_PROVISION_WORKFLOW_NAME}
     # Supported project locations, typically provided as a comma-separated environment variable.
     locations: ${API_PROJECTS_LOCATIONS}
+    status: ${API_PROJECTS_STATUS}
 
 externalservices:
   openshift:
