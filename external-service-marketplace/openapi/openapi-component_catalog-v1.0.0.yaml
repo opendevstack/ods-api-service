@@ -307,7 +307,7 @@ paths:
         - name: catalogId
           in: query
           description: id for the Catalog.
-          required: true
+          required: false
           schema:
             type: string
         - name: sortByTitle
