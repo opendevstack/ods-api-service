@@ -31,6 +31,10 @@ public interface MarketplaceService extends ExternalService {
 
     CatalogItem getCatalogItem(String instanceName, String catalogItemId) throws MarketplaceException;
 
+    List<CatalogItem> getAllCatalogItems() throws MarketplaceException;
+
+    List<CatalogItem> getAllCatalogItems(String instanceName) throws MarketplaceException;
+
     CatalogItem getCatalogItemBySlug(String slug) throws MarketplaceException;
 
     CatalogItem getCatalogItemBySlug(String instanceName, String slug) throws MarketplaceException;

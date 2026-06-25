@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -69,6 +70,35 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new MarketplaceException(
                     String.format("Failed to retrieve catalog item '%s' in instance '%s'",
                             catalogItemId, instanceName), e);
+        }
+    }
+
+    @Override
+    public List<CatalogItem> getAllCatalogItems() throws MarketplaceException {
+        return getAllCatalogItems(getDefaultInstance());
+    }
+
+    @Override
+    public List<CatalogItem> getAllCatalogItems(String instanceName) throws MarketplaceException {
+        log.debug("Marketplace service GET all catalog items in instance {} ", instanceName);
+
+        try {
+            MarketplaceApiClient marketplaceClient = getOboAuthenticatedClient(instanceName);
+            ApiClient apiClient = marketplaceClient.getApiClient();
+            CatalogItemsApi catalogItemsApi = new CatalogItemsApi(apiClient);
+
+            apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
+
+            return catalogItemsApi.getCatalogItems(SortOrder.ASC, null);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.debug("Catalog items not found in Marketplace instance '{}'", instanceName);
+            return Collections.emptyList();
+        } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
+            throw new MarketplaceException(
+                    String.format("Access denied when getting all catalog items in instance '%s'", instanceName), e);
+        } catch (RestClientException e) {
+            throw new MarketplaceException(
+                    String.format("Failed to retrieve catalog items in instance '%s'", instanceName), e);
         }
     }
 
