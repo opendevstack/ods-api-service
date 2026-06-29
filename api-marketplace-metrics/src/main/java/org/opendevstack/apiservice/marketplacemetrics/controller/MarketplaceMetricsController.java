@@ -19,8 +19,19 @@ public class MarketplaceMetricsController implements MarketplaceMetricsApi {
     @CrossOrigin(origins = "*")
     @GetMapping("/metrics/marketplace/catalog-items")
     @Override
-    public ResponseEntity<MarketplaceCatalogItemsMetrics> getMarketplaceCatalogItemsMetrics(Integer page, Integer size) {
-        return null;
+    public ResponseEntity<MarketplaceCatalogItemsMetrics> getMarketplaceCatalogItemsMetrics() {
+        MarketplaceCatalogItemsMetrics catalogItemsMetrics;
+        try {
+            catalogItemsMetrics = marketplaceMetricsFacade.getMarketplaceCatalogItemsMetrics();
+        } catch (MarketplaceMetricsException e) {
+            return sneakyThrow(e);
+        }
+
+        if (catalogItemsMetrics == null) {
+            return ResponseEntity.notFound().build();
+        } else {
+            return ResponseEntity.ok(catalogItemsMetrics);
+        }
     }
 
     @Override

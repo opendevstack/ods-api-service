@@ -7,6 +7,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.client.model.Proj
 import org.opendevstack.apiservice.marketplacemetrics.exception.MarketplaceMetricsException;
 import org.opendevstack.apiservice.marketplacemetrics.facade.MarketplaceMetricsFacade;
 import org.opendevstack.apiservice.marketplacemetrics.mapper.MarketplaceMetricsMapper;
+import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceCatalogItemsMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetrics;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,16 @@ public class MarketplaceMetricsFacadeImpl implements MarketplaceMetricsFacade {
             return mapper.toApiModel(allProjectComponents);
         } catch (MarketplaceException e) {
             throw new MarketplaceMetricsException("Failed to retrieve marketplace project components metrics.", e);
+        }
+    }
+
+    @Override
+    public MarketplaceCatalogItemsMetrics getMarketplaceCatalogItemsMetrics() throws MarketplaceMetricsException {
+        try {
+            var allCatalogItems = marketplaceService.getAllCatalogItems();
+            return mapper.toApiModel(allCatalogItems);
+        } catch (MarketplaceException e) {
+            throw new MarketplaceMetricsException("Failed to retrieve marketplace catalog items metrics.", e);
         }
     }
 }

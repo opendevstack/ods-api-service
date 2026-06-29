@@ -58,17 +58,6 @@ paths:
       summary: Get Marketplace metrics regarding catalog items.
       description: Returns usage metrics of catalog items available in the marketplace.
       operationId: getMarketplaceCatalogItemsMetrics
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            default: 20
       responses:
         "200":
           description: A paginated list of catalog items metrics

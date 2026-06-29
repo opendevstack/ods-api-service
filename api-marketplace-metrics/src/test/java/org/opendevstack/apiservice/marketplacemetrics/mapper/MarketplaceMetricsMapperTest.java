@@ -10,7 +10,8 @@ import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectCo
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,7 +26,7 @@ class MarketplaceMetricsMapperTest {
 
     @Test
     void to_api_model_returns_null_when_response_is_null() {
-        assertThat(mapper.toApiModel(null)).isNull();
+        assertThat(mapper.toApiModel( (ProjectComponentListResponse) null)).isNull();
     }
 
     @Test
@@ -47,7 +48,7 @@ class MarketplaceMetricsMapperTest {
         pagination.setPrevious(URI.create("https://api.example.com/resources?page=0&size=20"));
 
         ProjectComponentListResponse response = new ProjectComponentListResponse();
-        response.setData(Arrays.asList(item));
+        response.setData(List.of(item));
         response.setPagination(pagination);
 
         MarketplaceProjectComponentsMetrics result = mapper.toApiModel(response);
@@ -55,7 +56,7 @@ class MarketplaceMetricsMapperTest {
         assertThat(result).isNotNull();
         assertThat(result.getData()).hasSize(1);
 
-        MarketplaceProjectComponentMetrics mappedItem = result.getData().get(0);
+        MarketplaceProjectComponentMetrics mappedItem = result.getData().getFirst();
         assertThat(mappedItem.getComponentId()).isEqualTo("comp-1");
         assertThat(mappedItem.getProjectKey()).isEqualTo("PRJ1");
         assertThat(mappedItem.getCaller()).isEqualTo("user@example.com");
@@ -79,13 +80,13 @@ class MarketplaceMetricsMapperTest {
     @Test
     void to_api_model_maps_null_item_in_data_list_as_null_entry() {
         ProjectComponentListResponse response = new ProjectComponentListResponse();
-        response.setData(Arrays.asList((ProjectComponentListItem) null));
+        response.setData(Collections.singletonList(null));
 
         MarketplaceProjectComponentsMetrics result = mapper.toApiModel(response);
 
         assertThat(result).isNotNull();
         assertThat(result.getData()).hasSize(1);
-        assertThat(result.getData().get(0)).isNull();
+        assertThat(result.getData().getFirst()).isNull();
     }
 
     @Test

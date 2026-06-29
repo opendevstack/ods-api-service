@@ -46,8 +46,6 @@ public interface MarketplaceMetricsApi {
      * GET /metrics/marketplace/catalog-items : Get Marketplace metrics regarding catalog items.
      * Returns usage metrics of catalog items available in the marketplace.
      *
-     * @param page  (optional, default to 0)
-     * @param size  (optional, default to 20)
      * @return A paginated list of catalog items metrics (status code 200)
      *         or Invalid client token (status code 401)
      *         or Insufficient permissions (status code 403)
@@ -80,8 +78,7 @@ public interface MarketplaceMetricsApi {
     )
     
     ResponseEntity<MarketplaceCatalogItemsMetrics> getMarketplaceCatalogItemsMetrics(
-        @Parameter(name = "page", description = "", in = ParameterIn.QUERY) @Valid @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
-        @Parameter(name = "size", description = "", in = ParameterIn.QUERY) @Valid @RequestParam(value = "size", required = false, defaultValue = "20") Integer size
+        
     );
 
 
