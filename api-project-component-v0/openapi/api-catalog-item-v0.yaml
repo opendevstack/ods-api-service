@@ -1,0 +1,308 @@
+openapi: 3.0.3
+info:
+  title: ODS API Server
+  description: API documentation for ODS (Open DevStack) API Service
+  contact:
+    name: ODS Team
+  version: v0.0.1
+servers:
+  - url: http://{baseurl}/api/pub/v0
+    variables:
+      baseurl:
+        default: localhost:8080
+        description: Development environment
+tags:
+  - name: Catalog Items
+    description: API for managing Catalog Items
+
+paths:
+  /catalog-items:
+    get:
+      tags:
+        - CatalogItems
+      summary: List of all CatalogItems.
+      description: >
+        Returns a list of all CatalogItems for the given Catalog identified by catalogId.<br/>
+        CatalogItems referenced on a Catalog that are either invalid or non-existent are **excluded** from the response.
+      operationId: getCatalogItems
+      responses:
+        "200":
+          description: A list of valid CatalogItems.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogItem'
+        "400":
+          description: Invalid parameters provided on the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "401":
+          description: Invalid client token on the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "403":
+          description: Insufficient permissions for the client to access the resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "500":
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid
+      headers:
+        WWW_Authenticate:
+          schema:
+            type: string
+  schemas:
+    CatalogItem:
+      properties:
+        id:
+          type: string
+          example: 'aSdFam...yCg=='
+        slug:
+          type: string
+          description: >
+            Composite slug computed from the normalised Bitbucket project key and the repository slug of the item,
+            in the format `{project-key}_{repo-name}`. Calculated at mapping time; not retrieved from Bitbucket.
+          example: 'myproject_my-component-repo'
+        path:
+          type: string
+          example: projects/SOMEPROJECT/repos/some-repo/raw/CatalogItem.yaml?at=refs/heads/master
+        title:
+          type: string
+          example: An item title
+        shortDescription:
+          type: string
+          example: This is a short description for the item
+        descriptionFileId:
+          type: string
+          example: cHJvam...0ZXIK
+        imageFileId:
+          type: string
+          example: cHJvam...YXN0Z
+        itemSrc:
+          type: string
+          example: 'https://bitbucket.some-company.com/projects/SOMEPROJECT/repos/some-repo/browse/CatalogItem.yaml?at=refs/heads/master'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItemTag'
+        authors:
+          type: array
+          items:
+            type: string
+          example:
+            - '@SomeAuthor'
+            - '@SomeOtherAuthor'
+        date:
+          type: string
+          format: date-time
+          example: '2021-07-01T00:00:00Z'
+        userActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItemUserAction'
+        restrictions:
+          $ref: '#/components/schemas/CatalogItemRestriction'
+      required:
+        - id
+        - title
+        - shortDescription
+        - description
+        - image
+        - authors
+        - date
+      example:
+        id: aSdFam...yCg==
+        slug: myproject_some-repo
+        path: projects/SOMEPROJECT/repos/some-repo/raw/CatalogItem.yaml?at=refs/heads/master
+        title: An item title
+        shortDescription: This is a short description for the item
+        descriptionFileId: cHJvam...0ZXIK
+        imageFileId: cHJvam...YXN0Z
+        itemSrc: https://bitbucket.some-company.com/projects/SOMEPROJECT/repos/some-repo/browse/CatalogItem.yaml?at=refs/heads/master
+        tags:
+          - label: data
+            options:
+              - 'some-data-option'
+              - 'some-other-data-option'
+        authors:
+          - '@SomeAuthor'
+          - '@SomeOtherAuthor'
+        date: "2021-07-01T00:00:00Z"
+    CatalogItemUserAction:
+      properties:
+        id:
+          type: string
+          nullable: false
+          example: 'CODE'
+        displayName:
+          type: string
+          nullable: false
+          example: 'View Code'
+        url:
+          type: string
+          nullable: true
+          example: 'https://quickstarter'
+        triggerMessage:
+          type: string
+          nullable: true
+          example: 'Provisioning a component'
+        requestable:
+          type: boolean
+          nullable: true
+          example: true
+        restrictionMessage:
+          type: string
+          nullable: true
+          example: 'You do not have permissions to provision this component.'
+        parameters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItemUserActionParameter'
+      example:
+        id: "PROVISION"
+        triggerMessage: "Provisioning a component custom message"
+        parameters:
+          - name: "workflow"
+            type: "string"
+            required: true
+            defaultValue: "9987"
+            description: "Workflow to execute."
+            visible: false
+    CatalogItemUserActionParameter:
+      properties:
+        name:
+          type: string
+          nullable: false
+          example: 'workflow'
+        type:
+          type: string
+          nullable: false
+          example: 'string'
+        required:
+          type: boolean
+          example: 'true'
+        defaultValue:
+          type: string
+          nullable: true
+          example: '123'
+        defaultValues:
+          nullable: true
+          type: array
+          items:
+            type: string
+          example:
+            - 'some-data-option'
+            - 'some-other-data-option'
+        options:
+          nullable: true
+          type: array
+          items:
+            type: string
+          example:
+            - 'some-data-option'
+            - 'some-other-data-option'
+        locations:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/CatalogItemUserActionParameterLocation'
+        label:
+          type: string
+          nullable: false
+          example: 'Workflow to execute.'
+        placeholder:
+          type: string
+          nullable: true
+          example: 'some placeholder for a workflow'
+        hint:
+          type: string
+          nullable: true
+          example: 'some hint for a workflow'
+        sendOnDeletion:
+          type: boolean
+          nullable: true
+          example: false
+        visible:
+          type: boolean
+          example: 'true'
+        validations:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/CatalogItemUserActionParameterValidation'
+      example:
+        name: "workflow"
+        type: "string"
+        required: true
+        defaultValue: "9987"
+        description: "Workflow to execute."
+        visible: false
+    CatalogItemUserActionParameterValidation:
+      properties:
+        regex:
+          type: string
+          example: '/^[a-z\s]{0,255}$/i'
+        errorMessage:
+          type: string
+          example: 'There is an error in the provided value, please check it and try again.'
+    CatalogItemUserActionParameterLocation:
+      properties:
+        location:
+          type: string
+          example: 'EU'
+        value:
+          type: string
+          example: '1234'
+    CatalogItemTag:
+      properties:
+        label:
+          type: string
+          example: data
+        options:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+          example:
+            - 'some-data-option'
+            - 'some-other-data-option'
+    CatalogItemRestriction:
+      properties:
+        projects:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+          example:
+            - 'project-key-1'
+            - 'project-key-2'
+    RestErrorMessage:
+      properties:
+        message:
+          type: string
+      required:
+        - message
