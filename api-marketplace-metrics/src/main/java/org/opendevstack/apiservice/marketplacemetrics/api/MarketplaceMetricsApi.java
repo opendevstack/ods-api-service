@@ -5,6 +5,7 @@
  */
 package org.opendevstack.apiservice.marketplacemetrics.api;
 
+import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceCatalogItemsMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.RestErrorMessage;
 import io.swagger.v3.oas.annotations.ExternalDocumentation;
@@ -40,6 +41,50 @@ import jakarta.annotation.Generated;
 @Tag(name = "MarketplaceMetrics", description = "the MarketplaceMetrics API")
 public interface MarketplaceMetricsApi {
 
+    public static final String PATH_GET_MARKETPLACE_CATALOG_ITEMS_METRICS = "/metrics/marketplace/catalog-items";
+    /**
+     * GET /metrics/marketplace/catalog-items : Get Marketplace metrics regarding catalog items.
+     * Returns usage metrics of catalog items available in the marketplace.
+     *
+     * @param page  (optional, default to 0)
+     * @param size  (optional, default to 20)
+     * @return A paginated list of catalog items metrics (status code 200)
+     *         or Invalid client token (status code 401)
+     *         or Insufficient permissions (status code 403)
+     *         or Server error (status code 500)
+     */
+    @Operation(
+        operationId = "getMarketplaceCatalogItemsMetrics",
+        summary = "Get Marketplace metrics regarding catalog items.",
+        description = "Returns usage metrics of catalog items available in the marketplace.",
+        tags = { "MarketplaceMetrics" },
+        responses = {
+            @ApiResponse(responseCode = "200", description = "A paginated list of catalog items metrics", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = MarketplaceCatalogItemsMetrics.class))
+            }),
+            @ApiResponse(responseCode = "401", description = "Invalid client token", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
+            }),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
+            }),
+            @ApiResponse(responseCode = "500", description = "Server error", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
+            })
+        }
+    )
+    @RequestMapping(
+        method = RequestMethod.GET,
+        value = MarketplaceMetricsApi.PATH_GET_MARKETPLACE_CATALOG_ITEMS_METRICS,
+        produces = { "application/json" }
+    )
+    
+    ResponseEntity<MarketplaceCatalogItemsMetrics> getMarketplaceCatalogItemsMetrics(
+        @Parameter(name = "page", description = "", in = ParameterIn.QUERY) @Valid @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
+        @Parameter(name = "size", description = "", in = ParameterIn.QUERY) @Valid @RequestParam(value = "size", required = false, defaultValue = "20") Integer size
+    );
+
+
     public static final String PATH_GET_MARKETPLACE_PROJECT_COMPONENTS_METRICS = "/metrics/marketplace/project-components";
     /**
      * GET /metrics/marketplace/project-components : Get Marketplace metrics regarding project components.
@@ -48,9 +93,9 @@ public interface MarketplaceMetricsApi {
      * @param page Page number (from 0 until limit) (optional, default to 0)
      * @param size Page size (optional, default to 20)
      * @return A paginated list of all the provisioned project components (status code 200)
-     *         or Invalid client token on the request. (status code 401)
-     *         or Insufficient permissions for the client to access the resource. (status code 403)
-     *         or Server error. (status code 500)
+     *         or Invalid client token (status code 401)
+     *         or Insufficient permissions (status code 403)
+     *         or Server error (status code 500)
      */
     @Operation(
         operationId = "getMarketplaceProjectComponentsMetrics",
@@ -61,13 +106,13 @@ public interface MarketplaceMetricsApi {
             @ApiResponse(responseCode = "200", description = "A paginated list of all the provisioned project components", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = MarketplaceProjectComponentsMetrics.class))
             }),
-            @ApiResponse(responseCode = "401", description = "Invalid client token on the request.", content = {
+            @ApiResponse(responseCode = "401", description = "Invalid client token", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
             }),
-            @ApiResponse(responseCode = "403", description = "Insufficient permissions for the client to access the resource.", content = {
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
             }),
-            @ApiResponse(responseCode = "500", description = "Server error.", content = {
+            @ApiResponse(responseCode = "500", description = "Server error", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
             })
         }

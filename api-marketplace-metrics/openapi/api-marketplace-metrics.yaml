@@ -12,59 +12,101 @@ servers:
         default: localhost:8080
         description: Development environment
 tags:
-- name: Marketplace metrics
-  description: API for managing marketplace metrics
+  - name: Marketplace metrics
+    description: API for managing marketplace metrics
 paths:
   /metrics/marketplace/project-components:
     get:
       tags:
-      - MarketplaceMetrics
+        - MarketplaceMetrics
       summary: Get Marketplace metrics regarding project components.
       description: Returns all the components that were provisioned from the Marketplace in all the projects.
       operationId: getMarketplaceProjectComponentsMetrics
       parameters:
-      - name: page
-        in: query
-        description: Page number (from 0 until limit)
-        required: false
-        schema:
-          type: integer
-          default: 0
-      - name: size
-        in: query
-        description: Page size
-        required: false
-        schema:
-          type: integer
-          default: 20
+        - name: page
+          in: query
+          description: Page number (from 0 until limit)
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: Page size
+          required: false
+          schema:
+            type: integer
+            default: 20
       responses:
         "200":
+          description: A paginated list of all the provisioned project components
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MarketplaceProjectComponentsMetrics"
-          description: A paginated list of all the provisioned project components
         "401":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RestErrorMessage"
-          description: Invalid client token on the request.
+          $ref: "#/components/responses/UnauthorizedResponse"
         "403":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RestErrorMessage"
-          description: Insufficient permissions for the client to access the resource.
+          $ref: "#/components/responses/ForbiddenResponse"
         "500":
+          $ref: "#/components/responses/InternalErrorResponse"
+
+  /metrics/marketplace/catalog-items:
+    get:
+      tags:
+        - MarketplaceMetrics
+      summary: Get Marketplace metrics regarding catalog items.
+      description: Returns usage metrics of catalog items available in the marketplace.
+      operationId: getMarketplaceCatalogItemsMetrics
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: A paginated list of catalog items metrics
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RestErrorMessage"
-          description: Server error.
+                $ref: "#/components/schemas/MarketplaceCatalogItemsMetrics"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "500":
+          $ref: "#/components/responses/InternalErrorResponse"
+
 components:
+  responses:
+    UnauthorizedResponse:
+      description: Invalid client token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+    ForbiddenResponse:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+    InternalErrorResponse:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+
   schemas:
     RestErrorMessage:
+      type: object
       properties:
         message:
           type: string
@@ -176,3 +218,96 @@ components:
           nullable: true
           example: "https://api.example.com/resources?page=0&size=20"
           description: URL of the previous page (or null if the current is the first one)
+
+    MarketplaceCatalogItemsMetrics:
+      type: object
+      example:
+        data:
+          - id: aSdFam...yCg==
+            slug: myproject_my-component-repo
+            title: An item title
+            shortDescription: Example description
+            date: "2021-07-01T00:00:00Z"
+        pagination:
+          page: 0
+          size: 20
+          totalElements: 50
+          totalPages: 3
+          next: https://api.example.com/resources?page=1&size=20
+          previous: null
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItem'
+        pagination:
+          $ref: '#/components/schemas/MarketplaceCatalogItemsMetricsPagination'
+
+    MarketplaceCatalogItemsMetricsPagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+
+    CatalogItem:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        path:
+          type: string
+        title:
+          type: string
+        shortDescription:
+          type: string
+        descriptionFileId:
+          type: string
+        imageFileId:
+          type: string
+        description:
+          type: string
+          description: Resolved description content of the catalog item (e.g. markdown converted to plain text or HTML)
+          example: "This component provides a reusable service for handling..."
+        image:
+          type: string
+          description: Resolved image URL or base64 representation of the catalog item image
+          example: "https://example.com/images/component.png"
+        itemSrc:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItemTag'
+        authors:
+          type: array
+          items:
+            type: string
+        date:
+          type: string
+          format: date-time
+
+    CatalogItemTag:
+      type: object
+      properties:
+        label:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
