@@ -5,15 +5,21 @@ import org.junit.jupiter.api.Test;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.Pagination;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListItem;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListResponse;
+import org.opendevstack.apiservice.marketplacemetrics.model.CatalogItem;
+import org.opendevstack.apiservice.marketplacemetrics.model.CatalogItemTag;
+import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceCatalogItemsMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetrics;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MarketplaceMetricsMapperTest {
 
@@ -89,17 +95,190 @@ class MarketplaceMetricsMapperTest {
         assertThat(result.getData().getFirst()).isNull();
     }
 
-    @Test
-    void to_api_model_keeps_default_data_and_sets_null_pagination_when_source_has_null_data_and_pagination() {
-        ProjectComponentListResponse response = new ProjectComponentListResponse();
-        response.setData(null);
-        response.setPagination(null);
+     @Test
+     void to_api_model_keeps_default_data_and_sets_null_pagination_when_source_has_null_data_and_pagination() {
+         ProjectComponentListResponse response = new ProjectComponentListResponse();
+         response.setData(null);
+         response.setPagination(null);
 
-        MarketplaceProjectComponentsMetrics result = mapper.toApiModel(response);
+         MarketplaceProjectComponentsMetrics result = mapper.toApiModel(response);
 
-        assertThat(result).isNotNull();
-        assertThat(result.getData()).isEmpty();
-        assertThat(result.getPagination()).isNull();
-    }
+         assertThat(result).isNotNull();
+         assertThat(result.getData()).isEmpty();
+         assertThat(result.getPagination()).isNull();
+     }
+
+     @Test
+     void to_api_model_for_catalog_items_list_throws_exception_when_list_is_null() {
+         assertThatThrownBy(() -> mapper.toApiModel((List<org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem>) null))
+                 .isInstanceOf(NullPointerException.class);
+     }
+
+     @Test
+     void to_api_model_for_catalog_items_list_maps_empty_list() {
+         List<org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem> emptyList = Collections.emptyList();
+
+         MarketplaceCatalogItemsMetrics result = mapper.toApiModel(emptyList);
+
+         assertThat(result).isNotNull();
+         assertThat(result.getData()).isEmpty();
+     }
+
+     @Test
+     void to_api_model_for_catalog_items_list_maps_items_correctly() {
+         org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem sourceItem = new org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem();
+         sourceItem.setId("item-1");
+         sourceItem.setSlug("java-17");
+         sourceItem.setPath("/path/to/item");
+         sourceItem.setTitle("Java 17");
+         sourceItem.setShortDescription("Short desc");
+         sourceItem.setDescription("Full description");
+         sourceItem.setImage("http://example.com/image.png");
+         sourceItem.setItemSrc("http://example.com/item");
+         sourceItem.setAuthors(List.of("author1", "author2"));
+
+         MarketplaceCatalogItemsMetrics result = mapper.toApiModel(List.of(sourceItem));
+
+         assertThat(result).isNotNull();
+         assertThat(result.getData()).hasSize(1);
+
+         CatalogItem mappedItem = result.getData().getFirst();
+         assertThat(mappedItem.getId()).isEqualTo("item-1");
+         assertThat(mappedItem.getSlug()).isEqualTo("java-17");
+         assertThat(mappedItem.getPath()).isEqualTo("/path/to/item");
+         assertThat(mappedItem.getTitle()).isEqualTo("Java 17");
+         assertThat(mappedItem.getShortDescription()).isEqualTo("Short desc");
+         assertThat(mappedItem.getDescription()).isEqualTo("Full description");
+         assertThat(mappedItem.getImage()).isEqualTo("http://example.com/image.png");
+         assertThat(mappedItem.getItemSrc()).isEqualTo("http://example.com/item");
+         assertThat(mappedItem.getAuthors()).containsExactly("author1", "author2");
+     }
+
+     @Test
+     void to_api_model_for_catalog_item_returns_null_when_item_is_null() {
+         assertThatThrownBy(() -> mapper.toApiModel((org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem) null))
+                 .isInstanceOf(NullPointerException.class);
+     }
+
+     @Test
+     void to_api_model_for_catalog_item_maps_all_fields_when_populated() {
+         org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem sourceItem = new org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem();
+         sourceItem.setId("item-1");
+         sourceItem.setSlug("java-17");
+         sourceItem.setPath("/path/to/item");
+         sourceItem.setTitle("Java 17");
+         sourceItem.setShortDescription("Short desc");
+         sourceItem.setDescriptionFileId("file-id-1");
+         sourceItem.setImageFileId("image-id-1");
+         sourceItem.setDescription("Full description");
+         sourceItem.setImage("http://example.com/image.png");
+         sourceItem.setItemSrc("http://example.com/item");
+         sourceItem.setAuthors(List.of("author1"));
+         sourceItem.setDate(OffsetDateTime.now());
+
+         org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag sourceTag =
+             new org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag();
+         sourceTag.setLabel("version");
+         sourceTag.setOptions(Set.of("1.0", "2.0"));
+         sourceItem.setTags(List.of(sourceTag));
+
+         CatalogItem result = mapper.toApiModel(sourceItem);
+
+         assertThat(result).isNotNull();
+         assertThat(result.getId()).isEqualTo("item-1");
+         assertThat(result.getSlug()).isEqualTo("java-17");
+         assertThat(result.getPath()).isEqualTo("/path/to/item");
+         assertThat(result.getTitle()).isEqualTo("Java 17");
+         assertThat(result.getShortDescription()).isEqualTo("Short desc");
+         assertThat(result.getDescriptionFileId()).isEqualTo("file-id-1");
+         assertThat(result.getImageFileId()).isEqualTo("image-id-1");
+         assertThat(result.getDescription()).isEqualTo("Full description");
+         assertThat(result.getImage()).isEqualTo("http://example.com/image.png");
+         assertThat(result.getItemSrc()).isEqualTo("http://example.com/item");
+         assertThat(result.getAuthors()).containsExactly("author1");
+         assertThat(result.getDate()).isNotNull();
+         assertThat(result.getTags()).hasSize(1);
+         assertThat(result.getTags().getFirst().getLabel()).isEqualTo("version");
+         assertThat(result.getTags().getFirst().getOptions()).contains("1.0", "2.0");
+     }
+
+     @Test
+     void to_api_model_for_catalog_item_maps_with_null_fields() {
+         org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem sourceItem = new org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem();
+         sourceItem.setId("item-1");
+         sourceItem.setTitle("Title");
+
+         CatalogItem result = mapper.toApiModel(sourceItem);
+
+         assertThat(result).isNotNull();
+         assertThat(result.getId()).isEqualTo("item-1");
+         assertThat(result.getTitle()).isEqualTo("Title");
+         assertThat(result.getSlug()).isNull();
+         assertThat(result.getPath()).isNull();
+         assertThat(result.getDescription()).isNull();
+         assertThat(result.getTags()).isEmpty();
+         assertThat(result.getAuthors()).isEmpty();
+     }
+
+     @Test
+     void to_api_model_for_catalog_item_tag_returns_null_when_tag_is_null() {
+         assertThatThrownBy(() -> mapper.toApiModel((org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag) null))
+                 .isInstanceOf(NullPointerException.class);
+     }
+
+     @Test
+     void to_api_model_for_catalog_item_tag_maps_all_fields_when_populated() {
+         org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag sourceTag =
+             new org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag();
+         sourceTag.setLabel("version");
+         sourceTag.setOptions(Set.of("1.0", "2.0", "3.0"));
+
+         CatalogItemTag result = mapper.toApiModel(sourceTag);
+
+         assertThat(result).isNotNull();
+         assertThat(result.getLabel()).isEqualTo("version");
+         assertThat(result.getOptions()).hasSize(3).contains("1.0", "2.0", "3.0");
+     }
+
+     @Test
+     void to_api_model_for_catalog_item_tag_maps_with_null_options() {
+         org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag sourceTag =
+             new org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag();
+         sourceTag.setLabel("environment");
+         sourceTag.setOptions(null);
+
+         CatalogItemTag result = mapper.toApiModel(sourceTag);
+
+         assertThat(result).isNotNull();
+         assertThat(result.getLabel()).isEqualTo("environment");
+         assertThat(result.getOptions()).isEmpty();
+     }
+
+     @Test
+     void to_api_model_for_catalog_item_maps_multiple_tags() {
+         org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem sourceItem = new org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem();
+         sourceItem.setId("item-1");
+
+         org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag tag1 =
+             new org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag();
+         tag1.setLabel("version");
+         tag1.setOptions(Set.of("1.0", "2.0"));
+
+         org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag tag2 =
+             new org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag();
+         tag2.setLabel("environment");
+         tag2.setOptions(Set.of("prod", "dev"));
+
+         sourceItem.setTags(List.of(tag1, tag2));
+
+         CatalogItem result = mapper.toApiModel(sourceItem);
+
+         assertThat(result).isNotNull();
+         assertThat(result.getTags()).hasSize(2);
+         assertThat(result.getTags().get(0).getLabel()).isEqualTo("version");
+         assertThat(result.getTags().get(0).getOptions()).contains("1.0", "2.0");
+         assertThat(result.getTags().get(1).getLabel()).isEqualTo("environment");
+         assertThat(result.getTags().get(1).getOptions()).contains("prod", "dev");
+     }
 }
 
