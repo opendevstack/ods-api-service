@@ -1000,6 +1000,14 @@ components:
         imageFileId:
           type: string
           example: cHJvam...YXN0Z
+        description:
+          type: string
+          description: Resolved description content of the catalog item (e.g. markdown converted to plain text or HTML)
+          example: "This component provides a reusable service for handling..."
+        image:
+          type: string
+          description: Resolved image URL or base64 representation of the catalog item image
+          example: "https://example.com/images/component.png"
         itemSrc:
           type: string
           example: 'https://bitbucket.some-company.com/projects/SOMEPROJECT/repos/some-repo/browse/CatalogItem.yaml?at=refs/heads/master'
@@ -1040,6 +1048,8 @@ components:
         shortDescription: This is a short description for the item
         descriptionFileId: cHJvam...0ZXIK
         imageFileId: cHJvam...YXN0Z
+        description: "This component provides a reusable service for handling..."
+        image: "https://example.com/images/component.png"
         itemSrc: https://bitbucket.some-company.com/projects/SOMEPROJECT/repos/some-repo/browse/CatalogItem.yaml?at=refs/heads/master
         tags:
           - label: data
