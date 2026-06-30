@@ -49,6 +49,7 @@ public interface MarketplaceMetricsApi {
      * @return A paginated list of catalog items metrics (status code 200)
      *         or Invalid client token (status code 401)
      *         or Insufficient permissions (status code 403)
+     *         or Resource not found (status code 404)
      *         or Server error (status code 500)
      */
     @Operation(
@@ -64,6 +65,9 @@ public interface MarketplaceMetricsApi {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
             }),
             @ApiResponse(responseCode = "403", description = "Insufficient permissions", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
+            }),
+            @ApiResponse(responseCode = "404", description = "Resource not found", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
             }),
             @ApiResponse(responseCode = "500", description = "Server error", content = {
@@ -92,6 +96,7 @@ public interface MarketplaceMetricsApi {
      * @return A paginated list of all the provisioned project components (status code 200)
      *         or Invalid client token (status code 401)
      *         or Insufficient permissions (status code 403)
+     *         or Resource not found (status code 404)
      *         or Server error (status code 500)
      */
     @Operation(
@@ -107,6 +112,9 @@ public interface MarketplaceMetricsApi {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
             }),
             @ApiResponse(responseCode = "403", description = "Insufficient permissions", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
+            }),
+            @ApiResponse(responseCode = "404", description = "Resource not found", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = RestErrorMessage.class))
             }),
             @ApiResponse(responseCode = "500", description = "Server error", content = {

@@ -124,7 +124,6 @@ public class MarketplaceMetricsMapper {
         apiCatalogItem.setDescriptionFileId(catalogItem.getDescriptionFileId());
         apiCatalogItem.setImageFileId(catalogItem.getImageFileId());
         apiCatalogItem.setDescription(catalogItem.getDescription());
-        apiCatalogItem.setImage(catalogItem.getImage());
         apiCatalogItem.setItemSrc(catalogItem.getItemSrc());
         apiCatalogItem.setTags(tags);
         apiCatalogItem.setAuthors(catalogItem.getAuthors());

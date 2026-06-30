@@ -133,7 +133,6 @@ class MarketplaceMetricsMapperTest {
          sourceItem.setTitle("Java 17");
          sourceItem.setShortDescription("Short desc");
          sourceItem.setDescription("Full description");
-         sourceItem.setImage("http://example.com/image.png");
          sourceItem.setItemSrc("http://example.com/item");
          sourceItem.setAuthors(List.of("author1", "author2"));
 
@@ -149,7 +148,6 @@ class MarketplaceMetricsMapperTest {
          assertThat(mappedItem.getTitle()).isEqualTo("Java 17");
          assertThat(mappedItem.getShortDescription()).isEqualTo("Short desc");
          assertThat(mappedItem.getDescription()).isEqualTo("Full description");
-         assertThat(mappedItem.getImage()).isEqualTo("http://example.com/image.png");
          assertThat(mappedItem.getItemSrc()).isEqualTo("http://example.com/item");
          assertThat(mappedItem.getAuthors()).containsExactly("author1", "author2");
      }
@@ -171,7 +169,6 @@ class MarketplaceMetricsMapperTest {
          sourceItem.setDescriptionFileId("file-id-1");
          sourceItem.setImageFileId("image-id-1");
          sourceItem.setDescription("Full description");
-         sourceItem.setImage("http://example.com/image.png");
          sourceItem.setItemSrc("http://example.com/item");
          sourceItem.setAuthors(List.of("author1"));
          sourceItem.setDate(OffsetDateTime.now());
@@ -193,7 +190,6 @@ class MarketplaceMetricsMapperTest {
          assertThat(result.getDescriptionFileId()).isEqualTo("file-id-1");
          assertThat(result.getImageFileId()).isEqualTo("image-id-1");
          assertThat(result.getDescription()).isEqualTo("Full description");
-         assertThat(result.getImage()).isEqualTo("http://example.com/image.png");
          assertThat(result.getItemSrc()).isEqualTo("http://example.com/item");
          assertThat(result.getAuthors()).containsExactly("author1");
          assertThat(result.getDate()).isNotNull();
