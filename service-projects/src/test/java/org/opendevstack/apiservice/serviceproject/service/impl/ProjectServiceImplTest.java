@@ -9,6 +9,7 @@ import org.opendevstack.apiservice.persistence.entity.ProjectEntity;
 import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
 import org.opendevstack.apiservice.serviceproject.mapper.ProjectResponseMapper;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
+import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
 
 import java.util.List;
@@ -231,5 +232,70 @@ class ProjectServiceImplTest {
         assertThrows(RuntimeException.class, () -> projectService.updateProjectStatus(projectKey, "Running"));
 
         verify(projectRepository).findByProjectKeyIgnoreCase(projectKey);
+    }
+
+    @Test
+    void get_projects_returns_summaries_when_projects_exist() {
+        ProjectEntity entity1 = ProjectEntity.builder()
+                .id(UUID.randomUUID())
+                .projectKey("PROJ01")
+                .projectName("Project One")
+                .status("Running")
+                .build();
+
+        ProjectEntity entity2 = ProjectEntity.builder()
+                .id(UUID.randomUUID())
+                .projectKey("PROJ02")
+                .projectName("Project Two")
+                .status("Pending")
+                .build();
+
+        ProjectSummary summary1 = ProjectSummary.builder()
+                .projectKey("PROJ01")
+                .projectName("Project One")
+                .status(Status.RUNNING)
+                .build();
+
+        ProjectSummary summary2 = ProjectSummary.builder()
+                .projectKey("PROJ02")
+                .projectName("Project Two")
+                .status(Status.PENDING)
+                .build();
+
+        when(projectRepository.findAll()).thenReturn(List.of(entity1, entity2));
+        when(projectResponseMapper.toProjectSummary(List.of(entity1, entity2))).thenReturn(List.of(summary1, summary2));
+
+        List<ProjectSummary> result = projectService.getProjects();
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("PROJ01", result.get(0).getProjectKey());
+        assertEquals(Status.RUNNING, result.get(0).getStatus());
+        assertEquals("PROJ02", result.get(1).getProjectKey());
+        assertEquals(Status.PENDING, result.get(1).getStatus());
+        verify(projectRepository).findAll();
+        verify(projectResponseMapper).toProjectSummary(List.of(entity1, entity2));
+    }
+
+    @Test
+    void get_projects_returns_empty_list_when_no_projects_exist() {
+        when(projectRepository.findAll()).thenReturn(List.of());
+        when(projectResponseMapper.toProjectSummary(List.of())).thenReturn(List.of());
+
+        List<ProjectSummary> result = projectService.getProjects();
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+        verify(projectRepository).findAll();
+        verify(projectResponseMapper).toProjectSummary(List.of());
+    }
+
+    @Test
+    void get_projects_propagates_repository_exception() {
+        when(projectRepository.findAll()).thenThrow(new RuntimeException("DB connection error"));
+
+        assertThrows(RuntimeException.class, () -> projectService.getProjects());
+
+        verify(projectRepository).findAll();
     }
 }
