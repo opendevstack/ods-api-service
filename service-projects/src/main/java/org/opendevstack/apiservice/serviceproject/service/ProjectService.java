@@ -2,6 +2,7 @@ package org.opendevstack.apiservice.serviceproject.service;
 
 import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
+import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 
 import java.util.List;
 
@@ -12,7 +13,8 @@ public interface ProjectService {
     ProjectResponse getProject(String projectKey);
 
     void updateProjectStatus(String projectKey, String status);
-    
-    List<ProjectResponse> findProjectsByName(String projectName);
-}
 
+    List<ProjectResponse> findProjectsByName(String projectName);
+
+    List<ProjectSummary> getProjects();
+}

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.project.client.api.ProjectsApi;
 import org.opendevstack.apiservice.project.facade.ProjectsFacade;
 import org.opendevstack.apiservice.project.client.model.GetProjectsResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,16 +23,18 @@ public class ProjectController implements ProjectsApi {
 
     public static final String API_BASE_PATH = "/api/pub/v1/projects";
 
-    private static final String HTTP_HEADER_LOCATION = "Location";
-
     private final ProjectsFacade projectsFacade;
-
-    // private final ProjectRequestValidator projectRequestValidator;
 
     @GetMapping
     @Override
-    public ResponseEntity<List<GetProjectsResponse>> getProjects(@Valid @RequestParam Integer page,
+    public ResponseEntity<GetProjectsResponse> getProjects(@Valid @RequestParam Integer page,
                                                                  @Valid @RequestParam Integer size) {
-        return null;
+
+        GetProjectsResponse response = projectsFacade.getProjects(page, size);
+        response.setLocation(API_BASE_PATH);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
     }
 }

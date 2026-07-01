@@ -6,6 +6,7 @@ import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
 import org.opendevstack.apiservice.serviceproject.mapper.ProjectResponseMapper;
 import org.opendevstack.apiservice.serviceproject.model.ProjectRequest;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
+import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -77,6 +78,12 @@ public class ProjectServiceImpl implements ProjectService {
     public List<ProjectResponse> findProjectsByName(String projectName) {
         List<ProjectEntity> projects = projectRepository.findByProjectNameIgnoreCase(projectName);
         return projectResponseMapper.toCreateProjectResponse(projects);
+    }
+
+    @Override
+    public List<ProjectSummary> getProjects() {
+        List<ProjectEntity> projects = projectRepository.findAll();
+        return projectResponseMapper.toProjectSummary(projects);
     }
 
     private String getLdapGroup(String role, String projectKey) {

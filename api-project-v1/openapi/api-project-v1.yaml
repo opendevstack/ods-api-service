@@ -46,13 +46,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetProjectsResponseList'
+                $ref: '#/components/schemas/GetProjectsResponse'
         '404':
           description: Project not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetProjectsResponseList'
+                $ref: '#/components/schemas/GetProjectsResponse'
         "401":
           description: Invalid client token on the request.
           content:
@@ -70,7 +70,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetProjectsResponseList'
+                $ref: '#/components/schemas/GetProjectsResponse'
 components:
   schemas:
     RestErrorMessage:
@@ -79,7 +79,7 @@ components:
           type: string
       required:
         - message
-    GetProjectsResponse:
+    ProjectsResponse:
       type: object
       properties:
         projectKey:
@@ -96,7 +96,31 @@ components:
           type: string
         updatedAt:
           type: string
-    GetProjectsResponseList:
-      type: array
-      items:
-        $ref: '#/components/schemas/GetProjectsResponse'
+    GetProjectsResponse:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectsResponse'
+        metadata:
+          type: object
+          properties:
+            page:
+              type: integer
+            size:
+              type: integer
+            totalElements:
+              type: integer
+            totalPages:
+              type: integer
+            last:
+              type: boolean
+        message:
+          type: string
+        error:
+          type: string
+        errorKey:
+          type: string
+        location:
+          type: string
