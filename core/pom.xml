@@ -136,6 +136,12 @@
 
         <dependency>
             <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>api-project-v1</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
             <artifactId>api-project-component-v0</artifactId>
             <version>${project.version}</version>
         </dependency>

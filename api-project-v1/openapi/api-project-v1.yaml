@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: ODS API Server
+  description: API documentation for ODS (Open DevStack) API Service
+  contact:
+    name: ODS Team
+  version: v0.0.1
+servers:
+  - url: http://{baseurl}/api/pub/v1
+    variables:
+      baseurl:
+        default: localhost:8080
+        description: Development environment
+tags:
+- name: Projects
+  description: API for manage EDP projects.
+paths:
+  /projects:
+    get:
+      tags:
+      - Projects
+      summary: Get all projects filtered by page and size.
+      description: Returns the current status and details for each project in a list filtered by the given page and size.
+      operationId: getProjects
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+        description: Page number to retrieve.
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 20
+          maximum: 1000
+        description: Size of the page to retrieve.
+      responses:
+        '200':
+          description: Project information retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectsResponseList'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectsResponseList'
+        "401":
+          description: Invalid client token on the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "403":
+          description: Insufficient permissions for the client to access the resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectsResponseList'
+components:
+  schemas:
+    RestErrorMessage:
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    GetProjectsResponse:
+      type: object
+      properties:
+        projectKey:
+          type: string
+        projectName:
+          type: string
+        projectFlavor:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+    GetProjectsResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/GetProjectsResponse'
