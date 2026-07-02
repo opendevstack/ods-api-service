@@ -133,7 +133,7 @@ otel:
   service:
     # Logical service name and version attached to telemetry data.
     name: devstack-api-service-dev
-    version: 0.0.3
+    version: 0.0.4
   exporter:
     otlp:
       # Endpoint of the OpenTelemetry collector.
@@ -149,7 +149,7 @@ otel:
     exporter: none
   resource:
     # Resource attributes attached to every exported span.
-    attributes: service.name=devstack-api-service,service.version=0.0.3,deployment.environment=development
+    attributes: service.name=devstack-api-service,service.version=0.0.4,deployment.environment=development
   instrumentation:
     jdbc:
       # JDBC instrumentation is disabled, likely to reduce noise or overhead.
