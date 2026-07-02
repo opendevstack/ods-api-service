@@ -430,9 +430,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
         try {
             String scope = client.getConfig().getClientCredentialsScope();
-            String tenantId = client.getConfig().getTenantId();
 
-            jwtToken = clientCredentialsTokenService.requestToken(scope, tenantId);
+            jwtToken = clientCredentialsTokenService.requestToken(scope);
         } catch (RuntimeException ex) {
             throw new MarketplaceException(
                     String.format(

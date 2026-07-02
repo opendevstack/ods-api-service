@@ -35,7 +35,7 @@ public class ClientCredentialsTokenService {
      * @return the access token string
      * @throws ClientCredentialsTokenException if the token request fails
      */
-    public String requestToken(String scope, String tenantId) {
+    public String requestToken(String scope) {
         log.debug("Requesting access token using JWT assertion");
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
@@ -50,10 +50,8 @@ public class ClientCredentialsTokenService {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
         try {
-            String urlWithTenant = properties.getTokenUrl().replace("<app-tenant-id>", tenantId);
-
             ResponseEntity<ClientCredentialsTokenResponse> response =
-                    restTemplate.postForEntity(urlWithTenant, request, ClientCredentialsTokenResponse.class);
+                    restTemplate.postForEntity(properties.getTokenUrl(), request, ClientCredentialsTokenResponse.class);
 
             if (response.getBody() == null || response.getBody().getAccessToken() == null) {
                 throw new ClientCredentialsTokenException("JWT token response body or access_token is null");

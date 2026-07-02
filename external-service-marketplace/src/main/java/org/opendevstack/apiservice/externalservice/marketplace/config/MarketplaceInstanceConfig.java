@@ -51,10 +51,6 @@ public class MarketplaceInstanceConfig {
      */
     private String oboScope;
 
-    /**
-     * The tenant ID used for JWT token request when calling this Marketplace instance.
-     */
-    private String tenantId;
 
     /**
      * OAuth2 scope used for Client Credentials token exchange when calling this Marketplace instance.

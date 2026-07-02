@@ -70,7 +70,7 @@ app:
       - /api/v1/projects/*/platforms
     client-credentials:
       # Azure AD token endpoint used for request a token.
-      token-url: ${CLIENT_CREDENTIALS_TOKEN_URL:https://login.microsoftonline.com/<app-tenant-id>/oauth2/v2.0/token}
+      token-url: ${CLIENT_CREDENTIALS_TOKEN_URL:https://login.microsoftonline.com/${AZURE_TENANT_ID:}/oauth2/v2.0/token}
       # Client ID of this application's Azure AD app registration.
       client-id: ${CLIENT_CREDENTIALS_CLIENT_ID}
       # Client secret for token request. Must be injected via environment variable or secret store.
@@ -322,5 +322,4 @@ externalservices:
         trust-all-certificates: ${MARKETPLACE_TRUST_ALL_CERTS:false}
         username: ${MARKETPLACE_USERNAME:}
         password: ${MARKETPLACE_PASSWORD:}
-        tenant-id: ${AZURE_TENANT_ID:}
         client-credentials-scope: ${MARKETPLACE_CLIENT_CREDENTIALS_SCOPE:}
