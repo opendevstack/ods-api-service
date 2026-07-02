@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import org.opendevstack.apiservice.marketplacemetrics.api.MarketplaceMetricsApi;
 import org.opendevstack.apiservice.marketplacemetrics.exception.MarketplaceMetricsException;
 import org.opendevstack.apiservice.marketplacemetrics.facade.MarketplaceMetricsFacade;
+import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceCatalogItemsMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetrics;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,24 @@ import org.springframework.web.bind.annotation.*;
 public class MarketplaceMetricsController implements MarketplaceMetricsApi {
 
     MarketplaceMetricsFacade marketplaceMetricsFacade;
+
+    @CrossOrigin(origins = "*")
+    @GetMapping("/metrics/marketplace/catalog-items")
+    @Override
+    public ResponseEntity<MarketplaceCatalogItemsMetrics> getMarketplaceCatalogItemsMetrics() {
+        MarketplaceCatalogItemsMetrics catalogItemsMetrics;
+        try {
+            catalogItemsMetrics = marketplaceMetricsFacade.getMarketplaceCatalogItemsMetrics();
+        } catch (MarketplaceMetricsException e) {
+            return sneakyThrow(e);
+        }
+
+        if (catalogItemsMetrics == null) {
+            return ResponseEntity.notFound().build();
+        } else {
+            return ResponseEntity.ok(catalogItemsMetrics);
+        }
+    }
 
     @Override
     @CrossOrigin(origins = "*")

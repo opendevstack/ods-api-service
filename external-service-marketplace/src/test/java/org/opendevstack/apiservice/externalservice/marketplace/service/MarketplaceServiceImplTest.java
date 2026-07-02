@@ -663,6 +663,120 @@ class MarketplaceServiceImplTest {
     }
 
     // -------------------------------------------------------------------------
+    // getAllCatalogItems
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testGetAllCatalogItems_Success_ReturnsList() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        CatalogItem item = new CatalogItem();
+        item.setId("cid");
+        List<CatalogItem> mockList = List.of(item);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET)
+                .thenReturn(new ResponseEntity<>(mockList, HttpStatus.OK));
+
+        // Act
+        List<CatalogItem> result = marketplaceService.getAllCatalogItems(instanceName);
+
+        // Assert
+        assertEquals(mockList, result);
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testGetAllCatalogItems_NotFound_ReturnsEmptyList() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException notFoundEx = HttpClientErrorException.create(
+                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET).thenThrow(notFoundEx);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+        // Act
+        List<CatalogItem> result = marketplaceService.getAllCatalogItems(instanceName);
+
+        // Assert
+        assertTrue(result.isEmpty());
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testGetAllCatalogItems_AuthError_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException forbiddenEx = HttpClientErrorException.create(
+                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET).thenThrow(forbiddenEx);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getAllCatalogItems(instanceName));
+
+        assertTrue(exception.getMessage().contains("Access denied"));
+    }
+
+    @Test
+    void testGetAllCatalogItems_RestClientException_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET).thenThrow(new RestClientException("Connection failed"));
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getAllCatalogItems(instanceName));
+
+        assertTrue(exception.getMessage().contains("Failed to retrieve catalog items"));
+    }
+
+    @Test
+    void testGetAllCatalogItems_DefaultInstance_UsesDefaultClient() throws MarketplaceException {
+        // Arrange
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        List<CatalogItem> mockList = List.of(new CatalogItem());
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET)
+                .thenReturn(new ResponseEntity<>(mockList, HttpStatus.OK));
+
+        // Act
+        List<CatalogItem> result = marketplaceService.getAllCatalogItems();
+
+        // Assert
+        assertEquals(mockList, result);
+        verify(clientFactory).getClient("default");
+    }
+
+    // -------------------------------------------------------------------------
     // getProjectComponent — auth error
     // -------------------------------------------------------------------------
 

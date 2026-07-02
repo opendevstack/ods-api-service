@@ -4,11 +4,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListResponse;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.opendevstack.apiservice.marketplacemetrics.exception.MarketplaceMetricsException;
 import org.opendevstack.apiservice.marketplacemetrics.mapper.MarketplaceMetricsMapper;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetrics;
+import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceCatalogItemsMetrics;
+import java.util.List;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,6 +75,39 @@ class MarketplaceMetricsFacadeImplTest {
                 .hasCause(cause);
 
         verify(marketplaceService).getAllProjectComponents(page, size);
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void GivenServiceReturnsCatalogItems_whenGetMarketplaceCatalogItemsMetrics_ThenReturnMappedResult() throws Exception {
+        //given
+        List<CatalogItem> serviceResponse = List.of(mock(CatalogItem.class));
+        MarketplaceCatalogItemsMetrics mappedResponse = mock(MarketplaceCatalogItemsMetrics.class);
+        when(marketplaceService.getAllCatalogItems()).thenReturn(serviceResponse);
+        when(mapper.toApiModel(serviceResponse)).thenReturn(mappedResponse);
+
+        //when
+        MarketplaceCatalogItemsMetrics result = sut.getMarketplaceCatalogItemsMetrics();
+
+        //then
+        assertThat(result).isSameAs(mappedResponse);
+        verify(marketplaceService).getAllCatalogItems();
+        verify(mapper).toApiModel(serviceResponse);
+    }
+
+    @Test
+    void GivenServiceThrowsMarketplaceException_whenGetMarketplaceCatalogItemsMetrics_ThenWrapMarketplaceMetricsException() throws Exception {
+        //given
+        MarketplaceException cause = new MarketplaceException("unavailable");
+        when(marketplaceService.getAllCatalogItems()).thenThrow(cause);
+
+        //when //then
+        assertThatThrownBy(() -> sut.getMarketplaceCatalogItemsMetrics())
+                .isInstanceOf(MarketplaceMetricsException.class)
+                .hasMessage("Failed to retrieve marketplace catalog items metrics.")
+                .hasCause(cause);
+
+        verify(marketplaceService).getAllCatalogItems();
         verifyNoInteractions(mapper);
     }
 

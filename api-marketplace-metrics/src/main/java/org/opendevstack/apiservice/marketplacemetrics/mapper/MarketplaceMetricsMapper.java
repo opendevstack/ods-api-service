@@ -1,15 +1,20 @@
 package org.opendevstack.apiservice.marketplacemetrics.mapper;
 
 import org.openapitools.jackson.nullable.JsonNullable;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListResponse;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListItem;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.Pagination;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListItem;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListResponse;
+import org.opendevstack.apiservice.marketplacemetrics.model.CatalogItem;
+import org.opendevstack.apiservice.marketplacemetrics.model.CatalogItemTag;
+import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceCatalogItemsMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetricsPagination;
 import org.springframework.stereotype.Component;
 
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Mapper class for converting between external service and API models.
@@ -35,7 +40,7 @@ public class MarketplaceMetricsMapper {
             marketplaceProjectComponentsMetrics.setData(
                     projectComponentListResponse.getData().stream()
                             .map(this::toApiMarketplaceProjectComponentMetric)
-                            .collect(Collectors.toList())
+                            .toList()
             );
         }
 
@@ -88,6 +93,56 @@ public class MarketplaceMetricsMapper {
         marketplaceProjectComponentsMetricsPagination.setTotalElements(pagination.getTotalElements());
 
         return marketplaceProjectComponentsMetricsPagination;
+    }
+
+    public MarketplaceCatalogItemsMetrics toApiModel(List<org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem> allCatalogItems) {
+        var marketplaceCatalogItemsMetrics = new MarketplaceCatalogItemsMetrics();
+
+        var catalogItems = allCatalogItems.stream()
+                .map(this::toApiModel)
+                .toList();
+
+        marketplaceCatalogItemsMetrics.setData(catalogItems);
+
+        return marketplaceCatalogItemsMetrics;
+    }
+
+    public CatalogItem toApiModel(org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem catalogItem) {
+
+        var tags = Optional.ofNullable(catalogItem.getTags()).orElse(Collections.emptyList())
+                .stream()
+                .map(this::toApiModel)
+                .toList();
+
+        var apiCatalogItem = new CatalogItem();
+
+        apiCatalogItem.setId(catalogItem.getId());
+        apiCatalogItem.setSlug(catalogItem.getSlug());
+        apiCatalogItem.setPath(catalogItem.getPath());
+        apiCatalogItem.setTitle(catalogItem.getTitle());
+        apiCatalogItem.setShortDescription(catalogItem.getShortDescription());
+        apiCatalogItem.setDescriptionFileId(catalogItem.getDescriptionFileId());
+        apiCatalogItem.setImageFileId(catalogItem.getImageFileId());
+        apiCatalogItem.setDescription(catalogItem.getDescription());
+        apiCatalogItem.setItemSrc(catalogItem.getItemSrc());
+        apiCatalogItem.setTags(tags);
+        apiCatalogItem.setAuthors(catalogItem.getAuthors());
+        apiCatalogItem.setDate(catalogItem.getDate());
+
+        return apiCatalogItem;
+    }
+
+    public CatalogItemTag toApiModel(org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItemTag catalogItemTag) {
+        var options = Optional.ofNullable(catalogItemTag.getOptions()).orElse(Collections.emptySet())
+                .stream()
+                .toList();
+
+        var apiCatalogItemTag = new CatalogItemTag();
+
+        apiCatalogItemTag.setLabel(catalogItemTag.getLabel());
+        apiCatalogItemTag.setOptions(options);
+
+        return apiCatalogItemTag;
     }
 }
 
