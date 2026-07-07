@@ -40,7 +40,7 @@ class ClientCredentialsTokenServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         properties = new ClientCredentialsTokenProperties();
-        properties.setTokenUrl("https://login.microsoftonline.com/<app-tenant-id>/oauth2/v2.0/token");
+        properties.setTokenUrl("https://login.microsoftonline.com/tenant-id/oauth2/v2.0/token");
         properties.setClientId("test-client-id");
         properties.setClientSecret("test-client-secret");
         sut = new ClientCredentialsTokenService(properties, restTemplate);
@@ -49,7 +49,6 @@ class ClientCredentialsTokenServiceTest {
     @Test
     void request_token_returns_access_token_on_success() {
         // GIVEN
-        String tenantId = "tenant-id";
         String scope = "api://target-app/.default";
         ClientCredentialsTokenResponse tokenResponse = new ClientCredentialsTokenResponse();
         tokenResponse.setAccessToken("jwt-access-token");
@@ -57,13 +56,13 @@ class ClientCredentialsTokenServiceTest {
         tokenResponse.setExpiresIn(3600);
         tokenResponse.setScope(scope);
 
-        String expectedUrl = properties.getTokenUrl().replace("<app-tenant-id>", tenantId);
+        String expectedUrl = properties.getTokenUrl();
 
         when(restTemplate.postForEntity(eq(expectedUrl), any(HttpEntity.class), eq(ClientCredentialsTokenResponse.class)))
                 .thenReturn(new ResponseEntity<>(tokenResponse, HttpStatus.OK));
 
         // WHEN
-        String result = sut.requestToken(scope, tenantId);
+        String result = sut.requestToken(scope);
 
         // THEN
         assertEquals("jwt-access-token", result);
@@ -74,7 +73,6 @@ class ClientCredentialsTokenServiceTest {
     @SuppressWarnings("unchecked")
     void request_token_sends_correct_form_parameters_and_headers() {
         // GIVEN
-        String tenantId = "t-1";
         String scope = "api://app/scope";
         ClientCredentialsTokenResponse tokenResponse = new ClientCredentialsTokenResponse();
         tokenResponse.setAccessToken("token");
@@ -84,7 +82,7 @@ class ClientCredentialsTokenServiceTest {
                 .thenReturn(new ResponseEntity<>(tokenResponse, HttpStatus.OK));
 
         // WHEN
-        sut.requestToken(scope, tenantId);
+        sut.requestToken(scope);
 
         // THEN
         MultiValueMap<String, String> body = captor.getValue().getBody();
@@ -107,7 +105,7 @@ class ClientCredentialsTokenServiceTest {
 
         // WHEN / THEN
         ClientCredentialsTokenException ex = assertThrows(ClientCredentialsTokenException.class,
-                () -> sut.requestToken("scope", "tenant"));
+                () -> sut.requestToken("scope"));
         assertTrue(ex.getMessage().contains("null"));
     }
 
@@ -121,7 +119,7 @@ class ClientCredentialsTokenServiceTest {
                 .thenReturn(new ResponseEntity<>(response, HttpStatus.OK));
 
         // WHEN / THEN
-        assertThrows(ClientCredentialsTokenException.class, () -> sut.requestToken("scope", "tenant"));
+        assertThrows(ClientCredentialsTokenException.class, () -> sut.requestToken("scope"));
     }
 
     @Test
@@ -132,7 +130,7 @@ class ClientCredentialsTokenServiceTest {
 
         // WHEN / THEN
         ClientCredentialsTokenException ex = assertThrows(ClientCredentialsTokenException.class,
-                () -> sut.requestToken("scope", "tenant"));
+                () -> sut.requestToken("scope"));
         assertTrue(ex.getMessage().contains("Connection refused"));
     }
 }
