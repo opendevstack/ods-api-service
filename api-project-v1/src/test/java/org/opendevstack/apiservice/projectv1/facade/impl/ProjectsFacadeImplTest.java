@@ -1,13 +1,13 @@
-package org.opendevstack.apiservice.project.facade.impl;
+package org.opendevstack.apiservice.projectv1.facade.impl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.opendevstack.apiservice.project.client.model.GetProjectsResponse;
-import org.opendevstack.apiservice.project.client.model.GetProjectsResponseMetadata;
-import org.opendevstack.apiservice.project.client.model.ProjectsResponse;
-import org.opendevstack.apiservice.project.mapper.ProjectMapper;
+import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
+import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponseMetadata;
+import org.opendevstack.apiservice.projectv1.client.model.ProjectsResponse;
+import org.opendevstack.apiservice.projectv1.mapper.ProjectMapper;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;

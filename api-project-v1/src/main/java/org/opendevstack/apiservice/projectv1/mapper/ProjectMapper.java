@@ -1,8 +1,8 @@
-package org.opendevstack.apiservice.project.mapper;
+package org.opendevstack.apiservice.projectv1.mapper;
 
-import org.opendevstack.apiservice.project.client.model.GetProjectsResponse;
-import org.opendevstack.apiservice.project.client.model.GetProjectsResponseMetadata;
-import org.opendevstack.apiservice.project.client.model.ProjectsResponse;
+import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
+import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponseMetadata;
+import org.opendevstack.apiservice.projectv1.client.model.ProjectsResponse;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-@Component
+@Component("projectMapperV1")
 public class ProjectMapper {
 
     private static final int DEFAULT_PAGE = 0;

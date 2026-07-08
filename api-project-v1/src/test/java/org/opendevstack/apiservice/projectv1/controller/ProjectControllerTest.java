@@ -1,14 +1,14 @@
-package org.opendevstack.apiservice.project.controller;
+package org.opendevstack.apiservice.projectv1.controller;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.opendevstack.apiservice.project.client.model.GetProjectsResponse;
-import org.opendevstack.apiservice.project.client.model.GetProjectsResponseMetadata;
-import org.opendevstack.apiservice.project.client.model.ProjectsResponse;
-import org.opendevstack.apiservice.project.facade.ProjectsFacade;
+import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
+import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponseMetadata;
+import org.opendevstack.apiservice.projectv1.client.model.ProjectsResponse;
+import org.opendevstack.apiservice.projectv1.facade.ProjectsFacade;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;

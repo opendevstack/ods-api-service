@@ -1,11 +1,11 @@
-package org.opendevstack.apiservice.project.controller;
+package org.opendevstack.apiservice.projectv1.controller;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.apiservice.project.client.api.ProjectsApi;
-import org.opendevstack.apiservice.project.facade.ProjectsFacade;
-import org.opendevstack.apiservice.project.client.model.GetProjectsResponse;
+import org.opendevstack.apiservice.projectv1.client.api.ProjectsApi;
+import org.opendevstack.apiservice.projectv1.facade.ProjectsFacade;
+import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,9 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-@RestController
+@RestController("projectControllerV1")
 @RequestMapping(ProjectController.API_BASE_PATH)
 @AllArgsConstructor
 @Slf4j

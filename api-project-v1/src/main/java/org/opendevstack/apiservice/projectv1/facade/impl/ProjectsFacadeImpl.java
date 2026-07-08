@@ -1,14 +1,14 @@
-package org.opendevstack.apiservice.project.facade.impl;
+package org.opendevstack.apiservice.projectv1.facade.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.apiservice.project.facade.ProjectsFacade;
-import org.opendevstack.apiservice.project.client.model.GetProjectsResponse;
-import org.opendevstack.apiservice.project.mapper.ProjectMapper;
+import org.opendevstack.apiservice.projectv1.facade.ProjectsFacade;
+import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
+import org.opendevstack.apiservice.projectv1.mapper.ProjectMapper;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 import org.springframework.stereotype.Component;
 
-@Component("apiProjectFacadeImpl")
+@Component("apiProjectFacadeImplV1")
 @AllArgsConstructor
 @Slf4j
 public class ProjectsFacadeImpl implements ProjectsFacade {

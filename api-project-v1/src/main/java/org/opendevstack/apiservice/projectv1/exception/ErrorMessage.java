@@ -1,4 +1,4 @@
-package org.opendevstack.apiservice.project.exception;
+package org.opendevstack.apiservice.projectv1.exception;
 
 public class ErrorMessage {
 

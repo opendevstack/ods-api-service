@@ -1,11 +1,11 @@
-package org.opendevstack.apiservice.project.controller.advice;
+package org.opendevstack.apiservice.projectv1.controller.advice;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opendevstack.apiservice.project.client.model.GetProjectsResponse;
-import org.opendevstack.apiservice.project.controller.ProjectController;
-import org.opendevstack.apiservice.project.exception.ErrorKey;
-import org.opendevstack.apiservice.project.exception.ErrorMessage;
+import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
+import org.opendevstack.apiservice.projectv1.controller.ProjectController;
+import org.opendevstack.apiservice.projectv1.exception.ErrorKey;
+import org.opendevstack.apiservice.projectv1.exception.ErrorMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;

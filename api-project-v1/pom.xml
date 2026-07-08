@@ -149,9 +149,9 @@
                             <output>${project.basedir}/target/generated-sources/openapi</output>
                             <library>spring-boot</library>
                             <inputSpec>${project.basedir}/openapi/api-project-v1.yaml</inputSpec>
-                            <apiPackage>org.opendevstack.apiservice.project.client.api</apiPackage>
-                            <modelPackage>org.opendevstack.apiservice.project.client.model</modelPackage>
-                            <invokerPackage>org.opendevstack.apiservice.project.client</invokerPackage>
+                            <apiPackage>org.opendevstack.apiservice.projectv1.client.api</apiPackage>
+                            <modelPackage>org.opendevstack.apiservice.projectv1.client.model</modelPackage>
+                            <invokerPackage>org.opendevstack.apiservice.projectv1.client</invokerPackage>
                             <skipOverwrite>false</skipOverwrite>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
