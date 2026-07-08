@@ -1,16 +1,18 @@
 package org.opendevstack.apiservice.projectv1.controller.advice;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
 import org.opendevstack.apiservice.projectv1.controller.ProjectController;
 import org.opendevstack.apiservice.projectv1.exception.ErrorKey;
-import org.opendevstack.apiservice.projectv1.exception.ErrorMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
+
+import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -26,43 +28,44 @@ class ProjectExceptionHandlerTest {
     }
 
     @Test
-    void handle_method_argument_not_valid_returns_bad_request_for_invalid_page() {
-        MethodArgumentNotValidException ex = createValidationException("page", "must be >= 0", 0);
+    void handle_constraint_violation_returns_bad_request_for_invalid_page() {
+        ConstraintViolationException ex = createConstraintViolationException("page");
 
-        ResponseEntity<GetProjectsResponse> result = sut.handleMethodArgumentNotValidException(ex);
+        ResponseEntity<GetProjectsResponse> result = sut.handleConstraintViolationException(ex);
 
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(result.getBody()).isNotNull();
         assertThat(result.getBody().getError()).isEqualTo(HttpStatus.BAD_REQUEST.getReasonPhrase());
         assertThat(result.getBody().getErrorKey()).isEqualTo(ErrorKey.INVALID_PAGE.getKey());
-        assertThat(result.getBody().getMessage()).isEqualTo(ErrorMessage.INVALID_PAGE);
+        assertThat(result.getBody().getMessage()).isEqualTo(ErrorKey.INVALID_PAGE.getMessage());
         assertThat(result.getBody().getLocation()).isEqualTo(ProjectController.API_BASE_PATH);
     }
 
     @Test
-    void handle_method_argument_not_valid_returns_bad_request_for_invalid_size() {
-        MethodArgumentNotValidException ex = createValidationException("size", "must be >= 20", 0);
+    void handle_constraint_violation_returns_bad_request_for_invalid_size() {
+        ConstraintViolationException ex = createConstraintViolationException("size");
 
-        ResponseEntity<GetProjectsResponse> result = sut.handleMethodArgumentNotValidException(ex);
+        ResponseEntity<GetProjectsResponse> result = sut.handleConstraintViolationException(ex);
 
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(result.getBody()).isNotNull();
         assertThat(result.getBody().getError()).isEqualTo(HttpStatus.BAD_REQUEST.getReasonPhrase());
         assertThat(result.getBody().getErrorKey()).isEqualTo(ErrorKey.INVALID_SIZE.getKey());
-        assertThat(result.getBody().getMessage()).isEqualTo(ErrorMessage.INVALID_SIZE);
+        assertThat(result.getBody().getMessage()).isEqualTo(ErrorKey.INVALID_SIZE.getMessage());
         assertThat(result.getBody().getLocation()).isEqualTo(ProjectController.API_BASE_PATH);
     }
 
     @Test
-    void handle_method_argument_not_valid_returns_bad_request_for_unknown_field() {
-        MethodArgumentNotValidException ex = createValidationException("unknownField", "invalid value", "bad");
+    void handle_constraint_violation_returns_bad_request_for_unknown_field() {
+        ConstraintViolationException ex = createConstraintViolationException("unknownField");
 
-        ResponseEntity<GetProjectsResponse> result = sut.handleMethodArgumentNotValidException(ex);
+        ResponseEntity<GetProjectsResponse> result = sut.handleConstraintViolationException(ex);
 
         assertThat(result.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(result.getBody()).isNotNull();
+        assertThat(result.getBody().getError()).isEqualTo(HttpStatus.BAD_REQUEST.getReasonPhrase());
         assertThat(result.getBody().getErrorKey()).isEqualTo(ErrorKey.BAD_REQUEST_BODY.getKey());
-        assertThat(result.getBody().getMessage()).isEqualTo(ErrorMessage.BAD_REQUEST);
+        assertThat(result.getBody().getMessage()).isEqualTo(ErrorKey.BAD_REQUEST_BODY.getMessage());
         assertThat(result.getBody().getLocation()).isEqualTo(ProjectController.API_BASE_PATH);
     }
 
@@ -82,11 +85,16 @@ class ProjectExceptionHandlerTest {
 
     // ------- helpers -------
 
-    private MethodArgumentNotValidException createValidationException(String field, String defaultMessage, Object rejectedValue) {
-        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "target");
-        bindingResult.addError(new FieldError("target", field, rejectedValue, false, null, null, defaultMessage));
-        MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
-        when(ex.getBindingResult()).thenReturn(bindingResult);
-        return ex;
+    private ConstraintViolationException createConstraintViolationException(String fieldName) {
+        Path.Node node = mock(Path.Node.class);
+        when(node.getName()).thenReturn(fieldName);
+
+        Path path = mock(Path.class);
+        when(path.iterator()).thenReturn(List.of(node).iterator());
+
+        ConstraintViolation<?> violation = mock(ConstraintViolation.class);
+        when(violation.getPropertyPath()).thenReturn(path);
+
+        return new ConstraintViolationException(Set.of(violation));
     }
 }

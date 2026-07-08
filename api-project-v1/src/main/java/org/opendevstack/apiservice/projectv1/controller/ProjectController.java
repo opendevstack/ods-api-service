@@ -25,8 +25,7 @@ public class ProjectController implements ProjectsApi {
 
     @GetMapping
     @Override
-    public ResponseEntity<GetProjectsResponse> getProjects(@Valid @RequestParam Integer page,
-                                                                 @Valid @RequestParam Integer size) {
+    public ResponseEntity<GetProjectsResponse> getProjects(Integer page, Integer size) {
 
         GetProjectsResponse response = projectsFacade.getProjects(page, size);
         response.setLocation(API_BASE_PATH);

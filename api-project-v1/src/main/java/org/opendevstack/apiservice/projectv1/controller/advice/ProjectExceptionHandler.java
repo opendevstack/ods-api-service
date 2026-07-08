@@ -1,5 +1,8 @@
 package org.opendevstack.apiservice.projectv1.controller.advice;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
 import org.opendevstack.apiservice.projectv1.controller.ProjectController;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Component("projectExceptionHandlerV1")
 @RestControllerAdvice(assignableTypes = ProjectController.class)
@@ -24,25 +28,22 @@ public class ProjectExceptionHandler {
             "size", ErrorKey.INVALID_SIZE
     );
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<GetProjectsResponse> handleMethodArgumentNotValidException(
-            MethodArgumentNotValidException ex) {
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<GetProjectsResponse> handleConstraintViolationException(
+            ConstraintViolationException ex) {
+        log.warn("Request validation error: {}", ex.getMessage());
 
-        log.warn("Request body validation error: {}", ex.getMessage());
-
-        FieldError fieldError = ex.getBindingResult().getFieldErrors().stream()
-                .findFirst()
-                .orElse(null);
+        Optional<ErrorKey> error = ex.getConstraintViolations()
+                .stream()
+                .map(this::formatConstraintViolation)
+                .findFirst();
 
         GetProjectsResponse response = new GetProjectsResponse();
         response.setLocation(ProjectController.API_BASE_PATH);
         response.setError(HttpStatus.BAD_REQUEST.getReasonPhrase());
 
-        if (fieldError != null) {
-            String field = fieldError.getField();
-
-            ErrorKey key = FIELD_ERROR_MAP.getOrDefault(field, ErrorKey.BAD_REQUEST_BODY);
-
+        if (error.isPresent()) {
+            ErrorKey key = error.get();
             response.setErrorKey(key.getKey());
             response.setMessage(key.getMessage());
         } else {
@@ -62,5 +63,16 @@ public class ProjectExceptionHandler {
         response.setErrorKey(ErrorKey.INTERNAL_ERROR.getKey());
         response.setMessage("An error occurred while processing the request.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    private ErrorKey formatConstraintViolation(ConstraintViolation<?> violation) {
+        Path path = violation.getPropertyPath();
+
+        String lastNodeName = null;
+        for (Path.Node node : path) {
+            lastNodeName = node.getName();
+        }
+
+        return FIELD_ERROR_MAP.getOrDefault(lastNodeName, ErrorKey.BAD_REQUEST_BODY);
     }
 }
