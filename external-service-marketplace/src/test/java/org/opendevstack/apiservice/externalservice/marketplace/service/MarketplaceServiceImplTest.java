@@ -8,7 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
-import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsTokenService;
+import org.opendevstack.apiservice.core.security.client.credentials.ClientCredentialsTokenService;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;

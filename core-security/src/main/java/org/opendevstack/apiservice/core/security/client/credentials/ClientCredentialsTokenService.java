@@ -1,4 +1,4 @@
-package org.opendevstack.apiservice.core.security.client.crendentials;
+package org.opendevstack.apiservice.core.security.client.credentials;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

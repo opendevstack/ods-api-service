@@ -3,7 +3,7 @@ package org.opendevstack.apiservice.marketplacemetrics.exception;
 /**
  * Exception thrown when there are issues with projects info service operations.
  */
-public class MarketplaceMetricsException extends Exception {
+public class MarketplaceMetricsException extends RuntimeException {
 
     public MarketplaceMetricsException(String message) {
         super(message);

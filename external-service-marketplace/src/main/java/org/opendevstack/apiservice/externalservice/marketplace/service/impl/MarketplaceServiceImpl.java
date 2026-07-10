@@ -1,7 +1,7 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.opendevstack.apiservice.core.security.client.crendentials.ClientCredentialsTokenService;
+import org.opendevstack.apiservice.core.security.client.credentials.ClientCredentialsTokenService;
 import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
@@ -83,12 +83,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         log.debug("Marketplace service GET all catalog items in instance {} ", instanceName);
 
         try {
-            MarketplaceApiClient marketplaceClient = getOboAuthenticatedClient(instanceName);
+            MarketplaceApiClient marketplaceClient = getClientCredentialsAuthenticatedClient(instanceName);
             ApiClient apiClient = marketplaceClient.getApiClient();
             CatalogItemsApi catalogItemsApi = new CatalogItemsApi(apiClient);
-
             apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
-
             return catalogItemsApi.getCatalogItems(SortOrder.ASC, null);
         } catch (HttpClientErrorException.NotFound e) {
             log.debug("Catalog items not found in Marketplace instance '{}'", instanceName);
@@ -136,6 +134,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         return getProjectComponent(getDefaultInstance(), projectId, componentId);
     }
 
+    @Override
     public ProjectComponentListResponse getAllProjectComponents(String instanceName, Integer page, Integer size) throws MarketplaceException {
         log.debug("Marketplace service GET all components with page {} and size {} in instance {} ", page, size, instanceName);
         try {
@@ -154,6 +153,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         }
     }
 
+    @Override
     public ProjectComponentListResponse getAllProjectComponents(Integer page, Integer size) throws MarketplaceException {
         return getAllProjectComponents(getDefaultInstance(), page, size);
     }

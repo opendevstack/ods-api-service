@@ -1,4 +1,4 @@
-package org.opendevstack.apiservice.core.security.client.crendentials;
+package org.opendevstack.apiservice.core.security.client.credentials;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

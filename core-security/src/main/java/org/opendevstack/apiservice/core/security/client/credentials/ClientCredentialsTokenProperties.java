@@ -1,4 +1,4 @@
-package org.opendevstack.apiservice.core.security.client.crendentials;
+package org.opendevstack.apiservice.core.security.client.credentials;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
