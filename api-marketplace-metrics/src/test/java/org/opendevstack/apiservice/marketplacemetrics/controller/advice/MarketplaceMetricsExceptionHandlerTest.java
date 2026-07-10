@@ -39,7 +39,7 @@ class MarketplaceMetricsExceptionHandlerTest {
                 .thenThrow(new MarketplaceMetricsException(errorMessage));
 
         mockMvc.perform(get("/api/v1/projects/metrics/marketplace/catalog-items"))
-                .andExpect(status().isInternalServerError())
+                .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.message").value(errorMessage));
     }
 
@@ -50,7 +50,7 @@ class MarketplaceMetricsExceptionHandlerTest {
                 .thenThrow(new MarketplaceMetricsException(errorMessage));
 
         mockMvc.perform(get("/api/v1/projects/metrics/marketplace/project-components"))
-                .andExpect(status().isInternalServerError())
+                .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.message").value(errorMessage));
     }
 }

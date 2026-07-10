@@ -17,7 +17,7 @@ public class MarketplaceMetricsExceptionHandler {
     public ResponseEntity<RestErrorMessage> handleMarketplaceMetricsException(MarketplaceMetricsException ex) {
         log.error("Marketplace metrics retrieval failed: {}", ex.getMessage(), ex);
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(new RestErrorMessage(ex.getMessage()));
     }
 
