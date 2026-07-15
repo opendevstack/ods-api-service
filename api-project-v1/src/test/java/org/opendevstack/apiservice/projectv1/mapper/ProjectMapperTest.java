@@ -7,6 +7,9 @@ import org.opendevstack.apiservice.projectv1.client.model.ProjectsResponse;
 import org.opendevstack.apiservice.projectv1.exception.PageNotFoundException;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -39,7 +42,8 @@ class ProjectMapperTest {
                 .updatedAt(updatedAt)
                 .build();
 
-        GetProjectsResponse result = sut.toApiResponse(List.of(summary), 0, 20);
+        Page<ProjectSummary> page = new PageImpl<>(List.of(summary), PageRequest.of(0, 20), 1);
+        GetProjectsResponse result = sut.toApiResponse(page);
 
         assertThat(result).isNotNull();
         assertThat(result.getProjects()).hasSize(1);
@@ -55,18 +59,9 @@ class ProjectMapperTest {
     }
 
     @Test
-    void to_api_response_returns_empty_list_when_projects_are_null() {
-        GetProjectsResponse result = sut.toApiResponse(null, 0, 20);
-
-        assertThat(result).isNotNull();
-        assertThat(result.getProjects()).isEmpty();
-        assertThat(result.getMetadata().getTotalElements()).isEqualTo(0);
-        assertThat(result.getMetadata().getTotalPages()).isEqualTo(0);
-    }
-
-    @Test
-    void to_api_response_returns_empty_list_when_projects_list_is_empty() {
-        GetProjectsResponse result = sut.toApiResponse(List.of(), 0, 20);
+    void to_api_response_returns_empty_list_when_projects_page_is_empty() {
+        Page<ProjectSummary> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+        GetProjectsResponse result = sut.toApiResponse(page);
 
         assertThat(result).isNotNull();
         assertThat(result.getProjects()).isEmpty();
@@ -83,7 +78,8 @@ class ProjectMapperTest {
                 ProjectSummary.builder().projectKey("P3").build()
         );
 
-        GetProjectsResponse result = sut.toApiResponse(summaries, 0, 20);
+        Page<ProjectSummary> page = new PageImpl<>(summaries, PageRequest.of(0, 20), 3);
+        GetProjectsResponse result = sut.toApiResponse(page);
 
         assertThat(result.getMetadata().getPage()).isEqualTo(0);
         assertThat(result.getMetadata().getSize()).isEqualTo(20);
@@ -96,13 +92,11 @@ class ProjectMapperTest {
     void to_api_response_paginates_correctly_first_page() {
         List<ProjectSummary> summaries = List.of(
                 ProjectSummary.builder().projectKey("P1").build(),
-                ProjectSummary.builder().projectKey("P2").build(),
-                ProjectSummary.builder().projectKey("P3").build(),
-                ProjectSummary.builder().projectKey("P4").build(),
-                ProjectSummary.builder().projectKey("P5").build()
+                ProjectSummary.builder().projectKey("P2").build()
         );
 
-        GetProjectsResponse result = sut.toApiResponse(summaries, 0, 2);
+        Page<ProjectSummary> page = new PageImpl<>(summaries, PageRequest.of(0, 2), 5);
+        GetProjectsResponse result = sut.toApiResponse(page);
 
         assertThat(result.getProjects()).hasSize(2);
         assertThat(result.getProjects().get(0).getProjectKey()).isEqualTo("P1");
@@ -115,14 +109,11 @@ class ProjectMapperTest {
     @Test
     void to_api_response_paginates_correctly_last_page() {
         List<ProjectSummary> summaries = List.of(
-                ProjectSummary.builder().projectKey("P1").build(),
-                ProjectSummary.builder().projectKey("P2").build(),
-                ProjectSummary.builder().projectKey("P3").build(),
-                ProjectSummary.builder().projectKey("P4").build(),
                 ProjectSummary.builder().projectKey("P5").build()
         );
 
-        GetProjectsResponse result = sut.toApiResponse(summaries, 2, 2);
+        Page<ProjectSummary> page = new PageImpl<>(summaries, PageRequest.of(2, 2), 5);
+        GetProjectsResponse result = sut.toApiResponse(page);
 
         assertThat(result.getProjects()).hasSize(1);
         assertThat(result.getProjects().get(0).getProjectKey()).isEqualTo("P5");
@@ -130,35 +121,12 @@ class ProjectMapperTest {
     }
 
     @Test
-    void to_api_response_uses_default_page_when_null() {
-        ProjectSummary summary = ProjectSummary.builder().projectKey("P1").build();
-
-        GetProjectsResponse result = sut.toApiResponse(List.of(summary), null, 20);
-
-        assertThat(result.getMetadata().getPage()).isEqualTo(0);
-    }
-
-    @Test
-    void to_api_response_uses_default_size_when_null() {
-        ProjectSummary summary = ProjectSummary.builder().projectKey("P1").build();
-
-        GetProjectsResponse result = sut.toApiResponse(List.of(summary), 0, null);
-
-        assertThat(result.getMetadata().getSize()).isEqualTo(20);
-    }
-
-    @Test
     void to_api_response_throws_exception_when_page_is_greater_than_total_pages() {
-        List<ProjectSummary> summaries = List.of(
-                ProjectSummary.builder().projectKey("P1").build(),
-                ProjectSummary.builder().projectKey("P2").build(),
-                ProjectSummary.builder().projectKey("P3").build(),
-                ProjectSummary.builder().projectKey("P4").build(),
-                ProjectSummary.builder().projectKey("P5").build()
-        );
+        // Page 5 requested but only 3 pages exist (5 elements, size 2)
+        Page<ProjectSummary> page = new PageImpl<>(List.of(), PageRequest.of(5, 2), 5);
 
         assertThrows(PageNotFoundException.class,
-                () -> sut.toApiResponse(summaries, 5, 2));
+                () -> sut.toApiResponse(page));
     }
 
     @Test
@@ -168,7 +136,8 @@ class ProjectMapperTest {
                 .status(null)
                 .build();
 
-        GetProjectsResponse result = sut.toApiResponse(List.of(summary), 0, 20);
+        Page<ProjectSummary> page = new PageImpl<>(List.of(summary), PageRequest.of(0, 20), 1);
+        GetProjectsResponse result = sut.toApiResponse(page);
 
         assertThat(result.getProjects().get(0).getStatus()).isNull();
     }
@@ -181,7 +150,8 @@ class ProjectMapperTest {
                 .updatedAt(null)
                 .build();
 
-        GetProjectsResponse result = sut.toApiResponse(List.of(summary), 0, 20);
+        Page<ProjectSummary> page = new PageImpl<>(List.of(summary), PageRequest.of(0, 20), 1);
+        GetProjectsResponse result = sut.toApiResponse(page);
 
         assertThat(result.getProjects().get(0).getCreatedAt()).isNull();
         assertThat(result.getProjects().get(0).getUpdatedAt()).isNull();

@@ -11,6 +11,7 @@ import org.opendevstack.apiservice.persistence.entity.ProjectEntity;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
+import org.springframework.data.domain.Page;
 
 @Mapper(componentModel = "spring")
 public interface ProjectResponseMapper {
@@ -26,9 +27,6 @@ public interface ProjectResponseMapper {
     @Mapping(source = "status", target = "status", qualifiedByName = "mapStatus")
     @Named("mapEntityToSummary")
     ProjectSummary toProjectSummary(ProjectEntity entity);
-
-    @IterableMapping(qualifiedByName = "mapEntityToSummary")
-    List<ProjectSummary> toProjectSummary(List<ProjectEntity> entities);
 
     @Named("mapStatus")
     default Status mapStatus(String value) {

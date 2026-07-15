@@ -9,6 +9,10 @@ import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -81,9 +85,15 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public List<ProjectSummary> getProjects() {
-        List<ProjectEntity> projects = projectRepository.findAll();
-        return projectResponseMapper.toProjectSummary(projects);
+    public Page<ProjectSummary> getProjects(Integer page, Integer size) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("createdAt").ascending()
+        );
+        Page<ProjectEntity> pageResult = projectRepository.findAll(pageable);
+
+        return pageResult.map(projectResponseMapper::toProjectSummary);
     }
 
     private String getLdapGroup(String role, String projectKey) {

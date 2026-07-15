@@ -11,6 +11,9 @@ import org.opendevstack.apiservice.projectv1.mapper.ProjectMapper;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -47,51 +50,52 @@ class ProjectsFacadeImplTest {
                         .status(Status.RUNNING)
                         .build()
         );
+        Page<ProjectSummary> summaryPage = new PageImpl<>(summaries, PageRequest.of(0, 20), 1);
 
         GetProjectsResponse expectedResponse = new GetProjectsResponse()
                 .projects(List.of(new ProjectsResponse().projectKey("PROJ01")))
                 .metadata(new GetProjectsResponseMetadata().page(0).size(20).totalElements(1).totalPages(1).last(true));
 
-        when(projectService.getProjects()).thenReturn(summaries);
-        when(projectMapper.toApiResponse(summaries, 0, 20)).thenReturn(expectedResponse);
+        when(projectService.getProjects(0, 20)).thenReturn(summaryPage);
+        when(projectMapper.toApiResponse(summaryPage)).thenReturn(expectedResponse);
 
         GetProjectsResponse result = sut.getProjects(0, 20);
 
         assertThat(result).isNotNull();
         assertThat(result.getProjects()).hasSize(1);
         assertThat(result.getProjects().get(0).getProjectKey()).isEqualTo("PROJ01");
-        verify(projectService).getProjects();
-        verify(projectMapper).toApiResponse(summaries, 0, 20);
+        verify(projectService).getProjects(0, 20);
+        verify(projectMapper).toApiResponse(summaryPage);
     }
 
     @Test
     void get_projects_returns_empty_list_when_no_projects() {
-        List<ProjectSummary> emptySummaries = List.of();
+        Page<ProjectSummary> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
 
         GetProjectsResponse emptyResponse = new GetProjectsResponse()
                 .projects(List.of())
                 .metadata(new GetProjectsResponseMetadata().page(0).size(20).totalElements(0).totalPages(0).last(true));
 
-        when(projectService.getProjects()).thenReturn(emptySummaries);
-        when(projectMapper.toApiResponse(emptySummaries, 0, 20)).thenReturn(emptyResponse);
+        when(projectService.getProjects(0, 20)).thenReturn(emptyPage);
+        when(projectMapper.toApiResponse(emptyPage)).thenReturn(emptyResponse);
 
         GetProjectsResponse result = sut.getProjects(0, 20);
 
         assertThat(result).isNotNull();
         assertThat(result.getProjects()).isEmpty();
         assertThat(result.getMetadata().getTotalElements()).isEqualTo(0);
-        verify(projectService).getProjects();
-        verify(projectMapper).toApiResponse(emptySummaries, 0, 20);
+        verify(projectService).getProjects(0, 20);
+        verify(projectMapper).toApiResponse(emptyPage);
     }
 
     @Test
     void get_projects_propagates_service_exception() {
-        when(projectService.getProjects()).thenThrow(new RuntimeException("DB error"));
+        when(projectService.getProjects(0, 20)).thenThrow(new RuntimeException("DB error"));
 
         assertThrows(RuntimeException.class,
                 () -> sut.getProjects(0, 20));
 
-        verify(projectService).getProjects();
+        verify(projectService).getProjects(0, 20);
     }
 
     @Test
@@ -118,6 +122,7 @@ class ProjectsFacadeImplTest {
                         .updatedAt(now)
                         .build()
         );
+        Page<ProjectSummary> summaryPage = new PageImpl<>(summaries, PageRequest.of(0, 20), 2);
 
         GetProjectsResponse expectedResponse = new GetProjectsResponse()
                 .projects(List.of(
@@ -126,8 +131,8 @@ class ProjectsFacadeImplTest {
                 ))
                 .metadata(new GetProjectsResponseMetadata().page(0).size(20).totalElements(2).totalPages(1).last(true));
 
-        when(projectService.getProjects()).thenReturn(summaries);
-        when(projectMapper.toApiResponse(summaries, 0, 20)).thenReturn(expectedResponse);
+        when(projectService.getProjects(0, 20)).thenReturn(summaryPage);
+        when(projectMapper.toApiResponse(summaryPage)).thenReturn(expectedResponse);
 
         GetProjectsResponse result = sut.getProjects(0, 20);
 
