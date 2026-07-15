@@ -3,6 +3,8 @@ package org.opendevstack.apiservice.projectv1.mapper;
 import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
 import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponseMetadata;
 import org.opendevstack.apiservice.projectv1.client.model.ProjectsResponse;
+import org.opendevstack.apiservice.projectv1.exception.ErrorKey;
+import org.opendevstack.apiservice.projectv1.exception.PageNotFoundException;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +25,15 @@ public class ProjectMapper {
 
         int totalElements = projects != null ? projects.size() : 0;
         int totalPages = (int) Math.ceil((double) totalElements / effectiveSize);
-        boolean isLast = (effectivePage + 1) >= totalPages;
+
+        if (!isPageZeroCase(effectivePage, totalPages) && (effectivePage + 1) > totalPages) {
+            throw new PageNotFoundException(
+                ErrorKey.PAGE_NOT_FOUND,
+                "within the " + totalPages + " total pages."
+            );
+        }
+
+        boolean isLast = isPageZeroCase(effectivePage, totalPages) || (effectivePage + 1) == totalPages;
 
         List<ProjectsResponse> pageContent = projects == null
                 ? List.of()
@@ -58,5 +68,9 @@ public class ProjectMapper {
 
     private String formatDateTime(OffsetDateTime dateTime) {
         return dateTime != null ? dateTime.format(FORMATTER) : null;
+    }
+
+    private boolean isPageZeroCase(int effectivePage, int totalPages) {
+        return effectivePage == 0 && totalPages == 0;
     }
 }

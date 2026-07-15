@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
 import org.opendevstack.apiservice.projectv1.controller.ProjectController;
 import org.opendevstack.apiservice.projectv1.exception.ErrorKey;
+import org.opendevstack.apiservice.projectv1.exception.PageNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +54,34 @@ public class ProjectExceptionHandler {
         }
 
         return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<GetProjectsResponse> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException ex) {
+        log.warn("Request validation error: {}", ex.getMessage());
+
+        ErrorKey errorKey = FIELD_ERROR_MAP.getOrDefault(ex.getName(), ErrorKey.BAD_REQUEST_BODY);
+
+        GetProjectsResponse response = new GetProjectsResponse();
+        response.setLocation(ProjectController.API_BASE_PATH);
+        response.setError(HttpStatus.BAD_REQUEST.getReasonPhrase());
+        response.setErrorKey(errorKey.getKey());
+        response.setMessage(errorKey.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(PageNotFoundException.class)
+    public ResponseEntity<GetProjectsResponse> handlePageNotFoundException(
+            PageNotFoundException ex) {
+        log.warn("Get Projects error: {}", ex.getMessage());
+        ErrorKey errorKey = ex.getErrorKey();
+        GetProjectsResponse response = new GetProjectsResponse();
+        response.setLocation(ProjectController.API_BASE_PATH);
+        response.setError(HttpStatus.NOT_FOUND.getReasonPhrase());
+        response.setErrorKey(errorKey.getKey());
+        response.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     @ExceptionHandler(Exception.class)

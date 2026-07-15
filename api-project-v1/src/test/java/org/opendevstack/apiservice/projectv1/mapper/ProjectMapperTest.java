@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
 import org.opendevstack.apiservice.projectv1.client.model.ProjectsResponse;
+import org.opendevstack.apiservice.projectv1.exception.PageNotFoundException;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
 
@@ -12,6 +13,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProjectMapperTest {
 
@@ -143,6 +145,20 @@ class ProjectMapperTest {
         GetProjectsResponse result = sut.toApiResponse(List.of(summary), 0, null);
 
         assertThat(result.getMetadata().getSize()).isEqualTo(20);
+    }
+
+    @Test
+    void to_api_response_throws_exception_when_page_is_greater_than_total_pages() {
+        List<ProjectSummary> summaries = List.of(
+                ProjectSummary.builder().projectKey("P1").build(),
+                ProjectSummary.builder().projectKey("P2").build(),
+                ProjectSummary.builder().projectKey("P3").build(),
+                ProjectSummary.builder().projectKey("P4").build(),
+                ProjectSummary.builder().projectKey("P5").build()
+        );
+
+        assertThrows(PageNotFoundException.class,
+                () -> sut.toApiResponse(summaries, 5, 2));
     }
 
     @Test

@@ -5,7 +5,8 @@ public enum ErrorKey {
     INTERNAL_ERROR("003", ErrorMessage.INTERNAL_ERROR),
     BAD_REQUEST_BODY("014", ErrorMessage.BAD_REQUEST),
     INVALID_PAGE("031", ErrorMessage.INVALID_PAGE),
-    INVALID_SIZE("032", ErrorMessage.INVALID_SIZE);
+    INVALID_SIZE("032", ErrorMessage.INVALID_SIZE),
+    PAGE_NOT_FOUND("033", ErrorMessage.PAGE_NOT_FOUND);
 
     private String key;
     private String message;
