@@ -38,7 +38,7 @@ class MarketplaceMetricsExceptionHandlerTest {
         when(marketplaceMetricsFacade.getMarketplaceCatalogItemsMetrics())
                 .thenThrow(new MarketplaceMetricsException(errorMessage));
 
-        mockMvc.perform(get("/api/v1/projects/metrics/marketplace/catalog-items"))
+        mockMvc.perform(get("/api/v1/metrics/marketplace/catalog-items"))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.message").value(errorMessage));
     }
@@ -49,9 +49,10 @@ class MarketplaceMetricsExceptionHandlerTest {
         when(marketplaceMetricsFacade.getMarketplaceProjectComponentsMetrics(0, 20))
                 .thenThrow(new MarketplaceMetricsException(errorMessage));
 
-        mockMvc.perform(get("/api/v1/projects/metrics/marketplace/project-components"))
+        mockMvc.perform(get("/api/v1/metrics/marketplace/project-components")
+                        .param("page", "0")
+                        .param("size", "20"))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.message").value(errorMessage));
     }
 }
-
