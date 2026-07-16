@@ -15,7 +15,7 @@ tags:
   - name: Marketplace metrics
     description: API for managing marketplace metrics
 paths:
-  /metrics/marketplace/project-components:
+  /marketplace/project-components:
     get:
       tags:
         - MarketplaceMetrics
@@ -52,8 +52,10 @@ paths:
           $ref: "#/components/responses/NotFoundResponse"
         "500":
           $ref: "#/components/responses/InternalErrorResponse"
+        "502":
+          $ref: "#/components/responses/BadGatewayResponse"
 
-  /metrics/marketplace/catalog-items:
+  /marketplace/catalog-items:
     get:
       tags:
         - MarketplaceMetrics
@@ -62,7 +64,7 @@ paths:
       operationId: getMarketplaceCatalogItemsMetrics
       responses:
         "200":
-          description: A paginated list of catalog items metrics
+          description: A list of catalog items metrics
           content:
             application/json:
               schema:
@@ -75,6 +77,8 @@ paths:
           $ref: "#/components/responses/NotFoundResponse"
         "500":
           $ref: "#/components/responses/InternalErrorResponse"
+        "502":
+          $ref: "#/components/responses/BadGatewayResponse"
 
 components:
   responses:
@@ -92,6 +96,12 @@ components:
             $ref: '#/components/schemas/RestErrorMessage'
     NotFoundResponse:
       description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+    BadGatewayResponse:
+      description: Bad gateway
       content:
         application/json:
           schema:
@@ -227,40 +237,11 @@ components:
             title: An item title
             shortDescription: Example description
             date: "2021-07-01T00:00:00Z"
-        pagination:
-          page: 0
-          size: 20
-          totalElements: 50
-          totalPages: 3
-          next: https://api.example.com/resources?page=1&size=20
-          previous: null
       properties:
         data:
           type: array
           items:
             $ref: '#/components/schemas/CatalogItem'
-        pagination:
-          $ref: '#/components/schemas/MarketplaceCatalogItemsMetricsPagination'
-
-    MarketplaceCatalogItemsMetricsPagination:
-      type: object
-      properties:
-        page:
-          type: integer
-        size:
-          type: integer
-        totalElements:
-          type: integer
-        totalPages:
-          type: integer
-        next:
-          type: string
-          format: uri
-          nullable: true
-        previous:
-          type: string
-          format: uri
-          nullable: true
 
     CatalogItem:
       type: object

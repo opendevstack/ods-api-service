@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/projects")
+@RequestMapping("/api/v1/metrics")
 @AllArgsConstructor
 public class MarketplaceMetricsController implements MarketplaceMetricsApi {
 
@@ -19,7 +19,7 @@ public class MarketplaceMetricsController implements MarketplaceMetricsApi {
     public ResponseEntity<MarketplaceCatalogItemsMetrics> getMarketplaceCatalogItemsMetrics() {
         MarketplaceCatalogItemsMetrics catalogItemsMetrics = marketplaceMetricsFacade.getMarketplaceCatalogItemsMetrics();
 
-        if (catalogItemsMetrics == null) {
+        if (catalogItemsMetrics == null || catalogItemsMetrics.getData().isEmpty()) {
             return ResponseEntity.notFound().build();
         } else {
             return ResponseEntity.ok(catalogItemsMetrics);
@@ -27,7 +27,6 @@ public class MarketplaceMetricsController implements MarketplaceMetricsApi {
     }
 
     @Override
-    @GetMapping("/metrics/marketplace/project-components")
     public ResponseEntity<MarketplaceProjectComponentsMetrics> getMarketplaceProjectComponentsMetrics(Integer page, Integer size) {
         MarketplaceProjectComponentsMetrics marketplaceProjectComponentsMetrics =
                 marketplaceMetricsFacade.getMarketplaceProjectComponentsMetrics(page, size);

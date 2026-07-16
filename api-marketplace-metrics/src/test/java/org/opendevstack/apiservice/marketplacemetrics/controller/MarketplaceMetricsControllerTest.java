@@ -59,6 +59,20 @@ class MarketplaceMetricsControllerTest {
     }
 
     @Test
+    void GivenFacadeReturnsEmptyDataList_whenGetMarketplaceCatalogItemsMetrics_ThenReturnNotFound() throws MarketplaceMetricsException {
+        //given
+        MarketplaceCatalogItemsMetrics emptyMetrics = new MarketplaceCatalogItemsMetrics();
+        when(marketplaceMetricsFacade.getMarketplaceCatalogItemsMetrics()).thenReturn(emptyMetrics);
+
+        //when
+        ResponseEntity<MarketplaceCatalogItemsMetrics> response = controller.getMarketplaceCatalogItemsMetrics();
+
+        //then
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
+        assertThat(response.getBody()).isNull();
+    }
+
+    @Test
     void GivenFacadeThrowsException_whenGetMarketplaceCatalogItemsMetrics_ThenThrowMarketplaceMetricsException() throws MarketplaceMetricsException {
         //given
         when(marketplaceMetricsFacade.getMarketplaceCatalogItemsMetrics()).thenThrow(new MarketplaceMetricsException("boom"));

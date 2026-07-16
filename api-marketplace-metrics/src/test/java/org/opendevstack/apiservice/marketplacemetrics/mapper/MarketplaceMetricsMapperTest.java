@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.marketplacemetrics.mapper;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.Pagination;
@@ -10,6 +11,9 @@ import org.opendevstack.apiservice.marketplacemetrics.model.CatalogItemTag;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceCatalogItemsMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetrics;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -28,6 +32,11 @@ class MarketplaceMetricsMapperTest {
     @BeforeEach
     void setUp() {
         mapper = new MarketplaceMetricsMapper();
+    }
+
+    @AfterEach
+    void tearDown() {
+        RequestContextHolder.resetRequestAttributes();
     }
 
     @Test
@@ -276,5 +285,41 @@ class MarketplaceMetricsMapperTest {
          assertThat(result.getTags().get(1).getLabel()).isEqualTo("environment");
          assertThat(result.getTags().get(1).getOptions()).contains("prod", "dev");
      }
-}
 
+     @Test
+     void to_api_model_replaces_full_next_and_previous_url_with_current_api_url_keeping_only_query_params() {
+         MockHttpServletRequest request = new MockHttpServletRequest();
+         request.setScheme("https");
+         request.setServerName("api.current-instance.company.tld");
+         request.setServerPort(8443);
+         request.setRequestURI("/api/v1/projects/metrics/marketplace/project-components");
+         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+         Pagination pagination = new Pagination();
+         pagination.setNext(URI.create("http://marketplace-internal.svc.cluster.local/v1/marketplace/project-components?page=2&size=20"));
+         pagination.setPrevious(URI.create("http://marketplace-internal.svc.cluster.local/v1/other/path?page=0&size=20"));
+
+         ProjectComponentListResponse response = new ProjectComponentListResponse();
+         response.setData(Collections.emptyList());
+         response.setPagination(pagination);
+
+         MarketplaceProjectComponentsMetrics result = mapper.toApiModel(response);
+
+         assertThat(result).isNotNull();
+         assertThat(result.getPagination()).isNotNull();
+
+         URI next = result.getPagination().getNext().get();
+         assertThat(next.getScheme()).isEqualTo("https");
+         assertThat(next.getHost()).isEqualTo("api.current-instance.company.tld");
+         assertThat(next.getPort()).isEqualTo(8443);
+         assertThat(next.getPath()).isEqualTo("/api/v1/projects/metrics/marketplace/project-components");
+         assertThat(next.getQuery()).isEqualTo("page=2&size=20");
+
+         URI previous = result.getPagination().getPrevious().get();
+         assertThat(previous.getScheme()).isEqualTo("https");
+         assertThat(previous.getHost()).isEqualTo("api.current-instance.company.tld");
+         assertThat(previous.getPort()).isEqualTo(8443);
+         assertThat(previous.getPath()).isEqualTo("/api/v1/projects/metrics/marketplace/project-components");
+         assertThat(previous.getQuery()).isEqualTo("page=0&size=20");
+     }
+}

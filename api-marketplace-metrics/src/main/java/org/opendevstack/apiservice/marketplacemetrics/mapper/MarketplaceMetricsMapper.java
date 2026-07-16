@@ -11,7 +11,11 @@ import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectCo
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetrics;
 import org.opendevstack.apiservice.marketplacemetrics.model.MarketplaceProjectComponentsMetricsPagination;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -85,14 +89,30 @@ public class MarketplaceMetricsMapper {
         }
 
         MarketplaceProjectComponentsMetricsPagination marketplaceProjectComponentsMetricsPagination = new MarketplaceProjectComponentsMetricsPagination();
-        marketplaceProjectComponentsMetricsPagination.setNext(JsonNullable.of(pagination.getNext()));
+        marketplaceProjectComponentsMetricsPagination.setNext(JsonNullable.of(this.mapToCurrentApiUrlKeepingQueryParams(pagination.getNext())));
         marketplaceProjectComponentsMetricsPagination.setPage(pagination.getPage());
-        marketplaceProjectComponentsMetricsPagination.setPrevious(JsonNullable.of(pagination.getPrevious()));
+        marketplaceProjectComponentsMetricsPagination.setPrevious(JsonNullable.of(this.mapToCurrentApiUrlKeepingQueryParams(pagination.getPrevious())));
         marketplaceProjectComponentsMetricsPagination.setSize(pagination.getSize());
         marketplaceProjectComponentsMetricsPagination.setTotalPages(pagination.getTotalPages());
         marketplaceProjectComponentsMetricsPagination.setTotalElements(pagination.getTotalElements());
 
         return marketplaceProjectComponentsMetricsPagination;
+    }
+
+    private URI mapToCurrentApiUrlKeepingQueryParams(URI uri) {
+        if (uri == null) {
+            return null;
+        }
+
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (requestAttributes == null) {
+            return uri;
+        }
+
+        return ServletUriComponentsBuilder.fromCurrentRequestUri()
+                .replaceQuery(uri.getRawQuery())
+                .build(true)
+                .toUri();
     }
 
     public MarketplaceCatalogItemsMetrics toApiModel(List<org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem> allCatalogItems) {
