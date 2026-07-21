@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
+import org.opendevstack.apiservice.core.security.client.credentials.ClientCredentialsTokenService;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
@@ -16,6 +17,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.config.Marketplac
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.client.ApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListResponse;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentProvisionStatus;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionActionResponse;
 import org.opendevstack.apiservice.externalservice.marketplace.service.impl.MarketplaceServiceImpl;
@@ -62,6 +64,7 @@ class MarketplaceServiceImplTest {
     // HTTP method changes unexpectedly.
     private static final String PATH_CATALOG_ITEM_BY_ID   = "/catalog-items/{id}";
     private static final String PATH_PROJECT_COMPONENT    = "/project/{projectKey}/component/{componentId}";
+    private static final String PATH_PROJECT_COMPONENTS   = "/project/components";
     private static final String PATH_PROVISION_ACTIONS    = "/provision-actions";
     private static final String PATH_DELETE_COMPONENT     = "/support/delete/{projectKey}/{componentId}";
     private static final String PATH_NOTIFY_PROVISIONING  = "/provision/{projectKey}/{status}";
@@ -78,11 +81,14 @@ class MarketplaceServiceImplTest {
     @Mock
     private OboTokenService oboTokenService;
 
+    @Mock
+    private ClientCredentialsTokenService clientCredentialsTokenService;
+
     private MarketplaceService marketplaceService;
 
     @BeforeEach
     void setUp() {
-        marketplaceService = new MarketplaceServiceImpl(clientFactory, oboTokenService);
+        marketplaceService = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService);
 
         // Set up a fake SecurityContext so JwtUtils.getTokenValue() works
         Jwt jwt = Jwt.withTokenValue("test-jwt-assertion")
@@ -160,6 +166,104 @@ class MarketplaceServiceImplTest {
         verify(clientFactory).getClient(instanceName);
     }
 
+    // -------------------------------------------------------------------------
+    // getAllProjectComponents
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testGetAllProjectComponents_Success_ReturnsResponse() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        Integer page = 0;
+        Integer size = 10;
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProjectComponentListResponse mockResponse = new ProjectComponentListResponse();
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROJECT_COMPONENTS, HttpMethod.GET)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        // Act
+        ProjectComponentListResponse result = marketplaceService.getAllProjectComponents(instanceName, page, size);
+
+        // Assert
+        assertEquals(mockResponse, result);
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testGetAllProjectComponents_Unauthorized_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        Integer page = 0;
+        Integer size = 10;
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException forbiddenEx = HttpClientErrorException.create(
+                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROJECT_COMPONENTS, HttpMethod.GET).thenThrow(forbiddenEx);
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getAllProjectComponents(instanceName, page, size));
+
+        assertTrue(exception.getMessage().contains("Access denied"));
+    }
+
+    @Test
+    void testGetAllProjectComponents_RestClientException_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        Integer page = 0;
+        Integer size = 10;
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROJECT_COMPONENTS, HttpMethod.GET).thenThrow(new RestClientException("Connection failed"));
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getAllProjectComponents(instanceName, page, size));
+
+        assertTrue(exception.getMessage().contains("Failed to retrieve all project components"));
+    }
+
+    @Test
+    void testGetAllProjectComponents_DefaultInstance_UsesDefaultClient() throws MarketplaceException {
+        // Arrange
+        Integer page = 0;
+        Integer size = 10;
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        ProjectComponentListResponse mockResponse = new ProjectComponentListResponse();
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI(PATH_PROJECT_COMPONENTS, HttpMethod.GET)
+                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+
+        // Act
+        ProjectComponentListResponse result = marketplaceService.getAllProjectComponents(page, size);
+
+        // Assert
+        assertEquals(mockResponse, result);
+        verify(clientFactory).getClient("default");
+    }
+
     @Test
     void testGetProjectComponent_RestClientException() throws MarketplaceException {
         // Arrange
@@ -215,7 +319,7 @@ class MarketplaceServiceImplTest {
     void testIsHealthy_NoInstancesConfigured_ReturnsFalse() {
         when(clientFactory.getAvailableInstances()).thenReturn(Set.of());
 
-        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService) {
             @Override
             protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
                 return true;
@@ -238,7 +342,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
         when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
 
-        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService) {
             @Override
             protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
                 return true;
@@ -261,7 +365,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
         when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
 
-        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService) {
             @Override
             protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
                 return false;
@@ -279,7 +383,7 @@ class MarketplaceServiceImplTest {
         when(clientFactory.getDefaultInstanceName()).thenReturn("dev");
         when(clientFactory.getClient("dev")).thenReturn(marketplaceApiClient);
 
-        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService) {
+        MarketplaceServiceImpl service = new MarketplaceServiceImpl(clientFactory, oboTokenService, clientCredentialsTokenService) {
             @Override
             protected boolean isProvisionerEndpointUp(MarketplaceApiClient marketplaceClient) {
                 return true;
@@ -555,6 +659,120 @@ class MarketplaceServiceImplTest {
 
         // Assert
         assertNull(result);
+        verify(clientFactory).getClient("default");
+    }
+
+    // -------------------------------------------------------------------------
+    // getAllCatalogItems
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testGetAllCatalogItems_Success_ReturnsList() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        CatalogItem item = new CatalogItem();
+        item.setId("cid");
+        List<CatalogItem> mockList = List.of(item);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET)
+                .thenReturn(new ResponseEntity<>(mockList, HttpStatus.OK));
+
+        // Act
+        List<CatalogItem> result = marketplaceService.getAllCatalogItems(instanceName);
+
+        // Assert
+        assertEquals(mockList, result);
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testGetAllCatalogItems_NotFound_ReturnsEmptyList() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException notFoundEx = HttpClientErrorException.create(
+                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET).thenThrow(notFoundEx);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+        // Act
+        List<CatalogItem> result = marketplaceService.getAllCatalogItems(instanceName);
+
+        // Assert
+        assertTrue(result.isEmpty());
+        verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testGetAllCatalogItems_AuthError_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+        HttpClientErrorException forbiddenEx = HttpClientErrorException.create(
+                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY, new byte[0], null);
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET).thenThrow(forbiddenEx);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getAllCatalogItems(instanceName));
+
+        assertTrue(exception.getMessage().contains("Access denied"));
+    }
+
+    @Test
+    void testGetAllCatalogItems_RestClientException_ThrowsMarketplaceException() throws MarketplaceException {
+        // Arrange
+        String instanceName = "dev";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET).thenThrow(new RestClientException("Connection failed"));
+
+        // Act & Assert
+        MarketplaceException exception = assertThrows(MarketplaceException.class, () ->
+                marketplaceService.getAllCatalogItems(instanceName));
+
+        assertTrue(exception.getMessage().contains("Failed to retrieve catalog items"));
+    }
+
+    @Test
+    void testGetAllCatalogItems_DefaultInstance_UsesDefaultClient() throws MarketplaceException {
+        // Arrange
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setOboScope("api://test/scope");
+
+        List<CatalogItem> mockList = List.of(new CatalogItem());
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn("default");
+        when(clientFactory.getClient("default")).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        whenInvokeAPI("/catalog-items", HttpMethod.GET)
+                .thenReturn(new ResponseEntity<>(mockList, HttpStatus.OK));
+
+        // Act
+        List<CatalogItem> result = marketplaceService.getAllCatalogItems();
+
+        // Assert
+        assertEquals(mockList, result);
         verify(clientFactory).getClient("default");
     }
 
