@@ -51,6 +51,13 @@ public class MarketplaceInstanceConfig {
      */
     private String oboScope;
 
+
+    /**
+     * OAuth2 scope used for Client Credentials token exchange when calling this Marketplace instance.
+     * Example: {@code api://<marketplace-app-id>/.default}
+     */
+    private String clientCredentialsScope;
+
     /**
      * Bypass configuration. When the incoming token already targets the configured bypass
      * audience and scope, the OBO token exchange is skipped and the token is forwarded as-is.

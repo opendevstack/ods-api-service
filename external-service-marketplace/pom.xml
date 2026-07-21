@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opendevstack.apiservice</groupId>
         <artifactId>devstack-api-service</artifactId>
-        <version>0.0.3</version>
+        <version>0.0.4</version>
     </parent>
 
     <artifactId>external-service-marketplace</artifactId>
@@ -150,7 +150,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <openapiNormalizer>FILTER=operationId:getCatalogItemById|getCatalogItemBySlug|getCatalogHealth</openapiNormalizer>
+                            <openapiNormalizer>FILTER=operationId:getCatalogItemById|getCatalogItemBySlug|getCatalogItems|getCatalogHealth</openapiNormalizer>
                             <generatorName>java</generatorName>
                             <output>${project.basedir}/target/generated-sources/openapi</output>
                             <library>resttemplate</library>
@@ -186,7 +186,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <openapiNormalizer>FILTER=operationId:triggerProvisionAction|notifyProvisioningStatusUpdate|deleteProjectComponent|getProjectComponentProvisionStatusById|getProvisionerHealth</openapiNormalizer>
+                            <openapiNormalizer>FILTER=operationId:triggerProvisionAction|notifyProvisioningStatusUpdate|deleteProjectComponent|getProjectComponentProvisionStatusById|getAllProjectComponents|getProvisionerHealth</openapiNormalizer>
                             <generatorName>java</generatorName>
                             <output>${project.basedir}/target/generated-sources/openapi</output>
                             <library>resttemplate</library>

@@ -1,10 +1,12 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.apiservice.core.security.client.credentials.ClientCredentialsTokenService;
 import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
 import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.*;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.client.ApiClient;
@@ -14,21 +16,12 @@ import org.opendevstack.apiservice.externalservice.marketplace.client.api.Projec
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProvisionResultsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProvisionerActionsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProvisionerHealthApi;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.GetCatalogHealth200Response;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.GetProvisionerHealth200Response;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentProvisionStatus;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionAction;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionActionParameter;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisionActionResponse;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisioningDeleteRequest;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisioningStatusUpdateRequest;
-import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisioningStatusUpdateRequestAllOfParameters;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -39,11 +32,14 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     private final MarketplaceApiClientFactory clientFactory;
     private final OboTokenService oboTokenService;
+    private final ClientCredentialsTokenService clientCredentialsTokenService;
 
     public MarketplaceServiceImpl(MarketplaceApiClientFactory clientFactory,
-                                  OboTokenService oboTokenService) {
+                                  OboTokenService oboTokenService,
+                                  ClientCredentialsTokenService clientCredentialsTokenService) {
         this.clientFactory = clientFactory;
         this.oboTokenService = oboTokenService;
+        this.clientCredentialsTokenService = clientCredentialsTokenService;
         log.info("MarketplaceServiceImpl initialized");
     }
 
@@ -74,6 +70,33 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new MarketplaceException(
                     String.format("Failed to retrieve catalog item '%s' in instance '%s'",
                             catalogItemId, instanceName), e);
+        }
+    }
+
+    @Override
+    public List<CatalogItem> getAllCatalogItems() throws MarketplaceException {
+        return getAllCatalogItems(getDefaultInstance());
+    }
+
+    @Override
+    public List<CatalogItem> getAllCatalogItems(String instanceName) throws MarketplaceException {
+        log.debug("Marketplace service GET all catalog items in instance {} ", instanceName);
+
+        try {
+            MarketplaceApiClient marketplaceClient = getClientCredentialsAuthenticatedClient(instanceName);
+            ApiClient apiClient = marketplaceClient.getApiClient();
+            CatalogItemsApi catalogItemsApi = new CatalogItemsApi(apiClient);
+            apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
+            return catalogItemsApi.getCatalogItems(SortOrder.ASC, null);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.debug("Catalog items not found in Marketplace instance '{}'", instanceName);
+            return Collections.emptyList();
+        } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
+            throw new MarketplaceException(
+                    String.format("Access denied when getting all catalog items in instance '%s'", instanceName), e);
+        } catch (RestClientException e) {
+            throw new MarketplaceException(
+                    String.format("Failed to retrieve catalog items in instance '%s'", instanceName), e);
         }
     }
 
@@ -109,6 +132,30 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     @Override
     public ProjectComponentProvisionStatus getProjectComponent(String projectId, String componentId) throws MarketplaceException {
         return getProjectComponent(getDefaultInstance(), projectId, componentId);
+    }
+
+    @Override
+    public ProjectComponentListResponse getAllProjectComponents(String instanceName, Integer page, Integer size) throws MarketplaceException {
+        log.debug("Marketplace service GET all components with page {} and size {} in instance {} ", page, size, instanceName);
+        try {
+            MarketplaceApiClient marketplaceClient = getClientCredentialsAuthenticatedClient(instanceName);
+            ApiClient apiClient = marketplaceClient.getApiClient();
+            ProjectComponentsWithProvisionStatusApi projectComponentsApi = new ProjectComponentsWithProvisionStatusApi(apiClient);
+            apiClient.setBasePath(marketplaceClient.getConfig().getProvisionerActionsBaseUrl());
+            return projectComponentsApi.getAllProjectComponents(page, size);
+        }  catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
+            throw new MarketplaceException(
+                    String.format("Access denied when getting all project components in instance '%s'",
+                            instanceName), e);
+        } catch (RestClientException e) {
+            throw new MarketplaceException(
+                    String.format("Failed to retrieve all project components in instance '%s'", instanceName), e);
+        }
+    }
+
+    @Override
+    public ProjectComponentListResponse getAllProjectComponents(Integer page, Integer size) throws MarketplaceException {
+        return getAllProjectComponents(getDefaultInstance(), page, size);
     }
 
     @Override
@@ -370,5 +417,29 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                             instanceName, oboScope),
                     ex);
         }
+    }
+
+    /**
+     * Creates a {@link MarketplaceApiClient} authenticated with a JWT token
+     * obtained using the client credentials flow.
+     */
+    private MarketplaceApiClient getClientCredentialsAuthenticatedClient(String instanceName) throws MarketplaceException {
+        MarketplaceApiClient client = clientFactory.getClient(instanceName);
+
+        String jwtToken;
+
+        try {
+            String scope = client.getConfig().getClientCredentialsScope();
+
+            jwtToken = clientCredentialsTokenService.requestToken(scope);
+        } catch (RuntimeException ex) {
+            throw new MarketplaceException(
+                    String.format(
+                            "Failed to obtain JWT token for Marketplace instance '%s' using the client credentials flow.", instanceName),
+                    ex);
+        }
+
+        client.setBearerToken(jwtToken);
+        return client;
     }
 }

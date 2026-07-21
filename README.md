@@ -55,7 +55,7 @@ Build a traditional Spring Boot JAR file:
 ```bash
 make jar
 ```
-- Output: `core/target/core-0.0.3.jar`
+- Output: `core/target/core-0.0.4.jar`
 - Includes all dependencies
 - Standard Spring Boot startup time
 
