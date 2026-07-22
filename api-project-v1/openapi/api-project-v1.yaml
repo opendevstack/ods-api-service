@@ -47,8 +47,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetProjectsResponse'
+        '400':
+          description: Invalid request or validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProjectsResponse'
         '404':
-          description: Project not found.
+          description: Page not found.
           content:
             application/json:
               schema:
