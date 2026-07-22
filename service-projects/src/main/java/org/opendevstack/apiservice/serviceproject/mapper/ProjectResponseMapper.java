@@ -9,7 +9,9 @@ import org.mapstruct.IterableMapping;
 import org.mapstruct.Named;
 import org.opendevstack.apiservice.persistence.entity.ProjectEntity;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
+import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
+import org.springframework.data.domain.Page;
 
 @Mapper(componentModel = "spring")
 public interface ProjectResponseMapper {
@@ -21,6 +23,10 @@ public interface ProjectResponseMapper {
 
     @IterableMapping(qualifiedByName = "mapEntityToResponse")
     List<ProjectResponse> toCreateProjectResponse(List<ProjectEntity> entities);
+
+    @Mapping(source = "status", target = "status", qualifiedByName = "mapStatus")
+    @Named("mapEntityToSummary")
+    ProjectSummary toProjectSummary(ProjectEntity entity);
 
     @Named("mapStatus")
     default Status mapStatus(String value) {

@@ -9,7 +9,12 @@ import org.opendevstack.apiservice.persistence.entity.ProjectEntity;
 import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
 import org.opendevstack.apiservice.serviceproject.mapper.ProjectResponseMapper;
 import org.opendevstack.apiservice.serviceproject.model.ProjectResponse;
+import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -231,5 +236,74 @@ class ProjectServiceImplTest {
         assertThrows(RuntimeException.class, () -> projectService.updateProjectStatus(projectKey, "Running"));
 
         verify(projectRepository).findByProjectKeyIgnoreCase(projectKey);
+    }
+
+    @Test
+    void get_projects_returns_summaries_when_projects_exist() {
+        ProjectEntity entity1 = ProjectEntity.builder()
+                .id(UUID.randomUUID())
+                .projectKey("PROJ01")
+                .projectName("Project One")
+                .status("Running")
+                .build();
+
+        ProjectEntity entity2 = ProjectEntity.builder()
+                .id(UUID.randomUUID())
+                .projectKey("PROJ02")
+                .projectName("Project Two")
+                .status("Pending")
+                .build();
+
+        ProjectSummary summary1 = ProjectSummary.builder()
+                .projectKey("PROJ01")
+                .projectName("Project One")
+                .status(Status.RUNNING)
+                .build();
+
+        ProjectSummary summary2 = ProjectSummary.builder()
+                .projectKey("PROJ02")
+                .projectName("Project Two")
+                .status(Status.PENDING)
+                .build();
+
+        Page<ProjectEntity> entityPage = new PageImpl<>(List.of(entity1, entity2), PageRequest.of(0, 20), 2);
+
+        when(projectRepository.findAll(any(Pageable.class))).thenReturn(entityPage);
+        when(projectResponseMapper.toProjectSummary(entity1)).thenReturn(summary1);
+        when(projectResponseMapper.toProjectSummary(entity2)).thenReturn(summary2);
+
+        Page<ProjectSummary> result = projectService.getProjects(0, 20);
+
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        assertEquals("PROJ01", result.getContent().get(0).getProjectKey());
+        assertEquals(Status.RUNNING, result.getContent().get(0).getStatus());
+        assertEquals("PROJ02", result.getContent().get(1).getProjectKey());
+        assertEquals(Status.PENDING, result.getContent().get(1).getStatus());
+        verify(projectRepository).findAll(any(Pageable.class));
+        verify(projectResponseMapper).toProjectSummary(entity1);
+        verify(projectResponseMapper).toProjectSummary(entity2);
+    }
+
+    @Test
+    void get_projects_returns_empty_list_when_no_projects_exist() {
+        Page<ProjectEntity> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+
+        when(projectRepository.findAll(any(Pageable.class))).thenReturn(emptyPage);
+
+        Page<ProjectSummary> result = projectService.getProjects(0, 20);
+
+        assertNotNull(result);
+        assertEquals(0, result.getContent().size());
+        verify(projectRepository).findAll(any(Pageable.class));
+    }
+
+    @Test
+    void get_projects_propagates_repository_exception() {
+        when(projectRepository.findAll(any(Pageable.class))).thenThrow(new RuntimeException("DB connection error"));
+
+        assertThrows(RuntimeException.class, () -> projectService.getProjects(0, 20));
+
+        verify(projectRepository).findAll(any(Pageable.class));
     }
 }
