@@ -7,7 +7,7 @@ import org.mockito.MockitoAnnotations;
 import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
 import org.opendevstack.apiservice.projectv1.client.model.ProjectsResponse;
 import org.opendevstack.apiservice.projectv1.exception.PageNotFoundException;
-import org.opendevstack.apiservice.projectv1.mapper.ProjectMapper;
+import org.opendevstack.apiservice.projectv1.mapper.ProjectMapperV1;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
@@ -29,7 +29,7 @@ class ProjectsFacadeImplTest {
     private ProjectService projectService;
 
     @Mock
-    private ProjectMapper projectMapper;
+    private ProjectMapperV1 projectMapper;
 
     private ProjectsFacadeImpl sut;
 

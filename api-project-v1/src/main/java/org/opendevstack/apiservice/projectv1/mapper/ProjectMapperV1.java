@@ -6,18 +6,13 @@ import org.mapstruct.Named;
 import org.opendevstack.apiservice.projectv1.client.model.ProjectsResponse;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.model.Status;
-import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-@Mapper(
-        componentModel = "spring",
-        implementationName = "ProjectMapperImplV1"
-)
-@Component("projectMapperV1")
-public interface ProjectMapper {
+@Mapper(componentModel = "spring")
+public interface ProjectMapperV1 {
 
     DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
