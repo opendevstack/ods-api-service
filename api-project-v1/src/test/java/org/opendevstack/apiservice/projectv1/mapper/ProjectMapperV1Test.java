@@ -13,13 +13,13 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ProjectMapperTest {
+class ProjectMapperV1Test {
 
-    private ProjectMapper projectMapper;
+    private ProjectMapperV1 projectMapper;
 
     @BeforeEach
     void setUp() {
-        projectMapper = Mappers.getMapper(ProjectMapper.class);
+        projectMapper = Mappers.getMapper(ProjectMapperV1.class);
     }
 
     @Test

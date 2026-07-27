@@ -8,7 +8,7 @@ import org.opendevstack.apiservice.projectv1.exception.ErrorKey;
 import org.opendevstack.apiservice.projectv1.exception.PageNotFoundException;
 import org.opendevstack.apiservice.projectv1.facade.ProjectsFacade;
 import org.opendevstack.apiservice.projectv1.client.model.GetProjectsResponse;
-import org.opendevstack.apiservice.projectv1.mapper.ProjectMapper;
+import org.opendevstack.apiservice.projectv1.mapper.ProjectMapperV1;
 import org.opendevstack.apiservice.serviceproject.model.ProjectSummary;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 import org.springframework.data.domain.Page;
@@ -26,7 +26,7 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
 
     private final ProjectService projectService;
 
-    private final ProjectMapper projectMapper;
+    private final ProjectMapperV1 projectMapper;
 
     @Override
     public GetProjectsResponse getProjects(Integer page, Integer size) {
