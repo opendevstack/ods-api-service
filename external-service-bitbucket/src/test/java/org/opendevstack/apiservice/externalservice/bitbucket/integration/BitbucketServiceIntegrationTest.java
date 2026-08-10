@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -51,9 +50,6 @@ class BitbucketServiceIntegrationTest {
 
     @Autowired
     private BitbucketServiceConfiguration bitbucketConfiguration;
-
-    @Autowired
-    private RestTemplateBuilder restTemplateBuilder;
 
     private String testInstance;
     private String testProjectKey;
@@ -363,12 +359,11 @@ class BitbucketServiceIntegrationTest {
         badConfig.setBearerToken(null); // force basic auth with bad credentials
         badConfig.setConnectionTimeout(realConfig.getConnectionTimeout());
         badConfig.setReadTimeout(realConfig.getReadTimeout());
-        badConfig.setTrustAllCertificates(realConfig.isTrustAllCertificates());
 
         BitbucketServiceConfiguration badConfiguration = new BitbucketServiceConfiguration();
         badConfiguration.setInstances(java.util.Map.of("unauthorized", badConfig));
 
-        BitbucketApiClientFactory badFactory = new BitbucketApiClientFactory(badConfiguration, restTemplateBuilder);
+        BitbucketApiClientFactory badFactory = new BitbucketApiClientFactory(badConfiguration);
         return new BitbucketServiceImpl(badFactory);
     }
 

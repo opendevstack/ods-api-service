@@ -5,42 +5,26 @@ import org.opendevstack.apiservice.externalservice.jira.config.JiraServiceConfig
 import org.opendevstack.apiservice.externalservice.jira.exception.JiraException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.web.client.RestTemplate;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link JiraApiClientFactory}.
  * Focuses on the default-instance resolution logic introduced in {@code resolveInstanceName}.
  */
-@ExtendWith(MockitoExtension.class)
 class JiraApiClientFactoryTest {
-
-    @Mock
-    private RestTemplateBuilder restTemplateBuilder;
-
-    @Mock
-    private RestTemplate restTemplate;
 
     private JiraServiceConfiguration configuration;
 
     @BeforeEach
     void setUp() {
         configuration = new JiraServiceConfiguration();
-        lenient().when(restTemplateBuilder.build()).thenReturn(restTemplate);
     }
 
     private JiraApiClientFactory factory() {
-        return new JiraApiClientFactory(configuration, restTemplateBuilder);
+        return new JiraApiClientFactory(configuration);
     }
 
     // -------------------------------------------------------------------------
@@ -118,7 +102,6 @@ class JiraApiClientFactoryTest {
 
     @Test
     void getClient_returnsClientForConfiguredDefaultInstance() throws JiraException {
-        when(restTemplateBuilder.build()).thenReturn(restTemplate);
         configuration.setDefaultInstance("prod");
         configuration.setInstances(orderedMap("dev", "prod"));
 
@@ -130,7 +113,6 @@ class JiraApiClientFactoryTest {
 
     @Test
     void getClient_noDefaultConfigured_returnsFirstInstance() throws JiraException {
-        when(restTemplateBuilder.build()).thenReturn(restTemplate);
         Map<String, JiraInstanceConfig> instances = new LinkedHashMap<>();
         instances.put("alpha", config("https://jira-alpha.example.com"));
         instances.put("beta",  config("https://jira-beta.example.com"));

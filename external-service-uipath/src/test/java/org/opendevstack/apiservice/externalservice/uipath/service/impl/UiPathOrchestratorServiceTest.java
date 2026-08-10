@@ -1,23 +1,19 @@
 package org.opendevstack.apiservice.externalservice.uipath.service.impl;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.apiservice.externalservice.uipath.config.UiPathProperties;
 import org.opendevstack.apiservice.externalservice.uipath.exception.UiPathException;
 import org.opendevstack.apiservice.externalservice.uipath.model.UiPathAuthResponse;
 import org.opendevstack.apiservice.externalservice.uipath.model.UiPathODataResponse;
 import org.opendevstack.apiservice.externalservice.uipath.model.UiPathQueueItem;
 import org.opendevstack.apiservice.externalservice.uipath.model.UiPathQueueItemRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,95 +25,108 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for UiPathOrchestratorService.
+ * Unit tests for UiPathOrchestratorServiceImpl.
+ * Mocks the RestClient fluent chain to test all method paths.
  */
 @ExtendWith(MockitoExtension.class)
 class UiPathOrchestratorServiceTest {
 
-    @Mock
-    private RestTemplate restTemplate;
+    // --- RestClient fluent-chain mocks ---
+    @Mock private RestClient restClient;
+
+    // POST chain
+    @Mock private RestClient.RequestBodyUriSpec    postUriSpec;
+    @Mock private RestClient.RequestBodySpec       postBodySpec;
+    @Mock private RestClient.ResponseSpec          postResponseSpec;
+
+    // GET chain
+    @Mock private RestClient.RequestHeadersUriSpec getUriSpec;
+    @Mock private RestClient.RequestHeadersSpec<?> getHeadersSpec;
+    @Mock private RestClient.ResponseSpec          getResponseSpec;
 
     private UiPathProperties properties;
     private UiPathOrchestratorServiceImpl service;
 
+    private static final String HOST = "https://orchestrator.example.com";
+
     @BeforeEach
     void setUp() {
         properties = new UiPathProperties();
-        properties.setHost("https://orchestrator.example.com");
+        properties.setHost(HOST);
         properties.setClientId("testuser");
         properties.setClientSecret("testpass");
         properties.setTenancyName("default");
         properties.setOrganizationUnitId("123");
         properties.setTimeout(30000);
 
-        service = new UiPathOrchestratorServiceImpl(restTemplate, properties);
+        service = new UiPathOrchestratorServiceImpl(restClient, properties);
+
+        // Wire POST chain
+        lenient().when(restClient.post()).thenReturn(postUriSpec);
+        lenient().when(postUriSpec.uri(anyString())).thenReturn(postBodySpec);
+        lenient().when(postBodySpec.contentType(any())).thenReturn(postBodySpec);
+        lenient().doReturn(postBodySpec).when(postBodySpec).body(any(Object.class));
+        lenient().doReturn(postBodySpec).when(postBodySpec).headers(any());
+        lenient().when(postBodySpec.retrieve()).thenReturn(postResponseSpec);
+
+        // Wire GET chain
+        lenient().when(restClient.get()).thenReturn(getUriSpec);
+        lenient().doReturn(getHeadersSpec).when(getUriSpec).uri(anyString());
+        lenient().doReturn(getHeadersSpec).when(getHeadersSpec).headers(any());
+        lenient().when(getHeadersSpec.retrieve()).thenReturn(getResponseSpec);
     }
+
+    // helper: configure a successful auth response
+    private void givenAuthSucceeds(String token) {
+        UiPathAuthResponse auth = new UiPathAuthResponse();
+        auth.setSuccess(true);
+        auth.setResult(token);
+        when(postResponseSpec.body(UiPathAuthResponse.class)).thenReturn(auth);
+    }
+
+    // =========================================================================
+    // authenticate
+    // =========================================================================
 
     @Test
     void authenticate_Success() throws Exception {
-        // Given
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token-12345");
+        givenAuthSucceeds("test-token-12345");
 
-        when(restTemplate.postForEntity(
-                anyString(),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // When
         String token = service.authenticate();
 
-        // Then
         assertNotNull(token);
         assertEquals("test-token-12345", token);
-        verify(restTemplate).postForEntity(anyString(), any(HttpEntity.class), eq(UiPathAuthResponse.class));
     }
 
     @Test
     void authenticate_Failure() {
-        // Given
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(false);
-        authResponse.setError("Invalid credentials");
+        UiPathAuthResponse auth = new UiPathAuthResponse();
+        auth.setSuccess(false);
+        auth.setError("Invalid credentials");
+        when(postResponseSpec.body(UiPathAuthResponse.class)).thenReturn(auth);
 
-        when(restTemplate.postForEntity(
-                anyString(),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // When & Then
         assertThrows(UiPathException.AuthenticationException.class, () -> service.authenticate());
     }
 
+    // =========================================================================
+    // addQueueItem
+    // =========================================================================
+
     @Test
     void addQueueItem_Success() throws Exception {
-        // Given - Auth
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token");
+        // Auth returns token on first call; queue item returned on second call
+        UiPathAuthResponse auth = new UiPathAuthResponse();
+        auth.setSuccess(true);
+        auth.setResult("test-token");
 
-        when(restTemplate.postForEntity(
-                eq(properties.getLoginUrl()),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // Given - Queue Item Creation
         UiPathQueueItem createdItem = new UiPathQueueItem();
         createdItem.setId(12345L);
         createdItem.setReference("TEST-001");
         createdItem.setStatus("NEW");
 
-        when(restTemplate.postForEntity(
-                eq(properties.getQueueItemsUrl()),
-                any(HttpEntity.class),
-                eq(UiPathQueueItem.class)
-        )).thenReturn(new ResponseEntity<>(createdItem, HttpStatus.CREATED));
+        when(postResponseSpec.body(UiPathAuthResponse.class)).thenReturn(auth);
+        when(postResponseSpec.body(UiPathQueueItem.class)).thenReturn(createdItem);
 
-        // When
         Map<String, Object> content = new HashMap<>();
         content.put("Project Key", "TEST-001");
 
@@ -129,43 +138,29 @@ class UiPathOrchestratorServiceTest {
 
         UiPathQueueItem result = service.addQueueItem(request);
 
-        // Then
         assertNotNull(result);
         assertEquals(12345L, result.getId());
         assertEquals("TEST-001", result.getReference());
         assertEquals("NEW", result.getStatus());
     }
 
+    // =========================================================================
+    // getQueueItemById
+    // =========================================================================
+
     @Test
     void getQueueItemById_Success() throws Exception {
-        // Given - Auth
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token");
+        givenAuthSucceeds("test-token");
 
-        when(restTemplate.postForEntity(
-                eq(properties.getLoginUrl()),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // Given - Queue Item Retrieval
         UiPathQueueItem queueItem = new UiPathQueueItem();
         queueItem.setId(12345L);
         queueItem.setReference("TEST-001");
         queueItem.setStatus("SUCCESSFUL");
 
-        when(restTemplate.exchange(
-                anyString(),
-                eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                eq(UiPathQueueItem.class)
-        )).thenReturn(new ResponseEntity<>(queueItem, HttpStatus.OK));
+        when(getResponseSpec.body(UiPathQueueItem.class)).thenReturn(queueItem);
 
-        // When
         UiPathQueueItem result = service.getQueueItemById(12345L);
 
-        // Then
         assertNotNull(result);
         assertEquals(12345L, result.getId());
         assertEquals("SUCCESSFUL", result.getStatus());
@@ -175,44 +170,21 @@ class UiPathOrchestratorServiceTest {
 
     @Test
     void getQueueItemById_NotFound() throws Exception {
-        // Given - Auth
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token");
+        givenAuthSucceeds("test-token");
+        when(getHeadersSpec.retrieve()).thenThrow(new RestClientException("404 Not Found"));
 
-        when(restTemplate.postForEntity(
-                eq(properties.getLoginUrl()),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // Given - Queue Item Not Found
-        when(restTemplate.exchange(
-                anyString(),
-                eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                eq(UiPathQueueItem.class)
-        )).thenThrow(new RestClientException("404 Not Found"));
-
-        // When & Then
-        assertThrows(UiPathException.QueueItemNotFoundException.class, 
-                    () -> service.getQueueItemById(99999L));
+        assertThrows(UiPathException.QueueItemNotFoundException.class,
+                () -> service.getQueueItemById(99999L));
     }
+
+    // =========================================================================
+    // getQueueItemsByReference
+    // =========================================================================
 
     @Test
     void getQueueItemsByReference_Success() throws Exception {
-        // Given - Auth
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token");
+        givenAuthSucceeds("test-token");
 
-        when(restTemplate.postForEntity(
-                eq(properties.getLoginUrl()),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // Given - OData Query Response
         UiPathQueueItem item1 = new UiPathQueueItem();
         item1.setId(100L);
         item1.setReference("TEST-001");
@@ -226,59 +198,37 @@ class UiPathOrchestratorServiceTest {
         UiPathODataResponse<UiPathQueueItem> odataResponse = new UiPathODataResponse<>();
         odataResponse.setValue(List.of(item1, item2));
 
-        when(restTemplate.exchange(
-                anyString(),
-                eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                any(ParameterizedTypeReference.class)
-        )).thenReturn(new ResponseEntity<>(odataResponse, HttpStatus.OK));
+        when(getResponseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(odataResponse);
 
-        // When
         List<UiPathQueueItem> results = service.getQueueItemsByReference("TEST-001");
 
-        // Then
         assertNotNull(results);
         assertEquals(2, results.size());
     }
 
+    // =========================================================================
+    // getLatestQueueItemByReference
+    // =========================================================================
+
     @Test
     void getLatestQueueItemByReference_Success() throws Exception {
-        // Given - Auth
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token");
+        givenAuthSucceeds("test-token");
 
-        when(restTemplate.postForEntity(
-                eq(properties.getLoginUrl()),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // Given - Multiple items, should return the one with highest ID
         UiPathQueueItem item1 = new UiPathQueueItem();
         item1.setId(100L);
-        item1.setReference("TEST-001");
         item1.setStatus("FAILED");
 
         UiPathQueueItem item2 = new UiPathQueueItem();
-        item2.setId(200L); // This should be returned (highest ID)
-        item2.setReference("TEST-001");
+        item2.setId(200L);
         item2.setStatus("SUCCESSFUL");
 
         UiPathODataResponse<UiPathQueueItem> odataResponse = new UiPathODataResponse<>();
         odataResponse.setValue(List.of(item1, item2));
 
-        when(restTemplate.exchange(
-                anyString(),
-                eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                any(ParameterizedTypeReference.class)
-        )).thenReturn(new ResponseEntity<>(odataResponse, HttpStatus.OK));
+        when(getResponseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(odataResponse);
 
-        // When
         Optional<UiPathQueueItem> result = service.getLatestQueueItemByReference("TEST-001");
 
-        // Then
         assertTrue(result.isPresent());
         assertEquals(200L, result.get().getId());
         assertEquals("SUCCESSFUL", result.get().getStatus());
@@ -286,140 +236,67 @@ class UiPathOrchestratorServiceTest {
 
     @Test
     void getLatestQueueItemByReference_NotFound() throws Exception {
-        // Given - Auth
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token");
+        givenAuthSucceeds("test-token");
 
-        when(restTemplate.postForEntity(
-                eq(properties.getLoginUrl()),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // Given - Empty response
         UiPathODataResponse<UiPathQueueItem> odataResponse = new UiPathODataResponse<>();
         odataResponse.setValue(List.of());
 
-        when(restTemplate.exchange(
-                anyString(),
-                eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                any(ParameterizedTypeReference.class)
-        )).thenReturn(new ResponseEntity<>(odataResponse, HttpStatus.OK));
+        when(getResponseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(odataResponse);
 
-        // When
         Optional<UiPathQueueItem> result = service.getLatestQueueItemByReference("NONEXISTENT");
 
-        // Then
         assertFalse(result.isPresent());
     }
 
+    // =========================================================================
+    // hasQueueItemFinalized
+    // =========================================================================
+
     @Test
     void hasQueueItemFinalized_Success() throws Exception {
-        // Given - Auth
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token");
+        givenAuthSucceeds("test-token");
 
-        when(restTemplate.postForEntity(
-                eq(properties.getLoginUrl()),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // Given - Finalized item
         UiPathQueueItem item = new UiPathQueueItem();
         item.setId(200L);
-        item.setReference("TEST-001");
         item.setStatus("SUCCESSFUL");
 
         UiPathODataResponse<UiPathQueueItem> odataResponse = new UiPathODataResponse<>();
         odataResponse.setValue(List.of(item));
 
-        when(restTemplate.exchange(
-                anyString(),
-                eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                any(ParameterizedTypeReference.class)
-        )).thenReturn(new ResponseEntity<>(odataResponse, HttpStatus.OK));
+        when(getResponseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(odataResponse);
 
-        // When
-        boolean finalized = service.hasQueueItemFinalized("TEST-001");
-
-        // Then
-        assertTrue(finalized);
+        assertTrue(service.hasQueueItemFinalized("TEST-001"));
     }
 
     @Test
     void hasQueueItemFinalized_StillProcessing() throws Exception {
-        // Given - Auth
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token");
+        givenAuthSucceeds("test-token");
 
-        when(restTemplate.postForEntity(
-                eq(properties.getLoginUrl()),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // Given - Item still in progress
         UiPathQueueItem item = new UiPathQueueItem();
         item.setId(200L);
-        item.setReference("TEST-001");
         item.setStatus("IN_PROGRESS");
 
         UiPathODataResponse<UiPathQueueItem> odataResponse = new UiPathODataResponse<>();
         odataResponse.setValue(List.of(item));
 
-        when(restTemplate.exchange(
-                anyString(),
-                eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                any(ParameterizedTypeReference.class)
-        )).thenReturn(new ResponseEntity<>(odataResponse, HttpStatus.OK));
+        when(getResponseSpec.body(any(ParameterizedTypeReference.class))).thenReturn(odataResponse);
 
-        // When
-        boolean finalized = service.hasQueueItemFinalized("TEST-001");
-
-        // Then
-        assertFalse(finalized);
+        assertFalse(service.hasQueueItemFinalized("TEST-001"));
     }
+
+    // =========================================================================
+    // validateConnection / isHealthy
+    // =========================================================================
 
     @Test
     void validateConnection_Success() throws Exception {
-        // Given
-        UiPathAuthResponse authResponse = new UiPathAuthResponse();
-        authResponse.setSuccess(true);
-        authResponse.setResult("test-token");
-
-        when(restTemplate.postForEntity(
-                anyString(),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenReturn(new ResponseEntity<>(authResponse, HttpStatus.OK));
-
-        // When
-        boolean isValid = service.validateConnection();
-
-        // Then
-        assertTrue(isValid);
+        givenAuthSucceeds("test-token");
+        assertTrue(service.validateConnection());
     }
 
     @Test
     void validateConnection_Failure() {
-        // Given
-        when(restTemplate.postForEntity(
-                anyString(),
-                any(HttpEntity.class),
-                eq(UiPathAuthResponse.class)
-        )).thenThrow(new RestClientException("Connection refused"));
-
-        // When
-        boolean isValid = service.validateConnection();
-
-        // Then
-        assertFalse(isValid);
+        when(postBodySpec.retrieve()).thenThrow(new RestClientException("Connection refused"));
+        assertFalse(service.validateConnection());
     }
 }
