@@ -1,12 +1,19 @@
 package org.opendevstack.apiservice.core.security.flow.validator;
 
 import org.opendevstack.apiservice.core.contracts.auth.AuthType;
+import org.opendevstack.apiservice.core.security.client.credentials.ClientCredentialsTokenProperties;
 import org.opendevstack.apiservice.core.security.flow.AuthFlowValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ClientCredentialFlowValidator implements AuthFlowValidator {
+
+    private final ClientCredentialsTokenProperties clientCredentialsTokenProperties;
+
+    public ClientCredentialFlowValidator(ClientCredentialsTokenProperties clientCredentialsTokenProperties) {
+        this.clientCredentialsTokenProperties = clientCredentialsTokenProperties;
+    }
 
     @Override
     public AuthType getSupportedFlow() {
@@ -24,6 +31,12 @@ public class ClientCredentialFlowValidator implements AuthFlowValidator {
 
         Object aud = jwt.getClaim("aud");
         if (aud == null) {
+            return false;
+        }
+
+        // The audience must contain the configured client-id (app.security.client-credentials.client-id)
+        String configuredClientId = clientCredentialsTokenProperties.getClientId();
+        if (configuredClientId == null || configuredClientId.isBlank() || !aud.toString().contains(configuredClientId)) {
             return false;
         }
 
