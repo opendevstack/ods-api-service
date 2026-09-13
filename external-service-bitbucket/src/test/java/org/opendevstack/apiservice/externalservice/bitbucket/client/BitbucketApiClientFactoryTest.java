@@ -2,14 +2,9 @@ package org.opendevstack.apiservice.externalservice.bitbucket.client;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.opendevstack.apiservice.externalservice.bitbucket.config.BitbucketServiceConfiguration;
 import org.opendevstack.apiservice.externalservice.bitbucket.config.BitbucketServiceConfiguration.BitbucketInstanceConfig;
 import org.opendevstack.apiservice.externalservice.bitbucket.exception.BitbucketException;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -19,32 +14,22 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link BitbucketApiClientFactory}.
  * Focuses on default-instance resolution logic and client creation.
  */
-@ExtendWith(MockitoExtension.class)
 class BitbucketApiClientFactoryTest {
-
-    @Mock
-    private RestTemplateBuilder restTemplateBuilder;
-
-    @Mock
-    private RestTemplate restTemplate;
 
     private BitbucketServiceConfiguration configuration;
 
     @BeforeEach
     void setUp() {
         configuration = new BitbucketServiceConfiguration();
-        lenient().when(restTemplateBuilder.build()).thenReturn(restTemplate);
     }
 
     private BitbucketApiClientFactory factory() {
-        return new BitbucketApiClientFactory(configuration, restTemplateBuilder);
+        return new BitbucketApiClientFactory(configuration);
     }
 
     // -------------------------------------------------------------------------
@@ -120,7 +105,6 @@ class BitbucketApiClientFactoryTest {
 
     @Test
     void getClient_validInstance_returnsClient() throws BitbucketException {
-        when(restTemplateBuilder.build()).thenReturn(restTemplate);
         configuration.setInstances(Map.of("dev", config("https://bitbucket.dev.example.com")));
 
         BitbucketApiClient client = factory().getClient("dev");
@@ -135,7 +119,6 @@ class BitbucketApiClientFactoryTest {
 
     @Test
     void getClient_returnsClientForConfiguredDefaultInstance() throws BitbucketException {
-        when(restTemplateBuilder.build()).thenReturn(restTemplate);
         configuration.setDefaultInstance("prod");
         configuration.setInstances(orderedMap("dev", "prod"));
 
@@ -147,7 +130,6 @@ class BitbucketApiClientFactoryTest {
 
     @Test
     void getClient_noDefaultConfigured_returnsFirstInstance() throws BitbucketException {
-        when(restTemplateBuilder.build()).thenReturn(restTemplate);
         Map<String, BitbucketInstanceConfig> instances = new LinkedHashMap<>();
         instances.put("alpha", config("https://bitbucket-alpha.example.com"));
         instances.put("beta", config("https://bitbucket-beta.example.com"));

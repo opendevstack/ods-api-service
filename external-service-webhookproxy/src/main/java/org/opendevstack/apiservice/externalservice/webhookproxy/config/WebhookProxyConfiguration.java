@@ -62,10 +62,20 @@ public class WebhookProxyConfiguration {
         private int readTimeout = 30000;
         
         /**
-         * Whether to trust all SSL certificates (default: false)
-         * WARNING: Should only be used in development environments
+         * Path to the trust store file for SSL certificate validation.
+         * Optional - if not provided, uses the JVM default trust store.
          */
-        private boolean trustAllCertificates = false;
+        private String trustStorePath;
+
+        /**
+         * Password for the trust store.
+         */
+        private String trustStorePassword;
+
+        /**
+         * Type of the trust store (JKS, PKCS12, etc.). Default is JKS.
+         */
+        private String trustStoreType = "JKS";
         
         /**
          * Default Jenkinsfile path if not specified in request (default: Jenkinsfile)

@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.externalservice.uipath.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.uipath.config.UiPathProperties;
 import org.opendevstack.apiservice.externalservice.uipath.exception.UiPathException;
 import org.opendevstack.apiservice.externalservice.uipath.model.QueueItemStatus;
@@ -12,18 +13,14 @@ import org.opendevstack.apiservice.externalservice.uipath.model.UiPathQueueItemR
 import org.opendevstack.apiservice.externalservice.uipath.service.UiPathOrchestratorService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.Comparator;
 import java.util.List;
@@ -31,21 +28,21 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Implementation of UiPathService for UIPath Orchestrator.
- * This service provides integration with UIPath Orchestrator for managing queue items
+ * Implementation of UiPathOrchestratorService for UIPath Orchestrator.
+ * Provides integration with UIPath Orchestrator for managing queue items
  * and checking robot execution status.
  */
 @Service("uiPathOrchestratorService")
 @Slf4j
 public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService {
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
     private final UiPathProperties properties;
 
     public UiPathOrchestratorServiceImpl(
-            @Qualifier("uiPathRestTemplate") RestTemplate restTemplate,
+            @Qualifier("uiPathRestClient") RestClient restClient,
             @Qualifier("uiPathOrchestratorProperties") UiPathProperties properties) {
-        this.restTemplate = restTemplate;
+        this.restClient = restClient;
         this.properties = properties;
     }
 
@@ -57,35 +54,25 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
             UiPathAuthRequest authRequest = new UiPathAuthRequest(
                     properties.getTenancyName(),
                     properties.getClientId(),
-                    properties.getClientSecret()
-            );
+                    properties.getClientSecret());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Content-Type", "application/json");
+            UiPathAuthResponse authResponse = restClient.post()
+                    .uri(properties.getLoginUrl())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(authRequest)
+                    .retrieve()
+                    .body(UiPathAuthResponse.class);
 
-            HttpEntity<UiPathAuthRequest> request = new HttpEntity<>(authRequest, headers);
-
-            ResponseEntity<UiPathAuthResponse> response = restTemplate.postForEntity(
-                    properties.getLoginUrl(),
-                    request,
-                    UiPathAuthResponse.class
-            );
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                UiPathAuthResponse authResponse = response.getBody();
-
-                if (authResponse.isSuccess() && StringUtils.hasText(authResponse.getToken())) {
-                    log.debug("Successfully authenticated to UIPath Orchestrator");
-                    return authResponse.getToken();
-                } else {
-                    String errorMsg = authResponse.getError() != null ? authResponse.getError() : "Unknown authentication error";
-                    throw new UiPathException.AuthenticationException("Authentication failed: " + errorMsg);
-                }
-            } else {
-                throw new UiPathException.AuthenticationException(
-                        "Unexpected response status: " + response.getStatusCode()
-                );
+            if (authResponse != null && authResponse.isSuccess()
+                    && StringUtils.hasText(authResponse.getToken())) {
+                log.debug("Successfully authenticated to UIPath Orchestrator");
+                return authResponse.getToken();
             }
+
+            String errorMsg = (authResponse != null && authResponse.getError() != null)
+                    ? authResponse.getError()
+                    : "Unknown authentication error";
+            throw new UiPathException.AuthenticationException("Authentication failed: " + errorMsg);
 
         } catch (RestClientException e) {
             log.error("Failed to authenticate to UIPath Orchestrator: {}", e.getMessage(), e);
@@ -94,38 +81,31 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     }
 
     @Override
-    public UiPathQueueItem addQueueItem(UiPathQueueItemRequest request) 
+    public UiPathQueueItem addQueueItem(UiPathQueueItemRequest request)
             throws UiPathException.QueueItemCreationException {
-        
-        String reference = request.getItemData() != null ? request.getItemData().getReference() : "unknown";
+
+        String reference = request.getItemData() != null
+                ? request.getItemData().getReference()
+                : "unknown";
         log.info("Adding queue item with reference '{}'", reference);
 
         try {
-            // Authenticate first
             String token = authenticate();
 
-            // Create headers with authentication and organization unit
-            HttpHeaders headers = createAuthHeaders(token);
+            UiPathQueueItem queueItem = restClient.post()
+                    .uri(properties.getQueueItemsUrl())
+                    .headers(h -> applyAuthHeaders(h, token))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(UiPathQueueItem.class);
 
-            HttpEntity<UiPathQueueItemRequest> httpRequest = new HttpEntity<>(request, headers);
-
-            ResponseEntity<UiPathQueueItem> response = restTemplate.postForEntity(
-                    properties.getQueueItemsUrl(),
-                    httpRequest,
-                    UiPathQueueItem.class
-            );
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                UiPathQueueItem queueItem = response.getBody();
-                log.info("Successfully created queue item with ID {} and reference '{}'", 
-                           queueItem.getId(), reference);
+            if (queueItem != null) {
+                log.info("Successfully created queue item with ID {} and reference '{}'",
+                        queueItem.getId(), reference);
                 return queueItem;
-            } else {
-                throw new UiPathException.QueueItemCreationException(
-                        reference, 
-                        "Unexpected response status: " + response.getStatusCode()
-                );
             }
+            throw new UiPathException.QueueItemCreationException(reference, "Empty response body");
 
         } catch (UiPathException.AuthenticationException e) {
             log.error("Failed to authenticate before adding queue item: {}", e.getMessage(), e);
@@ -140,8 +120,7 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     @Async
     public CompletableFuture<UiPathQueueItem> addQueueItemAsync(UiPathQueueItemRequest request) {
         try {
-            UiPathQueueItem result = addQueueItem(request);
-            return CompletableFuture.completedFuture(result);
+            return CompletableFuture.completedFuture(addQueueItem(request));
         } catch (UiPathException.QueueItemCreationException e) {
             log.error("Async queue item creation failed: {}", e.getMessage(), e);
             return CompletableFuture.failedFuture(e);
@@ -149,32 +128,26 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     }
 
     @Override
-    public UiPathQueueItem getQueueItemById(Long queueItemId) 
+    public UiPathQueueItem getQueueItemById(Long queueItemId)
             throws UiPathException.QueueItemNotFoundException, UiPathException.StatusCheckException {
-        
+
         log.debug("Getting queue item by ID: {}", queueItemId);
 
         try {
             String token = authenticate();
-            HttpHeaders headers = createAuthHeaders(token);
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
             String url = properties.getQueueItemsUrl() + "(" + queueItemId + ")";
 
-            ResponseEntity<UiPathQueueItem> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    UiPathQueueItem.class
-            );
+            UiPathQueueItem queueItem = restClient.get()
+                    .uri(url)
+                    .headers(h -> applyAuthHeaders(h, token))
+                    .retrieve()
+                    .body(UiPathQueueItem.class);
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                UiPathQueueItem queueItem = response.getBody();
+            if (queueItem != null) {
                 log.debug("Found queue item {} with status: {}", queueItemId, queueItem.getStatus());
                 return queueItem;
-            } else {
-                throw new UiPathException.QueueItemNotFoundException(queueItemId.toString());
             }
+            throw new UiPathException.QueueItemNotFoundException(queueItemId.toString());
 
         } catch (UiPathException.AuthenticationException e) {
             log.error("Authentication failed while getting queue item: {}", e.getMessage());
@@ -186,41 +159,28 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     }
 
     @Override
-    public List<UiPathQueueItem> getQueueItemsByReference(String reference) 
+    public List<UiPathQueueItem> getQueueItemsByReference(String reference)
             throws UiPathException.StatusCheckException {
-        
+
         log.debug("Getting queue items by reference: '{}'", reference);
 
         try {
             String token = authenticate();
-            HttpHeaders headers = createAuthHeaders(token);
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            // Build OData query: $filter=Reference eq 'reference'&$select=Id (or all fields)
             String url = UriComponentsBuilder.fromUriString(properties.getQueueItemsUrl())
                     .queryParam("$filter", "Reference eq '" + reference + "'")
                     .build()
                     .toUriString();
 
-            ResponseEntity<UiPathODataResponse<UiPathQueueItem>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    new ParameterizedTypeReference<UiPathODataResponse<UiPathQueueItem>>() {}
-            );
+            UiPathODataResponse<UiPathQueueItem> odataResponse = restClient.get()
+                    .uri(url)
+                    .headers(h -> applyAuthHeaders(h, token))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {});
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                UiPathODataResponse<UiPathQueueItem> odataResponse = response.getBody();
-                List<UiPathQueueItem> items = odataResponse.getValue();
-                
-                log.debug("Found {} queue item(s) with reference '{}'", items != null ? items.size() : 0, reference);
-                
-                return items != null ? items : List.of();
-            } else {
-                log.warn("Unexpected response when querying by reference '{}': {}", 
-                           reference, response.getStatusCode());
-                return List.of();
-            }
+            List<UiPathQueueItem> items = (odataResponse != null) ? odataResponse.getValue() : null;
+            log.debug("Found {} queue item(s) with reference '{}'",
+                    items != null ? items.size() : 0, reference);
+            return items != null ? items : List.of();
 
         } catch (UiPathException.AuthenticationException e) {
             log.error("Authentication failed while querying by reference: {}", e.getMessage());
@@ -232,11 +192,10 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     }
 
     @Override
-    public Optional<UiPathQueueItem> getLatestQueueItemByReference(String reference) 
+    public Optional<UiPathQueueItem> getLatestQueueItemByReference(String reference)
             throws UiPathException.StatusCheckException {
-        
-        log.debug("Getting latest queue item by reference: '{}'", reference);
 
+        log.debug("Getting latest queue item by reference: '{}'", reference);
         List<UiPathQueueItem> items = getQueueItemsByReference(reference);
 
         if (items.isEmpty()) {
@@ -244,24 +203,20 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
             return Optional.empty();
         }
 
-        // Get the item with the highest ID (most recent)
         Optional<UiPathQueueItem> latestItem = items.stream()
                 .max(Comparator.comparing(UiPathQueueItem::getId));
 
-        latestItem.ifPresent(item -> 
-            log.debug("Latest queue item for reference '{}' is ID {} with status: {}", 
-                        reference, item.getId(), item.getStatus())
-        );
-
+        latestItem.ifPresent(item ->
+                log.debug("Latest queue item for reference '{}' is ID {} with status: {}",
+                        reference, item.getId(), item.getStatus()));
         return latestItem;
     }
 
     @Override
-    public boolean hasQueueItemFinalized(String reference) 
+    public boolean hasQueueItemFinalized(String reference)
             throws UiPathException.QueueItemNotFoundException, UiPathException.StatusCheckException {
-        
-        log.debug("Checking if queue item with reference '{}' has finalized", reference);
 
+        log.debug("Checking if queue item with reference '{}' has finalized", reference);
         Optional<UiPathQueueItem> latestItem = getLatestQueueItemByReference(reference);
 
         if (latestItem.isEmpty()) {
@@ -270,25 +225,20 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
 
         UiPathQueueItem item = latestItem.get();
         boolean finalized = item.isFinalized();
-        
-        log.debug("Queue item {} (reference '{}') finalized status: {} (status: {})", 
-                    item.getId(), reference, finalized, item.getStatus());
-
+        log.debug("Queue item {} (reference '{}') finalized status: {} (status: {})",
+                item.getId(), reference, finalized, item.getStatus());
         return finalized;
     }
 
     @Override
-    public boolean hasQueueItemFinalizedById(Long queueItemId) 
+    public boolean hasQueueItemFinalizedById(Long queueItemId)
             throws UiPathException.QueueItemNotFoundException, UiPathException.StatusCheckException {
-        
-        log.debug("Checking if queue item {} has finalized", queueItemId);
 
+        log.debug("Checking if queue item {} has finalized", queueItemId);
         UiPathQueueItem item = getQueueItemById(queueItemId);
         boolean finalized = item.isFinalized();
-        
-        log.debug("Queue item {} finalized status: {} (status: {})", 
-                    queueItemId, finalized, item.getStatus());
-
+        log.debug("Queue item {} finalized status: {} (status: {})",
+                queueItemId, finalized, item.getStatus());
         return finalized;
     }
 
@@ -317,7 +267,6 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
 
     @Override
     public UiPathQueueItemResult checkQueueItemByReference(String reference) {
-        // If no UIPath reference, consider the process complete and successful
         if (reference == null || reference.isEmpty()) {
             log.debug("No UIPath reference provided, returning NO_REFERENCE result");
             return UiPathQueueItemResult.noReference();
@@ -336,19 +285,16 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
             QueueItemStatus status = item.getStatusEnum();
             log.debug("UIPath queue item '{}' status: {}", reference, status);
 
-            // If UIPath is not in final state, return in-progress
             if (!status.isFinalState()) {
                 log.debug("UIPath queue item '{}' is still in progress with status: {}", reference, status);
                 return UiPathQueueItemResult.inProgress(item);
             }
 
-            // If UIPath failed, return failure
             if (!status.isSuccessful()) {
                 log.warn("UIPath queue item '{}' failed with status: {}", reference, status);
                 return UiPathQueueItemResult.failure(item);
             }
 
-            // UIPath succeeded
             log.debug("UIPath queue item '{}' completed successfully", reference);
             return UiPathQueueItemResult.success(item);
 
@@ -362,17 +308,13 @@ public class UiPathOrchestratorServiceImpl implements UiPathOrchestratorService 
     }
 
     /**
-     * Creates HTTP headers with authentication token and organization unit ID.
+     * Applies Bearer token auth and optional organization unit header.
      */
-    private HttpHeaders createAuthHeaders(String token) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + token);
-        headers.set("Content-Type", "application/json");
-        
+    private void applyAuthHeaders(HttpHeaders headers, String token) {
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
         if (StringUtils.hasText(properties.getOrganizationUnitId())) {
             headers.set("X-UIPATH-OrganizationUnitId", properties.getOrganizationUnitId());
         }
-        
-        return headers;
     }
 }

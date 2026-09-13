@@ -1,35 +1,15 @@
 package org.opendevstack.apiservice.externalservice.uipath.config;
 
-import lombok.Data;
-
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+import org.opendevstack.apiservice.externalservice.api.http.ExternalServiceSslProperties;
 
 /**
- * Configuration properties for SSL settings in external service calls.
+ * SSL configuration properties for the UiPath Orchestrator external service.
+ *
+ * <p>Bound as a nested field inside {@link UiPathProperties} under the
+ * {@code automation.platform.uipath.ssl.*} prefix — no standalone
+ * {@code @ConfigurationProperties} annotation needed.
  */
-@Component("uipathSslProperties")
-@ConfigurationProperties(prefix = "automation.platform.uipath.ssl")
-@Data
-public class SslProperties {
-
-    /**
-     * Whether to verify SSL certificates when making external service calls.
-     * Default is true for security.
-     */
-    private boolean verifyCertificates = true;
-    /**
-     * Path to the trust store file for SSL certificate validation.
-     * Optional - if not provided, uses system default trust store.
-     */
-    private String trustStorePath;
-    /**
-     * Password for the trust store.
-     */
-    private String trustStorePassword;
-    /**
-     * Type of the trust store (JKS, PKCS12, etc.).
-     * Default is JKS.
-     */
-    private String trustStoreType = "JKS";
+public class SslProperties extends ExternalServiceSslProperties {
+    // All fields inherited from ExternalServiceSslProperties.
+    // Add UiPath-specific SSL overrides here if ever needed.
 }
