@@ -15,7 +15,7 @@
 
     <properties>
         <liquibase.version>5.0.1</liquibase.version>
-        <postgresql.version>42.7.10</postgresql.version>
+        <postgresql.version>42.7.12</postgresql.version>
         <!-- Connection properties — always overridden at runtime via -D flags from the Makefile.
              These defaults exist only to let 'mvn liquibase:validate' pass without a live DB. -->
         <liquibase.url>jdbc:postgresql://localhost:5432/ods_api_service</liquibase.url>
