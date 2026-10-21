@@ -24,8 +24,11 @@ CREATE TABLE IF NOT EXISTS feedback_submissions (
         CHECK (COALESCE(jsonb_typeof(answers) = 'object', FALSE))
 );
 
-CREATE INDEX IF NOT EXISTS idx_feedback_submissions_client_submitted
-    ON feedback_submissions (client_id, submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_feedback_submissions_client_id
+    ON feedback_submissions (client_id);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_submissions_client_app_registration_id
+    ON feedback_submissions (client_app_registration_id);
 
 COMMENT ON TABLE feedback_submissions
     IS 'Questionnaire submissions with question and answer snapshots';
