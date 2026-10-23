@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS feedback_submissions (
     client_id                  UUID         NOT NULL,
     client_app_registration_id UUID         NOT NULL,
     client_name                VARCHAR(255) NOT NULL,
-    project_id                 UUID         NOT NULL,
-    project_key                VARCHAR(100) NOT NULL,
+    project_id                 UUID,
+    project_key                VARCHAR(100),
     submitter                  VARCHAR(255),
     submitted_at               TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     questions                  JSONB        NOT NULL,
@@ -52,4 +52,9 @@ COMMENT ON COLUMN feedback_submissions.questions
 COMMENT ON COLUMN feedback_submissions.answers
     IS 'Submitted answers keyed by question and follow-up IDs, stored as a JSON object';
 
+INSERT INTO api_definitions (api_id, name, base_path, version, auth_types, is_public, enabled)
+VALUES ('feedback-v1', 'Feedback API v1', 'feedback/submissions', 'v1', ARRAY['CLIENT_CREDENTIALS'], FALSE, TRUE)
+ON CONFLICT (api_id) DO NOTHING;
+
+--rollback DELETE FROM api_definitions WHERE api_id = 'feedback-v1';
 --rollback DROP TABLE IF EXISTS feedback_submissions;
