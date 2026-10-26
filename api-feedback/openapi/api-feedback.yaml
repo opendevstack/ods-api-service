@@ -1,0 +1,180 @@
+openapi: 3.0.3
+info:
+  title: Feedback API
+  description: API documentation for feedback submissions
+  contact:
+    name: ODS Team
+  version: v0.0.1
+servers:
+  - url: http://{baseurl}/api/v1/feedback
+    variables:
+      baseurl:
+        default: localhost:8080
+        description: Development environment
+tags:
+  - name: Feedback submissions
+    description: API for managing feedback submissions
+paths:
+  /submissions:
+    post:
+      tags:
+        - Feedback submissions
+      summary: Register a feedback submission
+      operationId: registerFeedbackSubmission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackSubmissionRequest'
+      responses:
+        '201':
+          description: Feedback submission created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackSubmission'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/InternalErrorResponse'
+  /submissions/{client_app_registration_id}:
+    get:
+      tags:
+        - Feedback submissions
+      summary: Get feedback submissions for a client application
+      operationId: getFeedbackSubmissionsByClientAppRegistrationId
+      parameters:
+        - name: client_app_registration_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Client application registration ID used to filter submissions.
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Return submissions created at or after this timestamp.
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Return submissions created at or before this timestamp.
+      responses:
+        '200':
+          description: Feedback submissions for the client application, or an empty array
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedbackSubmission'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/InternalErrorResponse'
+components:
+  responses:
+    BadRequestResponse:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+    UnauthorizedResponse:
+      description: Invalid client token or unregistered client application
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+    ForbiddenResponse:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+    InternalErrorResponse:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+  schemas:
+    RestErrorMessage:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    FeedbackSubmissionRequest:
+      type: object
+      required:
+        - questions
+        - answers
+        - submitter
+      properties:
+        projectKey:
+          type: string
+          minLength: 1
+          description: Optional project key; omit to submit feedback without a project association.
+        submitter:
+          type: string
+          format: email
+          minLength: 1
+          description: Email address of the person submitting feedback.
+        questions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: Question definitions shown to the submitter.
+        answers:
+          type: object
+          additionalProperties: true
+          description: Answers and possible follow-ups submitted.
+    FeedbackSubmission:
+      type: object
+      required:
+        - clientAppRegistrationId
+        - clientName
+        - submittedAt
+        - questions
+        - answers
+      properties:
+        clientAppRegistrationId:
+          type: string
+          format: uuid
+          description: Azure application registration identifier from the caller token.
+        clientName:
+          type: string
+        projectKey:
+          type: string
+          nullable: true
+          description: Project key, null when no project was supplied.
+        submitter:
+          type: string
+          description: Optional submitter identity.
+        submittedAt:
+          type: string
+          format: date-time
+        questions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        answers:
+          type: object
+          additionalProperties: true
