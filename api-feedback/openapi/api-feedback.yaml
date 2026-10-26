@@ -79,6 +79,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FeedbackSubmission'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedResponse'
         '403':
@@ -88,7 +90,7 @@ paths:
 components:
   responses:
     BadRequestResponse:
-      description: Invalid request body
+      description: Invalid request
       content:
         application/json:
           schema:

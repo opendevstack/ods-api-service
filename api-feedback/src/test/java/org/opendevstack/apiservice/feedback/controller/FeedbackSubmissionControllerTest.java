@@ -114,6 +114,15 @@ class FeedbackSubmissionControllerTest {
 				endDate);
 	}
 
+	@Test
+	void invalidStartDateReturnsBadRequest() throws Exception {
+		feedbackSubmissionMvc()
+			.perform(get("/api/v1/feedback/submissions/{client_app_registration_id}", UUID.randomUUID())
+				.param("startDate", "not-a-timestamp"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.message").value("Invalid value for parameter 'startDate'."));
+	}
+
 	private MockMvc feedbackSubmissionMvc() {
 		return MockMvcBuilders.standaloneSetup(new FeedbackSubmissionController(feedbackSubmissionService))
 			.setControllerAdvice(new FeedbackSubmissionExceptionHandler())

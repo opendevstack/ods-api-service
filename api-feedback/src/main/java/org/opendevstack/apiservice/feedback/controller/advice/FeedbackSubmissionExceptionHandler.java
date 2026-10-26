@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Converts exceptions from Feedback endpoints into API error responses. */
@@ -44,6 +45,15 @@ public class FeedbackSubmissionExceptionHandler {
 			HttpMessageNotReadableException exception) {
 		log.warn("Feedback request body could not be read: {}", exception.getMessage());
 		return ResponseEntity.badRequest().body(new RestErrorMessage("Request body must be valid JSON."));
+	}
+
+	/** Returns a 400 response when a path or query parameter cannot be converted. */
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<RestErrorMessage> handleMethodArgumentTypeMismatchException(
+			MethodArgumentTypeMismatchException exception) {
+		String message = "Invalid value for parameter '" + exception.getName() + "'.";
+		log.warn("Feedback request parameter validation failed: {}", message);
+		return ResponseEntity.badRequest().body(new RestErrorMessage(message));
 	}
 
 	/** Returns a generic 500 response for unexpected Feedback endpoint failures. */

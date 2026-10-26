@@ -149,6 +149,25 @@ class FeedbackSubmissionServiceTest {
 	}
 
 	@Test
+	void createSubmissionWithDisabledClientReturnsForbidden() {
+		UUID registrationId = UUID.randomUUID();
+		ClientAppEntity clientApp = ClientAppEntity.builder()
+			.id(UUID.randomUUID())
+			.clientId(registrationId)
+			.clientName("Disabled feedback client")
+			.enabled(false)
+			.build();
+		when(clientAppRepository.findByClientId(registrationId)).thenReturn(Optional.of(clientApp));
+
+		assertThatThrownBy(() -> service.createSubmission(new FeedbackSubmissionRequest(), registrationId))
+			.isInstanceOf(ResponseStatusException.class)
+			.hasMessageContaining("Client application is disabled")
+			.satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())
+				.isEqualTo(HttpStatus.FORBIDDEN));
+		verifyNoInteractions(feedbackSubmissionRepository, projectRepository);
+	}
+
+	@Test
 	void getSubmissionsByClientAppRegistrationIdWithoutDatesMapsStoredJsonAndMetadata() {
 		UUID clientAppRegistrationId = UUID.randomUUID();
 		FeedbackSubmissionEntity entity = new FeedbackSubmissionEntity();

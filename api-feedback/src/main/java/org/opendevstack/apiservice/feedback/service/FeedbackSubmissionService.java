@@ -50,6 +50,10 @@ public class FeedbackSubmissionService {
 					clientAppRegistrationId);
 			return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Client application is not registered");
 		});
+		if (!clientApp.isEnabled()) {
+			log.warn("Feedback submission rejected for disabled clientAppRegistrationId={}", clientAppRegistrationId);
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Client application is disabled");
+		}
 
 		FeedbackSubmissionEntity submission = new FeedbackSubmissionEntity();
 		submission.setClientId(clientApp.getId());
