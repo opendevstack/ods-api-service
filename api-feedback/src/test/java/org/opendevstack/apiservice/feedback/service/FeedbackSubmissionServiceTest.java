@@ -138,9 +138,10 @@ class FeedbackSubmissionServiceTest {
 	@Test
 	void createSubmissionWithUnregisteredClientReturnsUnauthorized() {
 		UUID registrationId = UUID.randomUUID();
+		FeedbackSubmissionRequest request = new FeedbackSubmissionRequest();
 		when(clientAppRepository.findByClientId(registrationId)).thenReturn(Optional.empty());
 
-		assertThatThrownBy(() -> service.createSubmission(new FeedbackSubmissionRequest(), registrationId))
+		assertThatThrownBy(() -> service.createSubmission(request, registrationId))
 			.isInstanceOf(ResponseStatusException.class)
 			.hasMessageContaining("Client application is not registered")
 			.satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())
@@ -151,6 +152,7 @@ class FeedbackSubmissionServiceTest {
 	@Test
 	void createSubmissionWithDisabledClientReturnsForbidden() {
 		UUID registrationId = UUID.randomUUID();
+		FeedbackSubmissionRequest request = new FeedbackSubmissionRequest();
 		ClientAppEntity clientApp = ClientAppEntity.builder()
 			.id(UUID.randomUUID())
 			.clientId(registrationId)
@@ -159,7 +161,7 @@ class FeedbackSubmissionServiceTest {
 			.build();
 		when(clientAppRepository.findByClientId(registrationId)).thenReturn(Optional.of(clientApp));
 
-		assertThatThrownBy(() -> service.createSubmission(new FeedbackSubmissionRequest(), registrationId))
+		assertThatThrownBy(() -> service.createSubmission(request, registrationId))
 			.isInstanceOf(ResponseStatusException.class)
 			.hasMessageContaining("Client application is disabled")
 			.satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())

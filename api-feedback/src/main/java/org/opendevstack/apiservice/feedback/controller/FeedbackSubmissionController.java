@@ -50,8 +50,7 @@ public class FeedbackSubmissionController implements FeedbackSubmissionsApi {
 			UUID clientAppRegistrationId, OffsetDateTime startDate, OffsetDateTime endDate) {
 		List<FeedbackSubmission> submissions = feedbackSubmissionService
 			.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate, endDate);
-		ResponseEntity<List<FeedbackSubmission>> response = ResponseEntity.ok(submissions);
-		return response;
+		return ResponseEntity.ok(submissions);
 	}
 
 }
