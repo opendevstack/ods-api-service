@@ -11,6 +11,8 @@ servers:
       baseurl:
         default: localhost:8080
         description: Development environment
+security:
+  - bearerAuth: []
 tags:
   - name: Feedback submissions
     description: API for managing feedback submissions
@@ -88,6 +90,11 @@ paths:
         '500':
           $ref: '#/components/responses/InternalErrorResponse'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   responses:
     BadRequestResponse:
       description: Invalid request
