@@ -53,8 +53,9 @@ class FeedbackSubmissionExceptionHandlerTest {
 		new FeedbackSubmissionExceptionHandler().handleMethodArgumentNotValidException(exception);
 
 		String logs = output.getOut() + output.getErr();
-		assertThat(logs).contains("submitter: must be a well-formed email address");
-		assertThat(logs).doesNotContain(rejectedEmail);
+		assertThat(logs)
+			.contains("submitter: must be a well-formed email address")
+			.doesNotContain(rejectedEmail);
 	}
 
 }
