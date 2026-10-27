@@ -9,7 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.opendevstack.apiservice.feedback.controller.advice.FeedbackSubmissionExceptionHandler;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
+import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionsMetadata;
+import org.opendevstack.apiservice.feedback.model.GetFeedbackSubmissionsResponse;
 import org.opendevstack.apiservice.feedback.service.FeedbackSubmissionService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +20,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -99,19 +103,23 @@ class FeedbackSubmissionControllerTest {
 		UUID clientAppRegistrationId = UUID.randomUUID();
 		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
 		OffsetDateTime endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z");
+		GetFeedbackSubmissionsResponse response = new GetFeedbackSubmissionsResponse().submissions(List.of())
+			.metadata(new FeedbackSubmissionsMetadata().page(0).size(20).totalElements(0).totalPages(0).last(true));
 		when(feedbackSubmissionService.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate,
-				endDate))
-			.thenReturn(List.of());
+				endDate, 0, 20)).thenReturn(response);
 
 		feedbackSubmissionMvc()
 			.perform(get("/api/v1/feedback/submissions/{client_app_registration_id}", clientAppRegistrationId)
 				.param("startDate", startDate.toString())
 				.param("endDate", endDate.toString()))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$").isArray());
+			.andExpect(jsonPath("$.submissions").isArray())
+			.andExpect(jsonPath("$.metadata.page").value(0))
+			.andExpect(jsonPath("$.metadata.size").value(20))
+			.andExpect(jsonPath("$.metadata.last").value(true));
 
 		verify(feedbackSubmissionService).getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate,
-				endDate);
+				endDate, 0, 20);
 	}
 
 	@Test
@@ -121,6 +129,21 @@ class FeedbackSubmissionControllerTest {
 				.param("startDate", "not-a-timestamp"))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.message").value("Invalid value for parameter 'startDate'."));
+	}
+
+	@Test
+	void invalidPageSizeReturnsBadRequest() throws Exception {
+		UUID clientAppRegistrationId = UUID.randomUUID();
+		when(feedbackSubmissionService.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, null, null, 0, 0))
+			.thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Size must be between 1 and 100."));
+
+		feedbackSubmissionMvc()
+			.perform(get("/api/v1/feedback/submissions/{client_app_registration_id}", clientAppRegistrationId)
+				.param("size", "0"))
+			.andExpect(status().isBadRequest());
+
+		verify(feedbackSubmissionService)
+			.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, null, null, 0, 0);
 	}
 
 	private MockMvc feedbackSubmissionMvc() {

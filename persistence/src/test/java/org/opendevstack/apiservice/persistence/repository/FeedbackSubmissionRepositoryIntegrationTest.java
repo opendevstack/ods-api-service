@@ -11,6 +11,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -59,24 +61,35 @@ class FeedbackSubmissionRepositoryIntegrationTest {
 		UUID afterEnd = saveSubmission(clientAppRegistrationId, OffsetDateTime.parse("2025-03-02T00:00:00Z"));
 		saveSubmission(UUID.randomUUID(), OffsetDateTime.parse("2025-02-15T00:00:00Z"));
 
-		assertThat(repository.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId))
+		assertThat(repository.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId,
+				PageRequest.of(0, 20)).getContent())
 			.extracting(FeedbackSubmissionEntity::getId)
 			.containsExactly(afterEnd, atEnd, insideRange, atStart, beforeStart);
 		assertThat(repository
 			.findByClientAppRegistrationIdAndSubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(clientAppRegistrationId,
-					startDate))
+					startDate, PageRequest.of(0, 20)).getContent())
 			.extracting(FeedbackSubmissionEntity::getId)
 			.containsExactly(afterEnd, atEnd, insideRange, atStart);
 		assertThat(repository
 			.findByClientAppRegistrationIdAndSubmittedAtLessThanEqualOrderBySubmittedAtDesc(clientAppRegistrationId,
-					endDate))
+					endDate, PageRequest.of(0, 20)).getContent())
 			.extracting(FeedbackSubmissionEntity::getId)
 			.containsExactly(atEnd, insideRange, atStart, beforeStart);
 		assertThat(repository
 			.findByClientAppRegistrationIdAndSubmittedAtBetweenOrderBySubmittedAtDesc(clientAppRegistrationId,
-					startDate, endDate))
+					startDate, endDate, PageRequest.of(0, 20)).getContent())
 			.extracting(FeedbackSubmissionEntity::getId)
 			.containsExactly(atEnd, insideRange, atStart);
+
+		Page<FeedbackSubmissionEntity> firstPage = repository
+			.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId, PageRequest.of(0, 2));
+		assertThat(firstPage.getContent()).extracting(FeedbackSubmissionEntity::getId).containsExactly(afterEnd, atEnd);
+		assertThat(firstPage.getTotalElements()).isEqualTo(5);
+		assertThat(firstPage.getTotalPages()).isEqualTo(3);
+		Page<FeedbackSubmissionEntity> secondPage = repository
+			.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId, PageRequest.of(1, 2));
+		assertThat(secondPage.getContent()).extracting(FeedbackSubmissionEntity::getId)
+			.containsExactly(insideRange, atStart);
 	}
 
 	private UUID saveSubmission(UUID clientAppRegistrationId, OffsetDateTime submittedAt) {

@@ -9,11 +9,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.feedback.mapper.FeedbackSubmissionMapper;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
+import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionsMetadata;
+import org.opendevstack.apiservice.feedback.model.GetFeedbackSubmissionsResponse;
 import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
 import org.opendevstack.apiservice.persistence.entity.FeedbackSubmissionEntity;
 import org.opendevstack.apiservice.persistence.repository.ClientAppRepository;
 import org.opendevstack.apiservice.persistence.repository.FeedbackSubmissionRepository;
 import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +29,12 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Slf4j
 public class FeedbackSubmissionService {
+
+	private static final int DEFAULT_PAGE = 0;
+
+	private static final int DEFAULT_SIZE = 20;
+
+	private static final int MAX_SIZE = 100;
 
 	private final FeedbackSubmissionRepository feedbackSubmissionRepository;
 
@@ -73,42 +84,62 @@ public class FeedbackSubmissionService {
 	}
 
 	/**
-	 * Finds submissions for a client application registration within optional inclusive
-	 * timestamp bounds. Results are ordered from newest to oldest.
+	 * Finds a page of submissions for a client application registration within optional
+	 * inclusive timestamp bounds. Results are ordered from newest to oldest.
 	 * @param clientAppRegistrationId client application registration ID
 	 * @param startDate inclusive lower bound, or {@code null} for no lower bound
 	 * @param endDate inclusive upper bound, or {@code null} for no upper bound
-	 * @return matching submissions as API models
+	 * @param page zero-based page number, or {@code null} for the first page
+	 * @param size page size, or {@code null} for the default size
+	 * @return matching submissions and pagination metadata
 	 */
 	@Transactional(readOnly = true)
-	public List<FeedbackSubmission> getSubmissionsByClientAppRegistrationId(UUID clientAppRegistrationId,
-			OffsetDateTime startDate, OffsetDateTime endDate) {
-		List<FeedbackSubmissionEntity> entities;
+	public GetFeedbackSubmissionsResponse getSubmissionsByClientAppRegistrationId(UUID clientAppRegistrationId,
+			OffsetDateTime startDate, OffsetDateTime endDate, Integer page, Integer size) {
+		int pageNumber = page == null ? DEFAULT_PAGE : page;
+		int pageSize = size == null ? DEFAULT_SIZE : size;
+		if (pageNumber < 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page must be greater than or equal to 0.");
+		}
+		if (pageSize < 1 || pageSize > MAX_SIZE) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Size must be between 1 and 100.");
+		}
+		Pageable pageable = PageRequest.of(pageNumber, pageSize);
+		Page<FeedbackSubmissionEntity> entities;
 		if (startDate != null && endDate != null) {
 			entities = feedbackSubmissionRepository
 				.findByClientAppRegistrationIdAndSubmittedAtBetweenOrderBySubmittedAtDesc(clientAppRegistrationId,
-						startDate, endDate);
+						startDate, endDate, pageable);
 		}
 		else if (startDate != null) {
 			entities = feedbackSubmissionRepository
 				.findByClientAppRegistrationIdAndSubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(
-						clientAppRegistrationId, startDate);
+						clientAppRegistrationId, startDate, pageable);
 		}
 		else if (endDate != null) {
 			entities = feedbackSubmissionRepository
 				.findByClientAppRegistrationIdAndSubmittedAtLessThanEqualOrderBySubmittedAtDesc(clientAppRegistrationId,
-						endDate);
+						endDate, pageable);
 		}
 		else {
 			entities = feedbackSubmissionRepository
-				.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId);
+				.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId, pageable);
 		}
-		List<FeedbackSubmission> submissions = entities.stream()
+		if (!(pageNumber == 0 && entities.getTotalPages() == 0) && pageNumber >= entities.getTotalPages()) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Requested feedback page does not exist.");
+		}
+		List<FeedbackSubmission> submissions = entities.getContent().stream()
 			.map(entity -> mapper.toApiModel(entity, objectMapper))
 			.toList();
-		log.debug("Found {} feedback submissions for clientAppRegistrationId={} between {} and {}", submissions.size(),
-				clientAppRegistrationId, startDate, endDate);
-		return submissions;
+		FeedbackSubmissionsMetadata metadata = new FeedbackSubmissionsMetadata()
+			.page(entities.getNumber())
+			.size(entities.getSize())
+			.totalElements((int) entities.getTotalElements())
+			.totalPages(entities.getTotalPages())
+			.last(entities.isLast());
+		log.debug("Found {} of {} feedback submissions for clientAppRegistrationId={} on page {}", submissions.size(),
+				entities.getTotalElements(), clientAppRegistrationId, pageNumber);
+		return new GetFeedbackSubmissionsResponse().submissions(submissions).metadata(metadata);
 	}
 
 }

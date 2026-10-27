@@ -1,9 +1,10 @@
 package org.opendevstack.apiservice.persistence.repository;
 
-import java.util.List;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.opendevstack.apiservice.persistence.entity.FeedbackSubmissionEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,15 +14,16 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FeedbackSubmissionRepository extends JpaRepository<FeedbackSubmissionEntity, UUID> {
 
-	List<FeedbackSubmissionEntity> findByClientAppRegistrationIdOrderBySubmittedAtDesc(UUID clientAppRegistrationId);
+	Page<FeedbackSubmissionEntity> findByClientAppRegistrationIdOrderBySubmittedAtDesc(
+			UUID clientAppRegistrationId, Pageable pageable);
 
-	List<FeedbackSubmissionEntity> findByClientAppRegistrationIdAndSubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(
-			UUID clientAppRegistrationId, OffsetDateTime startDate);
+	Page<FeedbackSubmissionEntity> findByClientAppRegistrationIdAndSubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(
+			UUID clientAppRegistrationId, OffsetDateTime startDate, Pageable pageable);
 
-	List<FeedbackSubmissionEntity> findByClientAppRegistrationIdAndSubmittedAtLessThanEqualOrderBySubmittedAtDesc(
-			UUID clientAppRegistrationId, OffsetDateTime endDate);
+	Page<FeedbackSubmissionEntity> findByClientAppRegistrationIdAndSubmittedAtLessThanEqualOrderBySubmittedAtDesc(
+			UUID clientAppRegistrationId, OffsetDateTime endDate, Pageable pageable);
 
-	List<FeedbackSubmissionEntity> findByClientAppRegistrationIdAndSubmittedAtBetweenOrderBySubmittedAtDesc(
-			UUID clientAppRegistrationId, OffsetDateTime startDate, OffsetDateTime endDate);
+	Page<FeedbackSubmissionEntity> findByClientAppRegistrationIdAndSubmittedAtBetweenOrderBySubmittedAtDesc(
+			UUID clientAppRegistrationId, OffsetDateTime startDate, OffsetDateTime endDate, Pageable pageable);
 
 }

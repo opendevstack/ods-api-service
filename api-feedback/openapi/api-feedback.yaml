@@ -72,21 +72,42 @@ paths:
             type: string
             format: date-time
           description: Return submissions created at or before this timestamp.
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Zero-based page number to retrieve.
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Number of submissions per page.
       responses:
         '200':
-          description: Feedback submissions for the client application, or an empty array
+          description: A page of feedback submissions for the client application.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FeedbackSubmission'
+                $ref: '#/components/schemas/GetFeedbackSubmissionsResponse'
         '400':
           $ref: '#/components/responses/BadRequestResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: The requested page does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
         '500':
           $ref: '#/components/responses/InternalErrorResponse'
 components:
@@ -192,3 +213,34 @@ components:
         answers:
           type: object
           additionalProperties: true
+    GetFeedbackSubmissionsResponse:
+      type: object
+      required:
+        - submissions
+        - metadata
+      properties:
+        submissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedbackSubmission'
+        metadata:
+          $ref: '#/components/schemas/FeedbackSubmissionsMetadata'
+    FeedbackSubmissionsMetadata:
+      type: object
+      required:
+        - page
+        - size
+        - totalElements
+        - totalPages
+        - last
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        last:
+          type: boolean

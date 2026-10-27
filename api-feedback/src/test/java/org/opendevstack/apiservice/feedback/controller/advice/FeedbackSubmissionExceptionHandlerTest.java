@@ -1,5 +1,10 @@
 package org.opendevstack.apiservice.feedback.controller.advice;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.opendevstack.apiservice.feedback.model.RestErrorMessage;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -56,6 +61,25 @@ class FeedbackSubmissionExceptionHandlerTest {
 		assertThat(logs)
 			.contains("submitter: must be a well-formed email address")
 			.doesNotContain(rejectedEmail);
+	}
+
+	@Test
+	void constrainedParameterReturnsBadRequestWithoutLoggingValue(CapturedOutput output) {
+		ConstraintViolation<?> violation = mock(ConstraintViolation.class);
+		Path path = mock(Path.class);
+		Path.Node parameter = mock(Path.Node.class);
+		when(path.iterator()).thenReturn(List.of(parameter).iterator());
+		when(parameter.getName()).thenReturn("size");
+		when(violation.getPropertyPath()).thenReturn(path);
+		when(violation.getMessage()).thenReturn("must be greater than or equal to 1");
+		ConstraintViolationException exception = new ConstraintViolationException("Rejected value 0", Set.of(violation));
+
+		ResponseEntity<RestErrorMessage> response = new FeedbackSubmissionExceptionHandler()
+			.handleConstraintViolationException(exception);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody().getMessage()).isEqualTo("size: must be greater than or equal to 1");
+		assertThat(output.getOut() + output.getErr()).doesNotContain("Rejected value 0");
 	}
 
 }

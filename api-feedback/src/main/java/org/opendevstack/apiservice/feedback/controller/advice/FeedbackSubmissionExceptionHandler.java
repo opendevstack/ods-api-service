@@ -1,5 +1,8 @@
 package org.opendevstack.apiservice.feedback.controller.advice;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import java.util.List;
 import org.opendevstack.apiservice.feedback.model.RestErrorMessage;
 import org.opendevstack.apiservice.feedback.controller.FeedbackSubmissionController;
@@ -63,6 +66,28 @@ public class FeedbackSubmissionExceptionHandler {
 		log.error("Unexpected error while processing feedback request", exception);
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 			.body(new RestErrorMessage("An error occurred while processing the request."));
+	}
+
+	/** Returns a 400 response for invalid constrained method parameters. */
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<RestErrorMessage> handleConstraintViolationException(ConstraintViolationException exception) {
+		List<String> validationErrors = exception.getConstraintViolations()
+			.stream()
+			.map(this::formatConstraintViolation)
+			.toList();
+		String message = validationErrors.stream().findFirst().orElse("Invalid request parameters.");
+		log.warn("Feedback request validation failed: {}", String.join("; ", validationErrors));
+		return ResponseEntity.badRequest().body(new RestErrorMessage(message));
+	}
+
+	private String formatConstraintViolation(ConstraintViolation<?> violation) {
+		String fieldName = null;
+		for (Path.Node node : violation.getPropertyPath()) {
+			if (node.getName() != null) {
+				fieldName = node.getName();
+			}
+		}
+		return (fieldName == null ? "request" : fieldName) + ": " + violation.getMessage();
 	}
 
 }

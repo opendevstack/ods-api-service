@@ -10,15 +10,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.opendevstack.apiservice.feedback.mapper.FeedbackSubmissionMapper;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
+import org.opendevstack.apiservice.feedback.model.GetFeedbackSubmissionsResponse;
 import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
 import org.opendevstack.apiservice.persistence.entity.FeedbackSubmissionEntity;
 import org.opendevstack.apiservice.persistence.entity.ProjectEntity;
 import org.opendevstack.apiservice.persistence.repository.ClientAppRepository;
 import org.opendevstack.apiservice.persistence.repository.FeedbackSubmissionRepository;
 import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -181,40 +187,54 @@ class FeedbackSubmissionServiceTest {
 		entity.setProjectKey("PROJECT");
 		entity.setQuestions(new ObjectMapper().valueToTree(List.of(Map.of("id", "q1"))));
 		entity.setAnswers(new ObjectMapper().valueToTree(Map.of("q1", Map.of("value", "yes"))));
-		when(feedbackSubmissionRepository.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId))
-			.thenReturn(List.of(entity));
+		Pageable pageable = PageRequest.of(0, 20);
+		when(feedbackSubmissionRepository.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId,
+				pageable)).thenReturn(new PageImpl<>(List.of(entity), pageable, 1));
 
-		List<FeedbackSubmission> submissions = service.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId,
-				null, null);
+		GetFeedbackSubmissionsResponse response = service.getSubmissionsByClientAppRegistrationId(
+				clientAppRegistrationId, null, null, null, null);
 
-		assertThat(submissions).hasSize(1);
-		assertThat(submissions.get(0).getProjectKey().orElse(null)).isEqualTo("PROJECT");
-		assertThat(submissions.get(0).getQuestions()).hasSize(1);
-		assertThat(submissions.get(0).getAnswers()).containsKey("q1");
+		assertThat(response.getSubmissions()).hasSize(1);
+		assertThat(response.getSubmissions().get(0).getProjectKey().orElse(null)).isEqualTo("PROJECT");
+		assertThat(response.getSubmissions().get(0).getQuestions()).hasSize(1);
+		assertThat(response.getSubmissions().get(0).getAnswers()).containsKey("q1");
+		assertThat(response.getMetadata().getPage()).isZero();
+		assertThat(response.getMetadata().getSize()).isEqualTo(20);
+		assertThat(response.getMetadata().getTotalElements()).isEqualTo(1);
+		assertThat(response.getMetadata().getTotalPages()).isEqualTo(1);
+		assertThat(response.getMetadata().getLast()).isTrue();
 	}
 
 	@Test
 	void getSubmissionsByClientAppRegistrationIdFiltersFromStartDate() {
 		UUID clientAppRegistrationId = UUID.randomUUID();
 		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
+		Pageable pageable = PageRequest.of(2, 5);
+		when(feedbackSubmissionRepository
+			.findByClientAppRegistrationIdAndSubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(clientAppRegistrationId,
+					startDate, pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 30));
 
-		service.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate, null);
+		service.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate, null, 2, 5);
 
 		verify(feedbackSubmissionRepository)
 			.findByClientAppRegistrationIdAndSubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(clientAppRegistrationId,
-					startDate);
+					startDate, pageable);
 	}
 
 	@Test
 	void getSubmissionsByClientAppRegistrationIdFiltersUntilEndDate() {
 		UUID clientAppRegistrationId = UUID.randomUUID();
 		OffsetDateTime endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z");
+		Pageable pageable = PageRequest.of(2, 5);
+		when(feedbackSubmissionRepository
+			.findByClientAppRegistrationIdAndSubmittedAtLessThanEqualOrderBySubmittedAtDesc(clientAppRegistrationId,
+					endDate, pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 30));
 
-		service.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, null, endDate);
+		service.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, null, endDate, 2, 5);
 
 		verify(feedbackSubmissionRepository)
 			.findByClientAppRegistrationIdAndSubmittedAtLessThanEqualOrderBySubmittedAtDesc(clientAppRegistrationId,
-					endDate);
+					endDate, pageable);
 	}
 
 	@Test
@@ -222,11 +242,26 @@ class FeedbackSubmissionServiceTest {
 		UUID clientAppRegistrationId = UUID.randomUUID();
 		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
 		OffsetDateTime endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z");
+		Pageable pageable = PageRequest.of(2, 5);
+		when(feedbackSubmissionRepository
+			.findByClientAppRegistrationIdAndSubmittedAtBetweenOrderBySubmittedAtDesc(clientAppRegistrationId,
+					startDate, endDate, pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 30));
 
-		service.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate, endDate);
+		service.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate, endDate, 2, 5);
 
 		verify(feedbackSubmissionRepository).findByClientAppRegistrationIdAndSubmittedAtBetweenOrderBySubmittedAtDesc(
-				clientAppRegistrationId, startDate, endDate);
+				clientAppRegistrationId, startDate, endDate, pageable);
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "-1, 20", "0, 0", "0, 101" })
+	void getSubmissionsRejectsOutOfRangePaginationParameters(int page, int size) {
+		assertThatThrownBy(() -> service.getSubmissionsByClientAppRegistrationId(UUID.randomUUID(), null, null, page,
+				size))
+			.isInstanceOf(ResponseStatusException.class)
+			.satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())
+				.isEqualTo(HttpStatus.BAD_REQUEST));
+		verifyNoInteractions(feedbackSubmissionRepository);
 	}
 
 	private void stubSaveAndFlush() {

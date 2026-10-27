@@ -7,6 +7,7 @@ import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
 import org.opendevstack.apiservice.feedback.api.FeedbackSubmissionsApi;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
+import org.opendevstack.apiservice.feedback.model.GetFeedbackSubmissionsResponse;
 import org.opendevstack.apiservice.feedback.service.FeedbackSubmissionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
 /** REST endpoints for creating and querying feedback submissions. */
@@ -39,17 +39,19 @@ public class FeedbackSubmissionController implements FeedbackSubmissionsApi {
 	}
 
 	/**
-	 * Lists submissions for a client, optionally bounded by inclusive timestamps.
+	 * Lists a page of submissions for a client, optionally bounded by inclusive timestamps.
 	 * @param clientAppRegistrationId client application registration ID to filter by
 	 * @param startDate inclusive lower bound for submission time, or {@code null}
 	 * @param endDate inclusive upper bound for submission time, or {@code null}
-	 * @return matching submissions, newest first
+	 * @param page zero-based page number
+	 * @param size maximum number of submissions per page
+	 * @return matching submissions and pagination metadata
 	 */
 	@Override
-	public ResponseEntity<List<FeedbackSubmission>> getFeedbackSubmissionsByClientAppRegistrationId(
-			UUID clientAppRegistrationId, OffsetDateTime startDate, OffsetDateTime endDate) {
-		List<FeedbackSubmission> submissions = feedbackSubmissionService
-			.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate, endDate);
+	public ResponseEntity<GetFeedbackSubmissionsResponse> getFeedbackSubmissionsByClientAppRegistrationId(
+			UUID clientAppRegistrationId, OffsetDateTime startDate, OffsetDateTime endDate, Integer page, Integer size) {
+		GetFeedbackSubmissionsResponse submissions = feedbackSubmissionService
+			.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate, endDate, page, size);
 		return ResponseEntity.ok(submissions);
 	}
 
