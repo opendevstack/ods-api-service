@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.feedback.controller.advice;
 
+import java.util.List;
 import org.opendevstack.apiservice.feedback.model.RestErrorMessage;
 import org.opendevstack.apiservice.feedback.controller.FeedbackSubmissionController;
 import lombok.extern.slf4j.Slf4j;
@@ -29,13 +30,13 @@ public class FeedbackSubmissionExceptionHandler {
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<RestErrorMessage> handleMethodArgumentNotValidException(
 			MethodArgumentNotValidException exception) {
-		log.warn("Feedback request validation failed: {}", exception.getMessage());
-		String message = exception.getBindingResult()
+		List<String> validationErrors = exception.getBindingResult()
 			.getFieldErrors()
 			.stream()
 			.map(error -> error.getField() + ": " + error.getDefaultMessage())
-			.findFirst()
-			.orElse("Invalid request body.");
+			.toList();
+		String message = validationErrors.stream().findFirst().orElse("Invalid request body.");
+		log.warn("Feedback request validation failed: {}", String.join("; ", validationErrors));
 		return ResponseEntity.badRequest().body(new RestErrorMessage(message));
 	}
 
@@ -43,7 +44,7 @@ public class FeedbackSubmissionExceptionHandler {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<RestErrorMessage> handleHttpMessageNotReadableException(
 			HttpMessageNotReadableException exception) {
-		log.warn("Feedback request body could not be read: {}", exception.getMessage());
+		log.warn("Feedback request body could not be read as valid JSON.");
 		return ResponseEntity.badRequest().body(new RestErrorMessage("Request body must be valid JSON."));
 	}
 
