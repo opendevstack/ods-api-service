@@ -1,47 +1,72 @@
 package org.opendevstack.apiservice.feedback.mapper;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import org.mapstruct.Context;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
+import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
+import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
 import org.opendevstack.apiservice.persistence.entity.FeedbackSubmissionEntity;
 import org.openapitools.jackson.nullable.JsonNullable;
-import org.springframework.stereotype.Component;
 
-/** Maps persisted feedback submissions to their public API representation. */
-@Component
-public class FeedbackSubmissionMapper {
+/** Maps between feedback API models and persisted submissions. */
+@Mapper(componentModel = "spring")
+public interface FeedbackSubmissionMapper {
 
-	private static final TypeReference<List<Map<String, Object>>> QUESTIONS_TYPE = new TypeReference<>() {
+	TypeReference<List<Map<String, Object>>> QUESTIONS_TYPE = new TypeReference<>() {
 	};
 
-	private static final TypeReference<Map<String, Object>> ANSWERS_TYPE = new TypeReference<>() {
+	TypeReference<Map<String, Object>> ANSWERS_TYPE = new TypeReference<>() {
 	};
 
-	private final ObjectMapper objectMapper;
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "clientId", source = "clientApp.id")
+	@Mapping(target = "clientAppRegistrationId", source = "clientAppRegistrationId")
+	@Mapping(target = "clientName", source = "clientApp.clientName")
+	@Mapping(target = "projectId", ignore = true)
+	@Mapping(target = "projectKey", source = "request.projectKey")
+	@Mapping(target = "submitter", source = "request.submitter")
+	@Mapping(target = "submittedAt", ignore = true)
+	@Mapping(target = "questions", source = "request.questions", qualifiedByName = "toQuestionsJson")
+	@Mapping(target = "answers", source = "request.answers", qualifiedByName = "toAnswersJson")
+	FeedbackSubmissionEntity toEntity(FeedbackSubmissionRequest request, ClientAppEntity clientApp,
+			UUID clientAppRegistrationId, @Context ObjectMapper objectMapper);
 
-	public FeedbackSubmissionMapper(ObjectMapper objectMapper) {
-		this.objectMapper = objectMapper;
+	@Mapping(target = "projectKey", source = "projectKey", qualifiedByName = "toJsonNullableString")
+	@Mapping(target = "questions", source = "questions", qualifiedByName = "toQuestionsList")
+	@Mapping(target = "answers", source = "answers", qualifiedByName = "toAnswersMap")
+	FeedbackSubmission toApiModel(FeedbackSubmissionEntity entity, @Context ObjectMapper objectMapper);
+
+	@Named("toQuestionsJson")
+	default JsonNode toQuestionsJson(List<Map<String, Object>> questions, @Context ObjectMapper objectMapper) {
+		return objectMapper.valueToTree(questions);
 	}
 
-	/**
-	 * Converts a persisted submission to an API response, including its JSON questions
-	 * and answers. The persistence identifier is intentionally not exposed in the
-	 * response.
-	 * @param entity persisted feedback submission
-	 * @return API representation of the submission
-	 */
-	public FeedbackSubmission toApiModel(FeedbackSubmissionEntity entity) {
-		FeedbackSubmission submission = new FeedbackSubmission();
-		submission.setClientAppRegistrationId(entity.getClientAppRegistrationId());
-		submission.setClientName(entity.getClientName());
-		submission.setProjectKey(JsonNullable.of(entity.getProjectKey()));
-		submission.setSubmitter(entity.getSubmitter());
-		submission.setSubmittedAt(entity.getSubmittedAt());
-		submission.setQuestions(objectMapper.convertValue(entity.getQuestions(), QUESTIONS_TYPE));
-		submission.setAnswers(objectMapper.convertValue(entity.getAnswers(), ANSWERS_TYPE));
-		return submission;
+	@Named("toAnswersJson")
+	default JsonNode toAnswersJson(Map<String, Object> answers, @Context ObjectMapper objectMapper) {
+		return objectMapper.valueToTree(answers);
+	}
+
+	@Named("toQuestionsList")
+	default List<Map<String, Object>> toQuestionsList(JsonNode questions, @Context ObjectMapper objectMapper) {
+		return objectMapper.convertValue(questions, QUESTIONS_TYPE);
+	}
+
+	@Named("toAnswersMap")
+	default Map<String, Object> toAnswersMap(JsonNode answers, @Context ObjectMapper objectMapper) {
+		return objectMapper.convertValue(answers, ANSWERS_TYPE);
+	}
+
+	@Named("toJsonNullableString")
+	default JsonNullable<String> toJsonNullableString(String value) {
+		return JsonNullable.of(value);
 	}
 
 }

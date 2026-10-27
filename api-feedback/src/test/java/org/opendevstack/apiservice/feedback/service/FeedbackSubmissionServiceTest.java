@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.opendevstack.apiservice.feedback.mapper.FeedbackSubmissionMapper;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
@@ -48,7 +49,7 @@ class FeedbackSubmissionServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new FeedbackSubmissionService(feedbackSubmissionRepository, clientAppRepository, projectRepository,
-				new FeedbackSubmissionMapper(new ObjectMapper()), new ObjectMapper());
+				Mappers.getMapper(FeedbackSubmissionMapper.class), new ObjectMapper());
 	}
 
 	@Test

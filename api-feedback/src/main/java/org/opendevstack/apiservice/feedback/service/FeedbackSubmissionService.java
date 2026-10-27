@@ -55,13 +55,8 @@ public class FeedbackSubmissionService {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Client application is disabled");
 		}
 
-		FeedbackSubmissionEntity submission = new FeedbackSubmissionEntity();
-		submission.setClientId(clientApp.getId());
-		submission.setClientAppRegistrationId(clientAppRegistrationId);
-		submission.setClientName(clientApp.getClientName());
-		submission.setSubmitter(request.getSubmitter());
-		submission.setQuestions(objectMapper.valueToTree(request.getQuestions()));
-		submission.setAnswers(objectMapper.valueToTree(request.getAnswers()));
+		FeedbackSubmissionEntity submission = mapper.toEntity(request, clientApp, clientAppRegistrationId,
+				objectMapper);
 
 		if (request.getProjectKey() != null) {
 			submission.setProjectKey(request.getProjectKey());
@@ -74,7 +69,7 @@ public class FeedbackSubmissionService {
 		FeedbackSubmissionEntity savedSubmission = feedbackSubmissionRepository.saveAndFlush(submission);
 		log.info("Registered feedback submission id={} projectKey={}", savedSubmission.getId(),
 				savedSubmission.getProjectKey());
-		return mapper.toApiModel(savedSubmission);
+		return mapper.toApiModel(savedSubmission, objectMapper);
 	}
 
 	/**
@@ -108,7 +103,9 @@ public class FeedbackSubmissionService {
 			entities = feedbackSubmissionRepository
 				.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId);
 		}
-		List<FeedbackSubmission> submissions = entities.stream().map(mapper::toApiModel).toList();
+		List<FeedbackSubmission> submissions = entities.stream()
+			.map(entity -> mapper.toApiModel(entity, objectMapper))
+			.toList();
 		log.debug("Found {} feedback submissions for clientAppRegistrationId={} between {} and {}", submissions.size(),
 				clientAppRegistrationId, startDate, endDate);
 		return submissions;
