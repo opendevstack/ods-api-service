@@ -256,8 +256,9 @@ class FeedbackSubmissionServiceTest {
 	@ParameterizedTest
 	@CsvSource({ "-1, 20", "0, 0", "0, 101" })
 	void getSubmissionsRejectsOutOfRangePaginationParameters(int page, int size) {
-		assertThatThrownBy(() -> service.getSubmissionsByClientAppRegistrationId(UUID.randomUUID(), null, null, page,
-				size))
+		UUID clientAppRegistrationId = UUID.randomUUID();
+		assertThatThrownBy(() -> service.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, null, null,
+				page, size))
 			.isInstanceOf(ResponseStatusException.class)
 			.satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())
 				.isEqualTo(HttpStatus.BAD_REQUEST));
