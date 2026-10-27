@@ -59,6 +59,7 @@
         <module>external-service-webhookproxy</module>
         <module>service-projects</module>
         <module>api-marketplace-metrics</module>
+        <module>api-feedback</module>
         <module>api-project-users</module>
         <module>api-project-platform</module>
         <module>api-project</module>
