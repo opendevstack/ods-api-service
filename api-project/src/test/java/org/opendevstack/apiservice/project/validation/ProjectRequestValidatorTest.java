@@ -11,6 +11,7 @@ import org.opendevstack.apiservice.project.model.CreateProjectRequest;
 import org.opendevstack.apiservice.project.model.UpdateProjectRequest;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -136,6 +137,19 @@ class ProjectRequestValidatorTest {
                 assertThrows(ProjectValidationException.class, () -> sut.validateCreateRequest(request));
 
         assertEquals(ErrorKey.INVALID_LOCATION, exception.getErrorKey());
+    }
+
+    @Test
+    void validateCreateRequest_rejects_null_project_manager_items() {
+        CreateProjectRequest request = new CreateProjectRequest();
+        request.setProjectFlavor("STANDARD");
+        request.setProjectManagers(Arrays.asList((String) null));
+
+        ProjectValidationException exception = assertThrows(
+                ProjectValidationException.class,
+                () -> sut.validateCreateRequest(request));
+
+        assertEquals(ErrorKey.BAD_REQUEST_BODY, exception.getErrorKey());
     }
 
     @ParameterizedTest

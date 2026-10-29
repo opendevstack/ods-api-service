@@ -62,7 +62,8 @@ public class ProjectCreationCommandBuilder {
                 location,
                 x2account,
                 owner,
-                clientApp.getId());
+                clientApp.getId(),
+                request.getProjectManagers());
     }
 
     private ClientAppProjectFlavorEntity resolveFlavor(CreateProjectRequest request, ClientAppEntity clientApp) {

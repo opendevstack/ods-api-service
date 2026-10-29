@@ -30,25 +30,31 @@ public class ProjectExceptionHandler {
             "projectFlavor", ErrorKey.BAD_REQUEST_FLAVOR_CONFIG_ITEM,
             "configurationItem", ErrorKey.BAD_REQUEST_FLAVOR_CONFIG_ITEM,
             "x2OdsAccount", ErrorKey.PROJECT_X2ACCOUNT_INVALID_FORMAT,
-            "owner", ErrorKey.PROJECT_OWNER_INVALID_FORMAT
+            "owner", ErrorKey.PROJECT_OWNER_INVALID_FORMAT,
+            "projectManagers", ErrorKey.PROJECT_MANAGERS_INVALID
     );
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<CreateProjectResponse> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException ex) {
-
-        log.warn("Request body validation error: {}", ex.getMessage());
-
         FieldError fieldError = ex.getBindingResult().getFieldErrors().stream()
                 .findFirst()
                 .orElse(null);
+
+        if (fieldError == null) {
+            log.warn("Request body validation error");
+        } else {
+            log.warn("Request body validation error for field '{}': {}",
+                    fieldError.getField(), fieldError.getDefaultMessage());
+        }
 
         CreateProjectResponse response = new CreateProjectResponse();
         response.setLocation(ProjectController.API_BASE_PATH);
         response.setError(HttpStatus.BAD_REQUEST.getReasonPhrase());
 
         if (fieldError != null) {
-            String field = fieldError.getField();
+            // Item errors arrive as "projectManagers[0]"
+            String field = fieldError.getField().replaceFirst("\\[\\d+]$", "");
 
             ErrorKey key = FIELD_ERROR_MAP.getOrDefault(field, ErrorKey.BAD_REQUEST_BODY);
 

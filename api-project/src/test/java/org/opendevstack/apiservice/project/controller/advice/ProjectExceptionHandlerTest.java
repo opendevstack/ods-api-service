@@ -3,6 +3,7 @@ package org.opendevstack.apiservice.project.controller.advice;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,6 +24,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -30,6 +33,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class ProjectExceptionHandlerTest {
@@ -150,6 +154,30 @@ class ProjectExceptionHandlerTest {
         assertNull(result.getBody().getErrorDescription());
     }
 
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void handle_method_argument_not_valid_exception_does_not_log_rejected_project_manager(CapturedOutput output) {
+        CreateProjectRequest target = new CreateProjectRequest();
+        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "createProjectRequest");
+        bindingResult.addError(new FieldError("createProjectRequest", "projectManagers[0]",
+                "Private Example", false, null, null, "must not be blank"));
+
+        MethodParameter methodParameter;
+        try {
+            methodParameter = new MethodParameter(
+                    ProjectController.class.getMethod("createProject", CreateProjectRequest.class), 0);
+        } catch (NoSuchMethodException e) {
+            fail("Failed to reflect controller method for test: " + e.getMessage());
+            return;
+        }
+
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        sut.handleMethodArgumentNotValidException(exception);
+
+        assertFalse(output.getOut().contains("Private Example"));
+    }
+
     @ParameterizedTest
     @MethodSource("provideValidationCases")
     void handle_method_argument_not_valid_exception_parameterized(
@@ -215,6 +243,16 @@ class ProjectExceptionHandlerTest {
                         "projectDescription",
                         "020",
                         "projectDescription not met the pattern ^.{0,255}$"
+                ),
+                Arguments.of(
+                        "projectManagers",
+                        "031",
+                        "projectManagers must contain at most 5 identifiers matching the pattern ^[a-z]{1,10}$"
+                ),
+                Arguments.of(
+                        "projectManagers[2]",
+                        "031",
+                        "projectManagers must contain at most 5 identifiers matching the pattern ^[a-z]{1,10}$"
                 ),
                 Arguments.of(
                         "unknownField",

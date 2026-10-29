@@ -56,6 +56,7 @@ class ProjectCreationCommandBuilderTest {
         CreateProjectRequest request = build_request("DLSS", null, "KEY01");
         request.setOwner(null);
         request.setLocation(null);
+        request.setProjectManagers(List.of("alex", "taylor"));
 
         when(projectExistenceService.isProjectFound("KEY01")).thenReturn(false);
 
@@ -66,6 +67,7 @@ class ProjectCreationCommandBuilderTest {
         assertEquals("owner1", result.getOwner());
         assertEquals("eu", result.getLocation());
         assertEquals("KEY01", result.getProjectKey());
+        assertEquals(List.of("alex", "taylor"), result.getProjectManagers());
     }
 
     @Test
