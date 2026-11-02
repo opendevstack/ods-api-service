@@ -70,6 +70,7 @@ class FeedbackSubmissionServiceTest {
 			.questions(List.of(Map.of("id", "q1", "options", List.of("yes", "no"))))
 			.answers(Map.of("q1", Map.of("value", "yes")));
 		when(clientAppRepository.findByClientId(registrationId)).thenReturn(Optional.of(clientApp));
+		when(projectRepository.findByProjectKeyIgnoreCase(null)).thenReturn(Optional.empty());
 		stubSaveAndFlush();
 
 		FeedbackSubmission response = service.createSubmission(request, registrationId);
@@ -86,7 +87,7 @@ class FeedbackSubmissionServiceTest {
 		assertThat(saved.getProjectKey()).isNull();
 		assertThat(saved.getQuestions().get(0).get("options").get(0).asText()).isEqualTo("yes");
 		assertThat(saved.getAnswers().get("q1").get("value").asText()).isEqualTo("yes");
-		verifyNoInteractions(projectRepository);
+		verify(projectRepository).findByProjectKeyIgnoreCase(null);
 	}
 
 	@Test
@@ -115,6 +116,7 @@ class FeedbackSubmissionServiceTest {
 		verify(feedbackSubmissionRepository).saveAndFlush(captor.capture());
 		assertThat(captor.getValue().getProjectId()).isEqualTo(projectId);
 		assertThat(captor.getValue().getProjectKey()).isEqualTo("PROJECT");
+		verify(projectRepository).findByProjectKeyIgnoreCase("project");
 	}
 
 	@Test
@@ -152,26 +154,6 @@ class FeedbackSubmissionServiceTest {
 			.hasMessageContaining("Client application is not registered")
 			.satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())
 				.isEqualTo(HttpStatus.UNAUTHORIZED));
-		verifyNoInteractions(feedbackSubmissionRepository, projectRepository);
-	}
-
-	@Test
-	void createSubmissionWithDisabledClientReturnsForbidden() {
-		UUID registrationId = UUID.randomUUID();
-		FeedbackSubmissionRequest request = new FeedbackSubmissionRequest();
-		ClientAppEntity clientApp = ClientAppEntity.builder()
-			.id(UUID.randomUUID())
-			.clientId(registrationId)
-			.clientName("Disabled feedback client")
-			.enabled(false)
-			.build();
-		when(clientAppRepository.findByClientId(registrationId)).thenReturn(Optional.of(clientApp));
-
-		assertThatThrownBy(() -> service.createSubmission(request, registrationId))
-			.isInstanceOf(ResponseStatusException.class)
-			.hasMessageContaining("Client application is disabled")
-			.satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())
-				.isEqualTo(HttpStatus.FORBIDDEN));
 		verifyNoInteractions(feedbackSubmissionRepository, projectRepository);
 	}
 

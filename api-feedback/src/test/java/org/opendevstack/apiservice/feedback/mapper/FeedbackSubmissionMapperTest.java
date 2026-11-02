@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
@@ -12,6 +13,7 @@ import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
 import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
 import org.opendevstack.apiservice.persistence.entity.FeedbackSubmissionEntity;
+import org.opendevstack.apiservice.persistence.entity.ProjectEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,30 +27,49 @@ class FeedbackSubmissionMapperTest {
 	void mapsRequestToEntityIncludingClientMetadataAndJsonFields() {
 		UUID internalClientId = UUID.randomUUID();
 		UUID clientAppRegistrationId = UUID.randomUUID();
+		UUID projectId = UUID.randomUUID();
 		List<Map<String, Object>> questions = List.of(Map.of("id", "rating", "options", List.of("good", "bad")));
 		Map<String, Object> answers = Map.of("rating", Map.of("value", "good"));
+		ProjectEntity project = new ProjectEntity();
+		project.setId(projectId);
+		project.setProjectKey("PROJECT");
 		ClientAppEntity clientApp = ClientAppEntity.builder()
 			.id(internalClientId)
 			.clientId(clientAppRegistrationId)
 			.clientName("Feedback client")
 			.build();
-		FeedbackSubmissionRequest request = new FeedbackSubmissionRequest().projectKey("PROJECT")
+		FeedbackSubmissionRequest request = new FeedbackSubmissionRequest().projectKey("project")
 			.submitter("submitter@example.org")
 			.questions(questions)
 			.answers(answers);
 
-		FeedbackSubmissionEntity entity = mapper.toEntity(request, clientApp, clientAppRegistrationId, objectMapper);
+		FeedbackSubmissionEntity entity = mapper.toEntity(request, Optional.of(project), clientApp, objectMapper);
 
 		assertThat(entity.getClientId()).isEqualTo(internalClientId);
 		assertThat(entity.getClientAppRegistrationId()).isEqualTo(clientAppRegistrationId);
 		assertThat(entity.getClientName()).isEqualTo("Feedback client");
 		assertThat(entity.getProjectKey()).isEqualTo("PROJECT");
+		assertThat(entity.getProjectId()).isEqualTo(projectId);
 		assertThat(entity.getSubmitter()).isEqualTo("submitter@example.org");
 		assertThat(entity.getQuestions()).isEqualTo(objectMapper.valueToTree(questions));
 		assertThat(entity.getAnswers()).isEqualTo(objectMapper.valueToTree(answers));
 		assertThat(entity.getId()).isNull();
-		assertThat(entity.getProjectId()).isNull();
 		assertThat(entity.getSubmittedAt()).isNull();
+	}
+
+	@Test
+	void mapsRequestProjectKeyWhenProjectIsNotRegistered() {
+		FeedbackSubmissionRequest request = new FeedbackSubmissionRequest().projectKey("UNREGISTERED");
+		ClientAppEntity clientApp = ClientAppEntity.builder()
+			.id(UUID.randomUUID())
+			.clientId(UUID.randomUUID())
+			.clientName("Feedback client")
+			.build();
+
+		FeedbackSubmissionEntity entity = mapper.toEntity(request, Optional.empty(), clientApp, objectMapper);
+
+		assertThat(entity.getProjectId()).isNull();
+		assertThat(entity.getProjectKey()).isEqualTo("UNREGISTERED");
 	}
 
 	@Test

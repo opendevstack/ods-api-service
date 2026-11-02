@@ -3,6 +3,7 @@ package org.opendevstack.apiservice.feedback.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionsMetadata;
 import org.opendevstack.apiservice.feedback.model.GetFeedbackSubmissionsResponse;
 import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
 import org.opendevstack.apiservice.persistence.entity.FeedbackSubmissionEntity;
+import org.opendevstack.apiservice.persistence.entity.ProjectEntity;
 import org.opendevstack.apiservice.persistence.repository.ClientAppRepository;
 import org.opendevstack.apiservice.persistence.repository.FeedbackSubmissionRepository;
 import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
@@ -56,21 +58,9 @@ public class FeedbackSubmissionService {
 					clientAppRegistrationId);
 			return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Client application is not registered");
 		});
-		if (!clientApp.isEnabled()) {
-			log.warn("Feedback submission rejected for disabled clientAppRegistrationId={}", clientAppRegistrationId);
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Client application is disabled");
-		}
+		Optional<ProjectEntity> project = projectRepository.findByProjectKeyIgnoreCase(request.getProjectKey());
 
-		FeedbackSubmissionEntity submission = mapper.toEntity(request, clientApp, clientAppRegistrationId,
-				objectMapper);
-
-		if (request.getProjectKey() != null) {
-			submission.setProjectKey(request.getProjectKey());
-			projectRepository.findByProjectKeyIgnoreCase(request.getProjectKey()).ifPresent(project -> {
-				submission.setProjectId(project.getId());
-				submission.setProjectKey(project.getProjectKey());
-			});
-		}
+		FeedbackSubmissionEntity submission = mapper.toEntity(request, project, clientApp, objectMapper);
 
 		FeedbackSubmissionEntity savedSubmission = feedbackSubmissionRepository.saveAndFlush(submission);
 		log.info("Registered feedback submission id={} projectKey={}", savedSubmission.getId(),
