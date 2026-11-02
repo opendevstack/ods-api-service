@@ -10,8 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.opendevstack.apiservice.feedback.mapper.FeedbackSubmissionMapper;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
@@ -190,7 +188,7 @@ class FeedbackSubmissionServiceTest {
 		Pageable pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "submittedAt"));
 		when(feedbackSubmissionRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(entity), pageable, 1));
 
-		GetFeedbackSubmissionsResponse response = service.getFeedbackSubmissions(null, null, null, null);
+		GetFeedbackSubmissionsResponse response = service.getFeedbackSubmissions(null, null, 0, 20);
 
 		assertThat(response.getSubmissions()).hasSize(1);
 		assertThat(response.getSubmissions().get(0).getProjectKey().orElse(null)).isEqualTo("PROJECT");
@@ -244,32 +242,6 @@ class FeedbackSubmissionServiceTest {
 
 		verify(feedbackSubmissionRepository).findBySubmittedAtBetweenOrderBySubmittedAtDesc(startDate, endDate,
 				pageable);
-	}
-
-	@Test
-	void getFeedbackSubmissionsRejectsStartDateAfterEndDate() {
-		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-02T00:00:00Z");
-		OffsetDateTime endDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
-
-		assertThatThrownBy(() -> service.getFeedbackSubmissions(startDate, endDate, null, null))
-			.isInstanceOf(ResponseStatusException.class)
-			.satisfies(exception -> {
-				ResponseStatusException statusException = (ResponseStatusException) exception;
-				assertThat(statusException.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-				assertThat(statusException.getReason()).isEqualTo("startDate must be before or equal to endDate.");
-			});
-
-		verifyNoInteractions(feedbackSubmissionRepository);
-	}
-
-	@ParameterizedTest
-	@CsvSource({ "-1, 20", "0, 0", "0, 101" })
-	void getSubmissionsRejectsOutOfRangePaginationParameters(int page, int size) {
-		assertThatThrownBy(() -> service.getFeedbackSubmissions(null, null, page, size))
-			.isInstanceOf(ResponseStatusException.class)
-			.satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())
-				.isEqualTo(HttpStatus.BAD_REQUEST));
-		verifyNoInteractions(feedbackSubmissionRepository);
 	}
 
 	private void stubSaveAndFlush() {

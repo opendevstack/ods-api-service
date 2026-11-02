@@ -31,12 +31,6 @@ import org.springframework.web.server.ResponseStatusException;
 @Slf4j
 public class FeedbackSubmissionService {
 
-	private static final int DEFAULT_PAGE = 0;
-
-	private static final int DEFAULT_SIZE = 20;
-
-	private static final int MAX_SIZE = 100;
-
 	private final FeedbackSubmissionRepository feedbackSubmissionRepository;
 
 	private final ClientAppRepository clientAppRepository;
@@ -89,26 +83,14 @@ public class FeedbackSubmissionService {
 	 * timestamp bounds. Results are ordered from newest to oldest.
 	 * @param startDate inclusive lower bound, or {@code null} for no lower bound
 	 * @param endDate inclusive upper bound, or {@code null} for no upper bound
-	 * @param page zero-based page number, or {@code null} for the first page
-	 * @param size page size, or {@code null} for the default size
+	 * @param page validated zero-based page number
+	 * @param size validated page size
 	 * @return matching submissions and pagination metadata
 	 */
 	@Transactional(readOnly = true)
 	public GetFeedbackSubmissionsResponse getFeedbackSubmissions(OffsetDateTime startDate, OffsetDateTime endDate,
-			Integer page, Integer size) {
-		if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"startDate must be before or equal to endDate.");
-		}
-		int pageNumber = page == null ? DEFAULT_PAGE : page;
-		int pageSize = size == null ? DEFAULT_SIZE : size;
-		if (pageNumber < 0) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page must be greater than or equal to 0.");
-		}
-		if (pageSize < 1 || pageSize > MAX_SIZE) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Size must be between 1 and 100.");
-		}
-		Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "submittedAt"));
+			int page, int size) {
+		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "submittedAt"));
 		Page<FeedbackSubmissionEntity> entities;
 		if (startDate != null && endDate != null) {
 			entities = feedbackSubmissionRepository
@@ -125,7 +107,7 @@ public class FeedbackSubmissionService {
 		else {
 			entities = feedbackSubmissionRepository.findAll(pageable);
 		}
-		if (!(pageNumber == 0 && entities.getTotalPages() == 0) && pageNumber >= entities.getTotalPages()) {
+		if (!(page == 0 && entities.getTotalPages() == 0) && page >= entities.getTotalPages()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Requested feedback page does not exist.");
 		}
 		List<FeedbackSubmission> submissions = entities.getContent().stream()
@@ -138,7 +120,7 @@ public class FeedbackSubmissionService {
 			.totalPages(entities.getTotalPages())
 			.last(entities.isLast());
 		log.debug("Found {} of {} feedback submissions on page {}", submissions.size(), entities.getTotalElements(),
-				pageNumber);
+				page);
 		return new GetFeedbackSubmissionsResponse().submissions(submissions).metadata(metadata);
 	}
 

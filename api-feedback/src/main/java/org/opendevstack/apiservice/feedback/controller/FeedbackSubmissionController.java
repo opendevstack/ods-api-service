@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
 
@@ -22,6 +23,12 @@ import java.time.OffsetDateTime;
 @RequiredArgsConstructor
 @Slf4j
 public class FeedbackSubmissionController implements FeedbackSubmissionsApi {
+
+	private static final int DEFAULT_PAGE = 0;
+
+	private static final int DEFAULT_SIZE = 20;
+
+	private static final int MAX_SIZE = 100;
 
 	private final FeedbackSubmissionService feedbackSubmissionService;
 
@@ -48,9 +55,35 @@ public class FeedbackSubmissionController implements FeedbackSubmissionsApi {
 	@Override
 	public ResponseEntity<GetFeedbackSubmissionsResponse> getFeedbackSubmissions(
 			OffsetDateTime startDate, OffsetDateTime endDate, Integer page, Integer size) {
+		validateDateRange(startDate, endDate);
+		int validPage = validatePage(page);
+		int validSize = validateSize(size);
 		GetFeedbackSubmissionsResponse submissions = feedbackSubmissionService.getFeedbackSubmissions(startDate,
-				endDate, page, size);
+				endDate, validPage, validSize);
 		return ResponseEntity.ok(submissions);
+	}
+
+	private void validateDateRange(OffsetDateTime startDate, OffsetDateTime endDate) {
+		if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"startDate must be before or equal to endDate.");
+		}
+	}
+
+	private int validatePage(Integer page) {
+		int pageNumber = page == null ? DEFAULT_PAGE : page;
+		if (pageNumber < 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page must be greater than or equal to 0.");
+		}
+		return pageNumber;
+	}
+
+	private int validateSize(Integer size) {
+		int pageSize = size == null ? DEFAULT_SIZE : size;
+		if (pageSize < 1 || pageSize > MAX_SIZE) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Size must be between 1 and 100.");
+		}
+		return pageSize;
 	}
 
 }

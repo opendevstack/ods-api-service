@@ -6,13 +6,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.opendevstack.apiservice.feedback.controller.advice.FeedbackSubmissionExceptionHandler;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionsMetadata;
 import org.opendevstack.apiservice.feedback.model.GetFeedbackSubmissionsResponse;
 import org.opendevstack.apiservice.feedback.service.FeedbackSubmissionService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,7 +21,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.server.ResponseStatusException;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -128,33 +128,32 @@ class FeedbackSubmissionControllerTest {
 			.andExpect(jsonPath("$.message").value("Invalid value for parameter 'startDate'."));
 	}
 
-	@Test
-	void startDateAfterEndDateReturnsBadRequest() throws Exception {
-		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-02T00:00:00Z");
-		OffsetDateTime endDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
-		when(feedbackSubmissionService.getFeedbackSubmissions(startDate, endDate, 0, 20))
-			.thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"startDate must be before or equal to endDate."));
-
+	@ParameterizedTest
+	@CsvSource({ "2025-01-02T00:00:00Z, 2025-01-01T00:00:00Z",
+			"2025-06-02T00:00:00Z, 2025-06-01T00:00:00Z" })
+	void startDateAfterEndDateReturnsBadRequest(String startDateValue, String endDateValue) throws Exception {
 		feedbackSubmissionMvc()
 			.perform(get("/api/v1/feedback/submissions")
-				.param("startDate", startDate.toString())
-				.param("endDate", endDate.toString()))
+				.param("startDate", startDateValue)
+				.param("endDate", endDateValue))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.message").value("startDate must be before or equal to endDate."));
+
+		verifyNoInteractions(feedbackSubmissionService);
 	}
 
-	@Test
-	void invalidPageSizeReturnsBadRequest() throws Exception {
-		when(feedbackSubmissionService.getFeedbackSubmissions(null, null, 0, 0))
-			.thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Size must be between 1 and 100."));
-
+	@ParameterizedTest
+	@CsvSource({ "-1, 20, Page must be greater than or equal to 0.",
+			"0, 0, Size must be between 1 and 100.", "0, 101, Size must be between 1 and 100." })
+	void invalidPaginationParametersReturnBadRequest(int page, int size, String expectedMessage) throws Exception {
 		feedbackSubmissionMvc()
 			.perform(get("/api/v1/feedback/submissions")
-				.param("size", "0"))
-			.andExpect(status().isBadRequest());
+				.param("page", Integer.toString(page))
+				.param("size", Integer.toString(size)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.message").value(expectedMessage));
 
-		verify(feedbackSubmissionService).getFeedbackSubmissions(null, null, 0, 0);
+		verifyNoInteractions(feedbackSubmissionService);
 	}
 
 	private MockMvc feedbackSubmissionMvc() {
