@@ -17,11 +17,11 @@ import org.springframework.stereotype.Repository;
 public interface FeedbackSubmissionRepository extends JpaRepository<FeedbackSubmissionEntity, UUID> {
 
 	@Query("""
-		SELECT submission
-		FROM FeedbackSubmissionEntity submission
-		WHERE submission.submittedAt >= COALESCE(:startDate, submission.submittedAt)
-			AND submission.submittedAt <= COALESCE(:endDate, submission.submittedAt)
-		""")
+        SELECT submission
+        FROM FeedbackSubmissionEntity submission
+        WHERE submission.submittedAt >= COALESCE(:startDate, submission.submittedAt)
+            AND submission.submittedAt <= COALESCE(:endDate, submission.submittedAt)
+        """)
 	Page<FeedbackSubmissionEntity> findBySubmittedAtRange(@Param("startDate") OffsetDateTime startDate,
 			@Param("endDate") OffsetDateTime endDate, Pageable pageable);
 
