@@ -9,8 +9,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
+import org.opendevstack.apiservice.feedback.mapper.FeedbackSubmissionJsonMapper;
 import org.opendevstack.apiservice.feedback.mapper.FeedbackSubmissionMapper;
+import org.opendevstack.apiservice.feedback.mapper.FeedbackSubmissionMapperImpl;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
 import org.opendevstack.apiservice.feedback.model.GetFeedbackSubmissionsResponse;
@@ -49,12 +50,14 @@ class FeedbackSubmissionServiceTest {
 	@Mock
 	private ProjectRepository projectRepository;
 
+	private final ObjectMapper objectMapper = new ObjectMapper();
+
 	private FeedbackSubmissionService service;
 
 	@BeforeEach
 	void setUp() {
 		service = new FeedbackSubmissionService(feedbackSubmissionRepository, clientAppRepository, projectRepository,
-				Mappers.getMapper(FeedbackSubmissionMapper.class), new ObjectMapper());
+				new FeedbackSubmissionMapperImpl(new FeedbackSubmissionJsonMapper(objectMapper)));
 	}
 
 	@Test
@@ -165,8 +168,8 @@ class FeedbackSubmissionServiceTest {
 		entity.setClientAppRegistrationId(UUID.randomUUID());
 		entity.setClientName("Feedback client");
 		entity.setProjectKey("PROJECT");
-		entity.setQuestions(new ObjectMapper().valueToTree(List.of(Map.of("id", "q1"))));
-		entity.setAnswers(new ObjectMapper().valueToTree(Map.of("q1", Map.of("value", "yes"))));
+		entity.setQuestions(objectMapper.valueToTree(List.of(Map.of("id", "q1"))));
+		entity.setAnswers(objectMapper.valueToTree(Map.of("q1", Map.of("value", "yes"))));
 		Pageable pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "submittedAt"));
 		when(feedbackSubmissionRepository.findBySubmittedAtRange(null, null, pageable))
 			.thenReturn(new PageImpl<>(List.of(entity), pageable, 1));

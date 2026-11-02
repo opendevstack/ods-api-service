@@ -1,6 +1,5 @@
 package org.opendevstack.apiservice.feedback.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -41,8 +40,6 @@ public class FeedbackSubmissionService {
 
 	private final FeedbackSubmissionMapper mapper;
 
-	private final ObjectMapper objectMapper;
-
 	/**
 	 * Persists a submission with metadata from its registered client application.
 	 * @param request validated feedback submission data
@@ -58,14 +55,15 @@ public class FeedbackSubmissionService {
 					clientAppRegistrationId);
 			return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Client application is not registered");
 		});
+		
 		Optional<ProjectEntity> project = projectRepository.findByProjectKeyIgnoreCase(request.getProjectKey());
 
-		FeedbackSubmissionEntity submission = mapper.toEntity(request, project, clientApp, objectMapper);
+		FeedbackSubmissionEntity submission = mapper.toEntity(request, project, clientApp);
 
 		FeedbackSubmissionEntity savedSubmission = feedbackSubmissionRepository.saveAndFlush(submission);
 		log.info("Registered feedback submission id={} projectKey={}", savedSubmission.getId(),
 				savedSubmission.getProjectKey());
-		return mapper.toApiModel(savedSubmission, objectMapper);
+		return mapper.toApiModel(savedSubmission);
 	}
 
 	/**
@@ -87,7 +85,7 @@ public class FeedbackSubmissionService {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Requested feedback page does not exist.");
 		}
 		List<FeedbackSubmission> submissions = entities.getContent().stream()
-			.map(entity -> mapper.toApiModel(entity, objectMapper))
+			.map(mapper::toApiModel)
 			.toList();
 		FeedbackSubmissionsMetadata metadata = new FeedbackSubmissionsMetadata()
 			.page(entities.getNumber())

@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmission;
 import org.opendevstack.apiservice.feedback.model.FeedbackSubmissionRequest;
@@ -19,9 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class FeedbackSubmissionMapperTest {
 
-	private final FeedbackSubmissionMapper mapper = Mappers.getMapper(FeedbackSubmissionMapper.class);
-
 	private final ObjectMapper objectMapper = new ObjectMapper();
+
+	private final FeedbackSubmissionMapper mapper = new FeedbackSubmissionMapperImpl(
+			new FeedbackSubmissionJsonMapper(objectMapper));
 
 	@Test
 	void mapsRequestToEntityIncludingClientMetadataAndJsonFields() {
@@ -43,7 +43,7 @@ class FeedbackSubmissionMapperTest {
 			.questions(questions)
 			.answers(answers);
 
-		FeedbackSubmissionEntity entity = mapper.toEntity(request, Optional.of(project), clientApp, objectMapper);
+		FeedbackSubmissionEntity entity = mapper.toEntity(request, Optional.of(project), clientApp);
 
 		assertThat(entity.getClientId()).isEqualTo(internalClientId);
 		assertThat(entity.getClientAppRegistrationId()).isEqualTo(clientAppRegistrationId);
@@ -66,7 +66,7 @@ class FeedbackSubmissionMapperTest {
 			.clientName("Feedback client")
 			.build();
 
-		FeedbackSubmissionEntity entity = mapper.toEntity(request, Optional.empty(), clientApp, objectMapper);
+		FeedbackSubmissionEntity entity = mapper.toEntity(request, Optional.empty(), clientApp);
 
 		assertThat(entity.getProjectId()).isNull();
 		assertThat(entity.getProjectKey()).isEqualTo("UNREGISTERED");
@@ -87,7 +87,7 @@ class FeedbackSubmissionMapperTest {
 		entity.setQuestions(objectMapper.valueToTree(questions));
 		entity.setAnswers(objectMapper.valueToTree(answers));
 
-		FeedbackSubmission submission = mapper.toApiModel(entity, objectMapper);
+		FeedbackSubmission submission = mapper.toApiModel(entity);
 
 		assertThat(submission.getClientAppRegistrationId()).isEqualTo(clientAppRegistrationId);
 		assertThat(submission.getClientName()).isEqualTo("Feedback client");
