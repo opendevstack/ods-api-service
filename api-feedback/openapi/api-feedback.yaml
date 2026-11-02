@@ -56,14 +56,14 @@ paths:
           schema:
             type: string
             format: date-time
-          description: Return submissions created at or after this timestamp.
+          description: Return submissions created at or after this timestamp. Must be before or equal to endDate when both are provided.
         - name: endDate
           in: query
           required: false
           schema:
             type: string
             format: date-time
-          description: Return submissions created at or before this timestamp.
+          description: Return submissions created at or before this timestamp. Must be after or equal to startDate when both are provided.
         - name: page
           in: query
           required: false

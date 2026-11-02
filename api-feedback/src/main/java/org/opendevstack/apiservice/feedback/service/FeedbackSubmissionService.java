@@ -96,6 +96,10 @@ public class FeedbackSubmissionService {
 	@Transactional(readOnly = true)
 	public GetFeedbackSubmissionsResponse getFeedbackSubmissions(OffsetDateTime startDate, OffsetDateTime endDate,
 			Integer page, Integer size) {
+		if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"startDate must be before or equal to endDate.");
+		}
 		int pageNumber = page == null ? DEFAULT_PAGE : page;
 		int pageSize = size == null ? DEFAULT_SIZE : size;
 		if (pageNumber < 0) {

@@ -246,6 +246,22 @@ class FeedbackSubmissionServiceTest {
 				pageable);
 	}
 
+	@Test
+	void getFeedbackSubmissionsRejectsStartDateAfterEndDate() {
+		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-02T00:00:00Z");
+		OffsetDateTime endDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
+
+		assertThatThrownBy(() -> service.getFeedbackSubmissions(startDate, endDate, null, null))
+			.isInstanceOf(ResponseStatusException.class)
+			.satisfies(exception -> {
+				ResponseStatusException statusException = (ResponseStatusException) exception;
+				assertThat(statusException.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+				assertThat(statusException.getReason()).isEqualTo("startDate must be before or equal to endDate.");
+			});
+
+		verifyNoInteractions(feedbackSubmissionRepository);
+	}
+
 	@ParameterizedTest
 	@CsvSource({ "-1, 20", "0, 0", "0, 101" })
 	void getSubmissionsRejectsOutOfRangePaginationParameters(int page, int size) {

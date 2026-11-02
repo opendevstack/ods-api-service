@@ -129,6 +129,22 @@ class FeedbackSubmissionControllerTest {
 	}
 
 	@Test
+	void startDateAfterEndDateReturnsBadRequest() throws Exception {
+		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-02T00:00:00Z");
+		OffsetDateTime endDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
+		when(feedbackSubmissionService.getFeedbackSubmissions(startDate, endDate, 0, 20))
+			.thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"startDate must be before or equal to endDate."));
+
+		feedbackSubmissionMvc()
+			.perform(get("/api/v1/feedback/submissions")
+				.param("startDate", startDate.toString())
+				.param("endDate", endDate.toString()))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.message").value("startDate must be before or equal to endDate."));
+	}
+
+	@Test
 	void invalidPageSizeReturnsBadRequest() throws Exception {
 		when(feedbackSubmissionService.getFeedbackSubmissions(null, null, 0, 0))
 			.thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Size must be between 1 and 100."));
