@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 /** REST endpoints for creating and querying feedback submissions. */
 @RestController
@@ -39,8 +38,7 @@ public class FeedbackSubmissionController implements FeedbackSubmissionsApi {
 	}
 
 	/**
-	 * Lists a page of submissions for a client, optionally bounded by inclusive timestamps.
-	 * @param clientAppRegistrationId client application registration ID to filter by
+	 * Lists a page of submissions across clients, optionally bounded by inclusive timestamps.
 	 * @param startDate inclusive lower bound for submission time, or {@code null}
 	 * @param endDate inclusive upper bound for submission time, or {@code null}
 	 * @param page zero-based page number
@@ -48,10 +46,10 @@ public class FeedbackSubmissionController implements FeedbackSubmissionsApi {
 	 * @return matching submissions and pagination metadata
 	 */
 	@Override
-	public ResponseEntity<GetFeedbackSubmissionsResponse> getFeedbackSubmissionsByClientAppRegistrationId(
-			UUID clientAppRegistrationId, OffsetDateTime startDate, OffsetDateTime endDate, Integer page, Integer size) {
-		GetFeedbackSubmissionsResponse submissions = feedbackSubmissionService
-			.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate, endDate, page, size);
+	public ResponseEntity<GetFeedbackSubmissionsResponse> getFeedbackSubmissions(
+			OffsetDateTime startDate, OffsetDateTime endDate, Integer page, Integer size) {
+		GetFeedbackSubmissionsResponse submissions = feedbackSubmissionService.getFeedbackSubmissions(startDate,
+				endDate, page, size);
 		return ResponseEntity.ok(submissions);
 	}
 

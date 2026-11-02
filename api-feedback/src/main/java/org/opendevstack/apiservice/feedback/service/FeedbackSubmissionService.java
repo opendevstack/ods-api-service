@@ -19,6 +19,7 @@ import org.opendevstack.apiservice.persistence.repository.ProjectRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,9 +85,8 @@ public class FeedbackSubmissionService {
 	}
 
 	/**
-	 * Finds a page of submissions for a client application registration within optional
-	 * inclusive timestamp bounds. Results are ordered from newest to oldest.
-	 * @param clientAppRegistrationId client application registration ID
+	 * Finds a page of submissions across client applications within optional inclusive
+	 * timestamp bounds. Results are ordered from newest to oldest.
 	 * @param startDate inclusive lower bound, or {@code null} for no lower bound
 	 * @param endDate inclusive upper bound, or {@code null} for no upper bound
 	 * @param page zero-based page number, or {@code null} for the first page
@@ -94,8 +94,8 @@ public class FeedbackSubmissionService {
 	 * @return matching submissions and pagination metadata
 	 */
 	@Transactional(readOnly = true)
-	public GetFeedbackSubmissionsResponse getSubmissionsByClientAppRegistrationId(UUID clientAppRegistrationId,
-			OffsetDateTime startDate, OffsetDateTime endDate, Integer page, Integer size) {
+	public GetFeedbackSubmissionsResponse getFeedbackSubmissions(OffsetDateTime startDate, OffsetDateTime endDate,
+			Integer page, Integer size) {
 		int pageNumber = page == null ? DEFAULT_PAGE : page;
 		int pageSize = size == null ? DEFAULT_SIZE : size;
 		if (pageNumber < 0) {
@@ -104,26 +104,22 @@ public class FeedbackSubmissionService {
 		if (pageSize < 1 || pageSize > MAX_SIZE) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Size must be between 1 and 100.");
 		}
-		Pageable pageable = PageRequest.of(pageNumber, pageSize);
+		Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "submittedAt"));
 		Page<FeedbackSubmissionEntity> entities;
 		if (startDate != null && endDate != null) {
 			entities = feedbackSubmissionRepository
-				.findByClientAppRegistrationIdAndSubmittedAtBetweenOrderBySubmittedAtDesc(clientAppRegistrationId,
-						startDate, endDate, pageable);
+				.findBySubmittedAtBetweenOrderBySubmittedAtDesc(startDate, endDate, pageable);
 		}
 		else if (startDate != null) {
 			entities = feedbackSubmissionRepository
-				.findByClientAppRegistrationIdAndSubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(
-						clientAppRegistrationId, startDate, pageable);
+				.findBySubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(startDate, pageable);
 		}
 		else if (endDate != null) {
 			entities = feedbackSubmissionRepository
-				.findByClientAppRegistrationIdAndSubmittedAtLessThanEqualOrderBySubmittedAtDesc(clientAppRegistrationId,
-						endDate, pageable);
+				.findBySubmittedAtLessThanEqualOrderBySubmittedAtDesc(endDate, pageable);
 		}
 		else {
-			entities = feedbackSubmissionRepository
-				.findByClientAppRegistrationIdOrderBySubmittedAtDesc(clientAppRegistrationId, pageable);
+			entities = feedbackSubmissionRepository.findAll(pageable);
 		}
 		if (!(pageNumber == 0 && entities.getTotalPages() == 0) && pageNumber >= entities.getTotalPages()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Requested feedback page does not exist.");
@@ -137,8 +133,8 @@ public class FeedbackSubmissionService {
 			.totalElements((int) entities.getTotalElements())
 			.totalPages(entities.getTotalPages())
 			.last(entities.isLast());
-		log.debug("Found {} of {} feedback submissions for clientAppRegistrationId={} on page {}", submissions.size(),
-				entities.getTotalElements(), clientAppRegistrationId, pageNumber);
+		log.debug("Found {} of {} feedback submissions on page {}", submissions.size(), entities.getTotalElements(),
+				pageNumber);
 		return new GetFeedbackSubmissionsResponse().submissions(submissions).metadata(metadata);
 	}
 

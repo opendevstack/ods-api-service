@@ -44,20 +44,12 @@ paths:
           $ref: '#/components/responses/ForbiddenResponse'
         '500':
           $ref: '#/components/responses/InternalErrorResponse'
-  /submissions/{client_app_registration_id}:
     get:
       tags:
         - Feedback submissions
-      summary: Get feedback submissions for a client application
-      operationId: getFeedbackSubmissionsByClientAppRegistrationId
+      summary: Get feedback submissions
+      operationId: getFeedbackSubmissions
       parameters:
-        - name: client_app_registration_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Client application registration ID used to filter submissions.
         - name: startDate
           in: query
           required: false
@@ -91,7 +83,7 @@ paths:
           description: Number of submissions per page.
       responses:
         '200':
-          description: A page of feedback submissions for the client application.
+          description: A page of feedback submissions, optionally filtered by submission date.
           content:
             application/json:
               schema:

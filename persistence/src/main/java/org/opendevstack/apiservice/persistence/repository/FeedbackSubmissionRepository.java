@@ -14,16 +14,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FeedbackSubmissionRepository extends JpaRepository<FeedbackSubmissionEntity, UUID> {
 
-	Page<FeedbackSubmissionEntity> findByClientAppRegistrationIdOrderBySubmittedAtDesc(
-			UUID clientAppRegistrationId, Pageable pageable);
+	Page<FeedbackSubmissionEntity> findBySubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(
+			OffsetDateTime startDate, Pageable pageable);
 
-	Page<FeedbackSubmissionEntity> findByClientAppRegistrationIdAndSubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(
-			UUID clientAppRegistrationId, OffsetDateTime startDate, Pageable pageable);
+	Page<FeedbackSubmissionEntity> findBySubmittedAtLessThanEqualOrderBySubmittedAtDesc(
+			OffsetDateTime endDate, Pageable pageable);
 
-	Page<FeedbackSubmissionEntity> findByClientAppRegistrationIdAndSubmittedAtLessThanEqualOrderBySubmittedAtDesc(
-			UUID clientAppRegistrationId, OffsetDateTime endDate, Pageable pageable);
-
-	Page<FeedbackSubmissionEntity> findByClientAppRegistrationIdAndSubmittedAtBetweenOrderBySubmittedAtDesc(
-			UUID clientAppRegistrationId, OffsetDateTime startDate, OffsetDateTime endDate, Pageable pageable);
+	Page<FeedbackSubmissionEntity> findBySubmittedAtBetweenOrderBySubmittedAtDesc(
+			OffsetDateTime startDate, OffsetDateTime endDate, Pageable pageable);
 
 }

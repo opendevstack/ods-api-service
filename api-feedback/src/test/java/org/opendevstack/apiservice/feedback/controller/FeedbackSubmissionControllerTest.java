@@ -100,16 +100,14 @@ class FeedbackSubmissionControllerTest {
 
 	@Test
 	void getSubmissionsAcceptsClientAppRegistrationIdAndDateBounds() throws Exception {
-		UUID clientAppRegistrationId = UUID.randomUUID();
 		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
 		OffsetDateTime endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z");
 		GetFeedbackSubmissionsResponse response = new GetFeedbackSubmissionsResponse().submissions(List.of())
 			.metadata(new FeedbackSubmissionsMetadata().page(0).size(20).totalElements(0).totalPages(0).last(true));
-		when(feedbackSubmissionService.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate,
-				endDate, 0, 20)).thenReturn(response);
+		when(feedbackSubmissionService.getFeedbackSubmissions(startDate, endDate, 0, 20)).thenReturn(response);
 
 		feedbackSubmissionMvc()
-			.perform(get("/api/v1/feedback/submissions/{client_app_registration_id}", clientAppRegistrationId)
+			.perform(get("/api/v1/feedback/submissions")
 				.param("startDate", startDate.toString())
 				.param("endDate", endDate.toString()))
 			.andExpect(status().isOk())
@@ -118,14 +116,13 @@ class FeedbackSubmissionControllerTest {
 			.andExpect(jsonPath("$.metadata.size").value(20))
 			.andExpect(jsonPath("$.metadata.last").value(true));
 
-		verify(feedbackSubmissionService).getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, startDate,
-				endDate, 0, 20);
+		verify(feedbackSubmissionService).getFeedbackSubmissions(startDate, endDate, 0, 20);
 	}
 
 	@Test
 	void invalidStartDateReturnsBadRequest() throws Exception {
 		feedbackSubmissionMvc()
-			.perform(get("/api/v1/feedback/submissions/{client_app_registration_id}", UUID.randomUUID())
+			.perform(get("/api/v1/feedback/submissions")
 				.param("startDate", "not-a-timestamp"))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.message").value("Invalid value for parameter 'startDate'."));
@@ -133,17 +130,15 @@ class FeedbackSubmissionControllerTest {
 
 	@Test
 	void invalidPageSizeReturnsBadRequest() throws Exception {
-		UUID clientAppRegistrationId = UUID.randomUUID();
-		when(feedbackSubmissionService.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, null, null, 0, 0))
+		when(feedbackSubmissionService.getFeedbackSubmissions(null, null, 0, 0))
 			.thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Size must be between 1 and 100."));
 
 		feedbackSubmissionMvc()
-			.perform(get("/api/v1/feedback/submissions/{client_app_registration_id}", clientAppRegistrationId)
+			.perform(get("/api/v1/feedback/submissions")
 				.param("size", "0"))
 			.andExpect(status().isBadRequest());
 
-		verify(feedbackSubmissionService)
-			.getSubmissionsByClientAppRegistrationId(clientAppRegistrationId, null, null, 0, 0);
+		verify(feedbackSubmissionService).getFeedbackSubmissions(null, null, 0, 0);
 	}
 
 	private MockMvc feedbackSubmissionMvc() {
