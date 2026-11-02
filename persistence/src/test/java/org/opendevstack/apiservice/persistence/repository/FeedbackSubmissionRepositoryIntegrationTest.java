@@ -64,28 +64,32 @@ class FeedbackSubmissionRepositoryIntegrationTest {
 		UUID otherClientSubmission = saveSubmission(secondClientRegistrationId,
 				OffsetDateTime.parse("2025-02-15T00:00:00Z"));
 
-		assertThat(repository.findAll(PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "submittedAt"))).getContent())
+		assertThat(repository.findBySubmittedAtRange(null, null,
+				PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "submittedAt"))).getContent())
 			.extracting(FeedbackSubmissionEntity::getId)
 			.containsExactly(afterEnd, atEnd, otherClientSubmission, insideRange, atStart, beforeStart);
 		assertThat(repository
-			.findBySubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(startDate, PageRequest.of(0, 20)).getContent())
+			.findBySubmittedAtRange(startDate, null,
+					PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "submittedAt"))).getContent())
 			.extracting(FeedbackSubmissionEntity::getId)
 			.containsExactly(afterEnd, atEnd, otherClientSubmission, insideRange, atStart);
 		assertThat(repository
-			.findBySubmittedAtLessThanEqualOrderBySubmittedAtDesc(endDate, PageRequest.of(0, 20)).getContent())
+			.findBySubmittedAtRange(null, endDate,
+					PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "submittedAt"))).getContent())
 			.extracting(FeedbackSubmissionEntity::getId)
 			.containsExactly(atEnd, otherClientSubmission, insideRange, atStart, beforeStart);
 		assertThat(repository
-			.findBySubmittedAtBetweenOrderBySubmittedAtDesc(startDate, endDate, PageRequest.of(0, 20)).getContent())
+			.findBySubmittedAtRange(startDate, endDate,
+					PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "submittedAt"))).getContent())
 			.extracting(FeedbackSubmissionEntity::getId)
 			.containsExactly(atEnd, otherClientSubmission, insideRange, atStart);
 
-		Page<FeedbackSubmissionEntity> firstPage = repository.findAll(
+		Page<FeedbackSubmissionEntity> firstPage = repository.findBySubmittedAtRange(null, null,
 			PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "submittedAt")));
 		assertThat(firstPage.getContent()).extracting(FeedbackSubmissionEntity::getId).containsExactly(afterEnd, atEnd);
 		assertThat(firstPage.getTotalElements()).isEqualTo(6);
 		assertThat(firstPage.getTotalPages()).isEqualTo(3);
-		Page<FeedbackSubmissionEntity> secondPage = repository.findAll(
+		Page<FeedbackSubmissionEntity> secondPage = repository.findBySubmittedAtRange(null, null,
 			PageRequest.of(1, 2, Sort.by(Sort.Direction.DESC, "submittedAt")));
 		assertThat(secondPage.getContent()).extracting(FeedbackSubmissionEntity::getId)
 			.containsExactly(otherClientSubmission, insideRange);

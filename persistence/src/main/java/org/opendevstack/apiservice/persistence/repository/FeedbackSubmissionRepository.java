@@ -6,6 +6,8 @@ import org.opendevstack.apiservice.persistence.entity.FeedbackSubmissionEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -14,13 +16,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FeedbackSubmissionRepository extends JpaRepository<FeedbackSubmissionEntity, UUID> {
 
-	Page<FeedbackSubmissionEntity> findBySubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(
-			OffsetDateTime startDate, Pageable pageable);
-
-	Page<FeedbackSubmissionEntity> findBySubmittedAtLessThanEqualOrderBySubmittedAtDesc(
-			OffsetDateTime endDate, Pageable pageable);
-
-	Page<FeedbackSubmissionEntity> findBySubmittedAtBetweenOrderBySubmittedAtDesc(
-			OffsetDateTime startDate, OffsetDateTime endDate, Pageable pageable);
+	@Query("""
+		SELECT submission
+		FROM FeedbackSubmissionEntity submission
+		WHERE submission.submittedAt >= COALESCE(:startDate, submission.submittedAt)
+			AND submission.submittedAt <= COALESCE(:endDate, submission.submittedAt)
+		""")
+	Page<FeedbackSubmissionEntity> findBySubmittedAtRange(@Param("startDate") OffsetDateTime startDate,
+			@Param("endDate") OffsetDateTime endDate, Pageable pageable);
 
 }

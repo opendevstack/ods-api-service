@@ -91,22 +91,8 @@ public class FeedbackSubmissionService {
 	public GetFeedbackSubmissionsResponse getFeedbackSubmissions(OffsetDateTime startDate, OffsetDateTime endDate,
 			int page, int size) {
 		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "submittedAt"));
-		Page<FeedbackSubmissionEntity> entities;
-		if (startDate != null && endDate != null) {
-			entities = feedbackSubmissionRepository
-				.findBySubmittedAtBetweenOrderBySubmittedAtDesc(startDate, endDate, pageable);
-		}
-		else if (startDate != null) {
-			entities = feedbackSubmissionRepository
-				.findBySubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(startDate, pageable);
-		}
-		else if (endDate != null) {
-			entities = feedbackSubmissionRepository
-				.findBySubmittedAtLessThanEqualOrderBySubmittedAtDesc(endDate, pageable);
-		}
-		else {
-			entities = feedbackSubmissionRepository.findAll(pageable);
-		}
+		Page<FeedbackSubmissionEntity> entities = feedbackSubmissionRepository
+			.findBySubmittedAtRange(startDate, endDate, pageable);
 		if (!(page == 0 && entities.getTotalPages() == 0) && page >= entities.getTotalPages()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Requested feedback page does not exist.");
 		}

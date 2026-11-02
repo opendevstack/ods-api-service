@@ -186,7 +186,8 @@ class FeedbackSubmissionServiceTest {
 		entity.setQuestions(new ObjectMapper().valueToTree(List.of(Map.of("id", "q1"))));
 		entity.setAnswers(new ObjectMapper().valueToTree(Map.of("q1", Map.of("value", "yes"))));
 		Pageable pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "submittedAt"));
-		when(feedbackSubmissionRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(entity), pageable, 1));
+		when(feedbackSubmissionRepository.findBySubmittedAtRange(null, null, pageable))
+			.thenReturn(new PageImpl<>(List.of(entity), pageable, 1));
 
 		GetFeedbackSubmissionsResponse response = service.getFeedbackSubmissions(null, null, 0, 20);
 
@@ -206,13 +207,13 @@ class FeedbackSubmissionServiceTest {
 		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
 		Pageable pageable = PageRequest.of(2, 5, Sort.by(Sort.Direction.DESC, "submittedAt"));
 		when(feedbackSubmissionRepository
-			.findBySubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(startDate, pageable))
+			.findBySubmittedAtRange(startDate, null, pageable))
 			.thenReturn(new PageImpl<>(List.of(), pageable, 30));
 
 		service.getFeedbackSubmissions(startDate, null, 2, 5);
 
 		verify(feedbackSubmissionRepository)
-			.findBySubmittedAtGreaterThanEqualOrderBySubmittedAtDesc(startDate, pageable);
+			.findBySubmittedAtRange(startDate, null, pageable);
 	}
 
 	@Test
@@ -220,13 +221,13 @@ class FeedbackSubmissionServiceTest {
 		OffsetDateTime endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z");
 		Pageable pageable = PageRequest.of(2, 5, Sort.by(Sort.Direction.DESC, "submittedAt"));
 		when(feedbackSubmissionRepository
-			.findBySubmittedAtLessThanEqualOrderBySubmittedAtDesc(endDate, pageable))
+			.findBySubmittedAtRange(null, endDate, pageable))
 			.thenReturn(new PageImpl<>(List.of(), pageable, 30));
 
 		service.getFeedbackSubmissions(null, endDate, 2, 5);
 
 		verify(feedbackSubmissionRepository)
-			.findBySubmittedAtLessThanEqualOrderBySubmittedAtDesc(endDate, pageable);
+			.findBySubmittedAtRange(null, endDate, pageable);
 	}
 
 	@Test
@@ -235,13 +236,12 @@ class FeedbackSubmissionServiceTest {
 		OffsetDateTime endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z");
 		Pageable pageable = PageRequest.of(2, 5, Sort.by(Sort.Direction.DESC, "submittedAt"));
 		when(feedbackSubmissionRepository
-			.findBySubmittedAtBetweenOrderBySubmittedAtDesc(startDate, endDate, pageable))
+			.findBySubmittedAtRange(startDate, endDate, pageable))
 			.thenReturn(new PageImpl<>(List.of(), pageable, 30));
 
 		service.getFeedbackSubmissions(startDate, endDate, 2, 5);
 
-		verify(feedbackSubmissionRepository).findBySubmittedAtBetweenOrderBySubmittedAtDesc(startDate, endDate,
-				pageable);
+		verify(feedbackSubmissionRepository).findBySubmittedAtRange(startDate, endDate, pageable);
 	}
 
 	private void stubSaveAndFlush() {
