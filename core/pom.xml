@@ -157,6 +157,12 @@
             <artifactId>api-marketplace-metrics</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.opendevstack.apiservice</groupId>
+            <artifactId>api-feedback</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         
         <!-- Service Projects module: project creation and key generation -->
         <dependency>
