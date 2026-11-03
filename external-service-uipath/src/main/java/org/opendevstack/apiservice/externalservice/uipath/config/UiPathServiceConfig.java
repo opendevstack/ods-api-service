@@ -1,107 +1,42 @@
 package org.opendevstack.apiservice.externalservice.uipath.config;
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import lombok.extern.slf4j.Slf4j;
+import org.opendevstack.apiservice.externalservice.api.http.RestClientFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.web.client.RestTemplate;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.security.GeneralSecurityException;
-import java.security.cert.X509Certificate;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.client.RestClient;
 
 /**
- * Configuration class for UIPath service components.
+ * Configuration class for the UiPath Orchestrator external service.
+ *
+ * <p>SSL wiring is delegated to {@link RestClientFactory} in {@code external-service-api};
+ * no SSL boilerplate lives here.
  */
 @Configuration
 @EnableAsync
-@EnableConfigurationProperties(UiPathProperties.class)
 @Slf4j
 public class UiPathServiceConfig {
 
     private final UiPathProperties uiPathProperties;
 
-    public UiPathServiceConfig(@org.springframework.beans.factory.annotation.Qualifier("uiPathOrchestratorProperties") UiPathProperties uiPathProperties) {
+    public UiPathServiceConfig(UiPathProperties uiPathProperties) {
         this.uiPathProperties = uiPathProperties;
     }
 
     /**
-     * Creates a RestTemplate bean for HTTP client operations with configurable SSL settings.
-     * Uses a different bean name to avoid conflicts with other RestTemplate beans.
+     * {@link RestClient} bean for UiPath Orchestrator.
      *
-     * @return RestTemplate instance with SSL configuration
+     * <p>SSL and timeouts are configured via {@code automation.platform.uipath.ssl.*}
+     * and {@code automation.platform.uipath.timeout} properties respectively.
+     *
+     * @param builder Spring prototype builder (injected fresh per bean definition)
+     * @return configured {@link RestClient}
      */
-    @Bean(name = "uiPathRestTemplate")
-    public RestTemplate uiPathRestTemplate() {
-        if (!uiPathProperties.getSsl().isVerifyCertificates()) {
-            log.warn("UIPath SSL certificate verification is DISABLED - this should only be used in development environments");
-            return createInsecureRestTemplate();
-        } else {
-            log.info("UIPath SSL certificate verification is ENABLED");
-            return createSecureRestTemplate();
-        }
-    }
-
-    private RestTemplate createInsecureRestTemplate() {
-        try {
-            // Create a trust manager that accepts all certificates
-            // WARNING: This is insecure and should only be used in development environments
-            TrustManager[] trustAllCerts = new TrustManager[] {
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[0];
-                    }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                        // Intentionally empty - accepts all client certificates (insecure)
-                    }
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                        // Intentionally empty - accepts all server certificates (insecure)
-                    }
-                }
-            };
-
-            // Install the all-trusting trust manager
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-
-            // Create hostname verifier that accepts all hostnames (insecure)
-            HostnameVerifier allHostsValid = (hostname, session) -> true;
-
-            // Create a custom request factory that uses our SSL configuration
-            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory() {
-                @Override
-                protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
-                    if (connection instanceof HttpsURLConnection httpsConnection) {
-                        httpsConnection.setSSLSocketFactory(sslContext.getSocketFactory());
-                        httpsConnection.setHostnameVerifier(allHostsValid);
-                    }
-                    super.prepareConnection(connection, httpMethod);
-                }
-            };
-
-            requestFactory.setConnectTimeout(uiPathProperties.getTimeout());
-            requestFactory.setReadTimeout(uiPathProperties.getTimeout());
-
-            return new RestTemplate(requestFactory);
-
-        } catch (GeneralSecurityException e) {
-            log.warn("Failed to create insecure RestTemplate, falling back to default: {}", e.getMessage());
-            return createSecureRestTemplate();
-        }
-    }
-
-    private RestTemplate createSecureRestTemplate() {
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(uiPathProperties.getTimeout());
-        requestFactory.setReadTimeout(uiPathProperties.getTimeout());
-        return new RestTemplate(requestFactory);
+    @Bean(name = "uiPathRestClient")
+    public RestClient uiPathRestClient(RestClient.Builder builder) {
+        int timeout = uiPathProperties.getTimeout();
+        log.info("Creating UiPath RestClient (connect/read timeout={}ms)", timeout);
+        return RestClientFactory.build(builder, uiPathProperties.getSsl(), timeout, timeout);
     }
 }

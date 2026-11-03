@@ -1,21 +1,19 @@
 package org.opendevstack.apiservice.externalservice.aap.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.aap.exception.AutomationPlatformException;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationExecutionResult;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationJobStatus;
 import org.opendevstack.apiservice.externalservice.aap.service.AutomationPlatformService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriUtils;
-
-import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -25,13 +23,13 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Implementation of AutomationPlatformService for Ansible Automation Platform.
- * This service provides integration with Ansible AWX/Tower for executing workflows and modules.
+ * Provides integration with Ansible AWX/Tower for executing workflows and modules.
  */
 @Service("automationPlatformService")
 @Slf4j
 public class AnsibleAutomationPlatformService implements AutomationPlatformService {
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
     @Value("${automation.platform.ansible.base-url:http://localhost:8080/api/v2}")
     private String baseUrl;
@@ -42,46 +40,45 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
     @Value("${automation.platform.ansible.password:password}")
     private String password;
 
-    @Value("${automation.platform.ansible.timeout:30000}")
-    private int timeoutMs;
-
-    public AnsibleAutomationPlatformService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    public AnsibleAutomationPlatformService(RestClient aapRestClient) {
+        this.restClient = aapRestClient;
     }
 
     @Override
-    public AutomationExecutionResult executeWorkflow(String workflowName, Map<String, Object> parameters) throws AutomationPlatformException {
+    public AutomationExecutionResult executeWorkflow(String workflowName, Map<String, Object> parameters)
+            throws AutomationPlatformException {
         log.info("Executing workflow '{}' with parameters: {}", workflowName, parameters);
-        
+
         try {
-            // Create headers with authentication
-            HttpHeaders headers = createAuthHeaders();
-            
-            // Prepare request body
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("extra_vars", parameters);
-            
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-            
-            // Execute workflow job template with proper URL encoding
+
             String encodedWorkflowName = UriUtils.encodePath(workflowName, StandardCharsets.UTF_8);
             String url = baseUrl + "/workflow_job_templates/" + encodedWorkflowName + "/launch/";
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-            
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                Map<String, Object> responseBody = response.getBody();
+
+            Map<String, Object> responseBody = restClient.post()
+                    .uri(url)
+                    .headers(this::applyAuthHeaders)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {});
+
+            if (responseBody != null) {
                 String jobId = String.valueOf(responseBody.get("id"));
                 String status = String.valueOf(responseBody.get("status"));
-                
-                AutomationExecutionResult result = new AutomationExecutionResult(jobId, status, true, "Workflow executed successfully");
+
+                AutomationExecutionResult result =
+                        new AutomationExecutionResult(jobId, status, true, "Workflow executed successfully");
                 result.setMetadata(responseBody);
-                
+
                 log.info("Workflow '{}' executed successfully with job ID: {}", workflowName, jobId);
                 return result;
             } else {
-                throw new AutomationPlatformException.WorkflowExecutionException(workflowName, "Unexpected response status: " + response.getStatusCode());
+                throw new AutomationPlatformException.WorkflowExecutionException(
+                        workflowName, "Empty response body");
             }
-            
+
         } catch (RestClientException e) {
             log.error("Failed to execute workflow '{}': {}", workflowName, e.getMessage(), e);
             throw new AutomationPlatformException.WorkflowExecutionException(workflowName, e);
@@ -90,17 +87,17 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
 
     @Override
     @Async
-    public CompletableFuture<AutomationExecutionResult> executeWorkflowAsync(String workflowName, Map<String, Object> parameters) {
+    public CompletableFuture<AutomationExecutionResult> executeWorkflowAsync(
+            String workflowName, Map<String, Object> parameters) {
         try {
             AutomationExecutionResult result = executeWorkflow(workflowName, parameters);
             return CompletableFuture.completedFuture(result);
         } catch (AutomationPlatformException e) {
             log.error("Async workflow execution failed: {}", e.getMessage(), e);
             AutomationExecutionResult errorResult = AutomationExecutionResult.failure(
-                UUID.randomUUID().toString(), 
-                "Async execution failed: " + e.getMessage(),
-                e.getErrorCode()
-            );
+                    UUID.randomUUID().toString(),
+                    "Async execution failed: " + e.getMessage(),
+                    e.getErrorCode());
             return CompletableFuture.completedFuture(errorResult);
         }
     }
@@ -108,50 +105,33 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
     @Override
     public AutomationJobStatus getJobStatus(String jobId) throws AutomationPlatformException {
         log.debug("Checking status for job ID: {}", jobId);
-
-        try {
-            HttpHeaders headers = createAuthHeaders();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            String encodedJobId = UriUtils.encodePath(jobId, StandardCharsets.UTF_8);
-            String url = baseUrl + "/jobs/" + encodedJobId + "/";
-            return fetchJobStatus(jobId, url, request);
-        } catch (RestClientException e) {
-            log.error("Failed to get job status for ID '{}': {}", jobId, e.getMessage(), e);
-            throw new AutomationPlatformException("Failed to get job status", e);
-        }
+        String encodedJobId = UriUtils.encodePath(jobId, StandardCharsets.UTF_8);
+        String url = baseUrl + "/jobs/" + encodedJobId + "/";
+        return fetchJobStatus(jobId, url);
     }
 
     @Override
     public AutomationJobStatus getWorkflowJobStatus(String workflowId) throws AutomationPlatformException {
         log.debug("Checking workflow status for job ID: {}", workflowId);
-
-        try {
-            HttpHeaders headers = createAuthHeaders();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            String encodedWorkflowId = UriUtils.encodePath(workflowId, StandardCharsets.UTF_8);
-            String url = baseUrl + "/workflow_jobs/" + encodedWorkflowId + "/";
-            return fetchJobStatus(workflowId, url, request);
-        } catch (RestClientException e) {
-            log.error("Failed to get workflow job status for ID '{}': {}", workflowId, e.getMessage(), e);
-            throw new AutomationPlatformException("Failed to get workflow job status", e);
-        }
+        String encodedWorkflowId = UriUtils.encodePath(workflowId, StandardCharsets.UTF_8);
+        String url = baseUrl + "/workflow_jobs/" + encodedWorkflowId + "/";
+        return fetchJobStatus(workflowId, url);
     }
 
-    private AutomationJobStatus fetchJobStatus(String jobId, String url, HttpEntity<Void> request) throws AutomationPlatformException {
+    private AutomationJobStatus fetchJobStatus(String jobId, String url) throws AutomationPlatformException {
         try {
-            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, request, Map.class);
+            Map<String, Object> responseBody = restClient.get()
+                    .uri(url)
+                    .headers(this::applyAuthHeaders)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() {});
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                Map<String, Object> responseBody = response.getBody();
-
+            if (responseBody != null) {
                 AutomationJobStatus status = new AutomationJobStatus();
                 status.setJobId(jobId);
                 status.setStatus(parseJobStatus(String.valueOf(responseBody.get("status"))));
                 status.setStatusMessage(String.valueOf(responseBody.get("result_traceback")));
                 status.setResult(responseBody);
-
                 return status;
             } else {
                 throw new AutomationPlatformException.JobNotFoundException(jobId);
@@ -165,16 +145,13 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
     @Override
     public boolean validateConnection() {
         try {
-            HttpHeaders headers = createAuthHeaders();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-            
-            String url = baseUrl + "/ping/";
-            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, request, Map.class);
-            
-            boolean isValid = response.getStatusCode().is2xxSuccessful();
-            log.debug("Connection validation: {}", isValid ? "successful" : "failed");
-            return isValid;
-            
+            restClient.get()
+                    .uri(baseUrl + "/ping/")
+                    .headers(this::applyAuthHeaders)
+                    .retrieve()
+                    .toBodilessEntity();
+            log.debug("Connection validation: successful");
+            return true;
         } catch (Exception e) {
             log.warn("Connection validation failed: {}", e.getMessage());
             return false;
@@ -184,8 +161,6 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
     @Override
     public boolean isHealthy() {
         try {
-            // Use validateConnection for health checks, but don't log warnings on failure
-            // as health checks are frequent and failures are expected to be handled by the health indicator
             return validateConnection();
         } catch (Exception e) {
             log.debug("Health check failed: {}", e.getMessage());
@@ -193,25 +168,22 @@ public class AnsibleAutomationPlatformService implements AutomationPlatformServi
         }
     }
 
-    private HttpHeaders createAuthHeaders() {
-        HttpHeaders headers = new HttpHeaders();
+    private void applyAuthHeaders(HttpHeaders headers) {
         headers.setBasicAuth(username, password);
-        headers.set("Content-Type", "application/json");
-        return headers;
+        headers.setContentType(MediaType.APPLICATION_JSON);
     }
 
     private AutomationJobStatus.Status parseJobStatus(String status) {
         if (status == null) {
             return AutomationJobStatus.Status.PENDING;
         }
-        
         return switch (status.toLowerCase()) {
-            case "pending" -> AutomationJobStatus.Status.PENDING;
-            case "running" -> AutomationJobStatus.Status.RUNNING;
-            case "successful" -> AutomationJobStatus.Status.SUCCESSFUL;
-            case "failed" -> AutomationJobStatus.Status.FAILED;
-            case "canceled", "cancelled" -> AutomationJobStatus.Status.CANCELLED;
-            default -> AutomationJobStatus.Status.ERROR;
+            case "pending"              -> AutomationJobStatus.Status.PENDING;
+            case "running"              -> AutomationJobStatus.Status.RUNNING;
+            case "successful"           -> AutomationJobStatus.Status.SUCCESSFUL;
+            case "failed"               -> AutomationJobStatus.Status.FAILED;
+            case "canceled", "cancelled"-> AutomationJobStatus.Status.CANCELLED;
+            default                     -> AutomationJobStatus.Status.ERROR;
         };
     }
 }
