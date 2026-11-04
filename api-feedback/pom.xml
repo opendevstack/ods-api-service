@@ -108,6 +108,7 @@
                                 <skipDefaultInterface>true</skipDefaultInterface>
                                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
                                 <useTags>true</useTags>
+                                <containerDefaultToNull>true</containerDefaultToNull>
                             </configOptions>
                         </configuration>
                     </execution>

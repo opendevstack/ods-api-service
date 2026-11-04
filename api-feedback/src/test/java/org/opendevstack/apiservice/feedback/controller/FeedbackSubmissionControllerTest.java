@@ -99,6 +99,36 @@ class FeedbackSubmissionControllerTest {
 	}
 
 	@Test
+	void missingQuestionsReturnsBadRequestWithMessage() throws Exception {
+		feedbackSubmissionMvc()
+			.perform(post("/api/v1/feedback/submissions").contentType(MediaType.APPLICATION_JSON).content("""
+					{
+					  "submitter": "submitter@example.org",
+					  "answers": {}
+					}
+					"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.message").value("questions: must not be null"));
+
+		verifyNoInteractions(feedbackSubmissionService);
+	}
+
+	@Test
+	void missingAnswersReturnsBadRequestWithMessage() throws Exception {
+		feedbackSubmissionMvc()
+			.perform(post("/api/v1/feedback/submissions").contentType(MediaType.APPLICATION_JSON).content("""
+					{
+					  "submitter": "submitter@example.org",
+					  "questions": []
+					}
+					"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.message").value("answers: must not be null"));
+
+		verifyNoInteractions(feedbackSubmissionService);
+	}
+
+	@Test
 	void getSubmissionsAcceptsClientAppRegistrationIdAndDateBounds() throws Exception {
 		OffsetDateTime startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z");
 		OffsetDateTime endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z");
