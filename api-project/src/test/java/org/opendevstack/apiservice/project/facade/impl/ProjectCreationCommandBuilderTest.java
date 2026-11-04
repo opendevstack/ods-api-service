@@ -56,7 +56,7 @@ class ProjectCreationCommandBuilderTest {
         CreateProjectRequest request = build_request("DLSS", null, "KEY01");
         request.setOwner(null);
         request.setLocation(null);
-        request.setProjectManagers(List.of("alex", "taylor"));
+        request.setProjectManagers(List.of("alex", "taylor", "alex"));
 
         when(projectExistenceService.isProjectFound("KEY01")).thenReturn(false);
 
