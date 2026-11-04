@@ -21,6 +21,7 @@ public class ErrorMessage {
     public static final String PROJECT_ALREADY_EXISTS = "Project already exists";
     public static final String PROJECT_WITH_SAME_PROJECT_NAME_ALREADY_EXISTS = "Project with same project name already exists";
     public static final String CLIENT_APP_NOT_REGISTERED_MANUAL_REGISTRATION_REQUIRED = "ClientApp not registered, manual registration required";
+    public static final String PROJECT_MANAGERS_INVALID = "projectManagers must contain at most 5 identifiers matching the pattern ^[a-z]{1,10}$";
     
     private ErrorMessage() {
         // prevent instantiation

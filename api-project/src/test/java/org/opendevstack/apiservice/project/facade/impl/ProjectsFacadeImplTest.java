@@ -3,6 +3,7 @@ package org.opendevstack.apiservice.project.facade.impl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationExecutionResult;
@@ -22,15 +23,18 @@ import org.opendevstack.apiservice.serviceproject.model.Status;
 import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -90,7 +94,7 @@ class ProjectsFacadeImplTest {
         CreateProjectRequest request = new CreateProjectRequest();
         ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
-                "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID);
+                "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID, null);
         ProjectRequest serviceRequest = new ProjectRequest();
         ProjectResponse projectResponse = ProjectResponse.builder()
                 .projectId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
@@ -128,7 +132,7 @@ class ProjectsFacadeImplTest {
         request.setRegistrationOnly(true);
         ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
-                "P3RO01", "name", "desc", null, "CI-001", "eu", "x2test", "owner", CLIENT_ID);
+                "P3RO01", "name", "desc", null, "CI-001", "eu", "x2test", "owner", CLIENT_ID, null);
         ProjectRequest serviceRequest = new ProjectRequest();
         ProjectResponse projectResponse = ProjectResponse.builder()
                 .projectId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
@@ -162,7 +166,7 @@ class ProjectsFacadeImplTest {
         CreateProjectRequest request = new CreateProjectRequest();
         ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
-                "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID);
+                "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID, null);
 
         when(clientAppService.findByClientId(CLIENT_ID)).thenReturn(clientApp);
         when(projectCreationCommandBuilder.buildForCreation(request, clientApp)).thenReturn(command);
@@ -179,6 +183,67 @@ class ProjectsFacadeImplTest {
                 .thenReturn(AutomationExecutionResult.failure("job-1", "error", "workflow failed"));
 
         assertThrows(ProjectCreationException.class, () -> sut.createProject(request, CLIENT_ID));
+    }
+
+    @Test
+    void create_project_sends_project_managers_to_ansible_workflow_with_existing_parameters() throws Exception {
+        Map<String, Object> extraVars = execute_creation_with_real_mapper(List.of("alex", "taylor"));
+
+        assertEquals(List.of("alex", "taylor"), extraVars.get("project_managers"));
+        assertEquals("DLSS01", extraVars.get("project_key"));
+        assertEquals("owner", extraVars.get("project_owner"));
+        assertEquals("11111111-1111-1111-1111-111111111111", extraVars.get("project_id"));
+        assertEquals(11, extraVars.size());
+    }
+
+    @Test
+    void create_project_does_not_send_project_managers_to_ansible_workflow_when_omitted_or_empty() throws Exception {
+        Map<String, Object> omitted = execute_creation_with_real_mapper(null);
+        Map<String, Object> empty = execute_creation_with_real_mapper(List.of());
+
+        assertFalse(omitted.containsKey("project_managers"));
+        assertFalse(empty.containsKey("project_managers"));
+        assertEquals(10, omitted.size());
+        assertEquals(10, empty.size());
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> execute_creation_with_real_mapper(List<String> projectManagers) throws Exception {
+        AutomationPlatformService aap = org.mockito.Mockito.mock(AutomationPlatformService.class);
+        ProjectsFacadeImpl facade = new ProjectsFacadeImpl(
+                projectService,
+                projectMapper,
+                new AutomationParametersMapper() {},
+                projectCreationResponseMapper,
+                projectCreationCommandBuilder,
+                clientAppService,
+                aap);
+        Field workflowField = ProjectsFacadeImpl.class.getDeclaredField("createProjectWorkflow");
+        workflowField.setAccessible(true);
+        workflowField.set(facade, "create-project-workflow");
+
+        CreateProjectRequest request = new CreateProjectRequest();
+        ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
+        ProjectCreationCommand command = new ProjectCreationCommand(
+                "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID, projectManagers);
+
+        when(clientAppService.findByClientId(CLIENT_ID)).thenReturn(clientApp);
+        when(projectCreationCommandBuilder.buildForCreation(request, clientApp)).thenReturn(command);
+        when(projectMapper.toServiceRequest(command)).thenReturn(new ProjectRequest());
+        when(projectService.saveProject(any(ProjectRequest.class)))
+                .thenReturn(ProjectResponse.builder()
+                        .projectId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+                        .projectKey("DLSS01")
+                        .status(Status.PENDING)
+                        .build());
+        when(aap.executeWorkflow(anyString(), anyMap()))
+                .thenReturn(AutomationExecutionResult.success("job-1", "ok"));
+
+        facade.createProject(request, CLIENT_ID);
+
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(aap).executeWorkflow(eq("create-project-workflow"), captor.capture());
+        return captor.getValue();
     }
 
     @Test

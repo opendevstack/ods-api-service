@@ -21,6 +21,9 @@ public interface AutomationParametersMapper {
         parameters.put("description", command.getProjectDescription());
         parameters.put("project_name", command.getProjectName());
         parameters.put("client_id", command.getClientId().toString());
+        if (command.getProjectManagers() != null && !command.getProjectManagers().isEmpty()) {
+            parameters.put("project_managers", command.getProjectManagers());
+        }
         return parameters;
     }
 }

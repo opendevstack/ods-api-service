@@ -22,6 +22,7 @@ public class ProjectRequestValidator {
         validateFlavorOrConfigItem(request);
         validateOwnerIfX2AccountIsPresent(request);
         validateLocation(request);
+        validateProjectManagers(request);
     }
 
     public void validateUpdateRequest(UpdateProjectRequest request) {
@@ -66,6 +67,13 @@ public class ProjectRequestValidator {
         if (!locations.contains(location)) {
             throw new ProjectValidationException(ErrorKey.INVALID_LOCATION, 
                 String.join(", ", locations));
+        }
+    }
+
+    private void validateProjectManagers(CreateProjectRequest request) {
+        List<String> projectManagers = request.getProjectManagers();
+        if (projectManagers != null && projectManagers.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new ProjectValidationException(ErrorKey.BAD_REQUEST_BODY);
         }
     }
 
