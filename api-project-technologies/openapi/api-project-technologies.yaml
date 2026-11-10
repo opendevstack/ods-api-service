@@ -43,6 +43,10 @@ paths:
           $ref: '#/components/responses/UnauthorizedResponse'
         "403":
           $ref: '#/components/responses/ForbiddenResponse'
+        "404":
+          $ref: '#/components/responses/NotFoundResponse'
+        "502":
+          $ref: '#/components/responses/BadGatewayResponse'
 components:
   responses:
     UnauthorizedResponse:
@@ -53,6 +57,18 @@ components:
             $ref: '#/components/schemas/RestErrorMessage'
     ForbiddenResponse:
       description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+    NotFoundResponse:
+      description: Project technologies were not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RestErrorMessage'
+    BadGatewayResponse:
+      description: Unexpected gateway error while retrieving technologies from Marketplace
       content:
         application/json:
           schema:

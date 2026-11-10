@@ -9,6 +9,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.client.Marketplac
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.*;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
+import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceNotFoundException;
 import org.opendevstack.apiservice.externalservice.marketplace.client.ApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.CatalogHealthApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.CatalogItemsApi;
@@ -193,6 +194,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             ProjectTechnologiesApi projectTechnologiesApi = new ProjectTechnologiesApi(apiClient);
             apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
             return projectTechnologiesApi.getProjectTechnologies(projectKey);
+            } catch (HttpClientErrorException.NotFound e) {
+                throw new MarketplaceNotFoundException(
+                    String.format("Project '%s' not found in instance '%s'",
+                        projectKey, instanceName), e);
         } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
             throw new MarketplaceException(
                     String.format("Access denied when getting technologies for project '%s' in instance '%s'",
