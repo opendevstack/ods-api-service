@@ -9,10 +9,12 @@ import org.opendevstack.apiservice.externalservice.marketplace.client.Marketplac
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.*;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
+import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceNotFoundException;
 import org.opendevstack.apiservice.externalservice.marketplace.client.ApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.CatalogHealthApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.CatalogItemsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProjectComponentsWithProvisionStatusApi;
+import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProjectTechnologiesApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProvisionResultsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProvisionerActionsApi;
 import org.opendevstack.apiservice.externalservice.marketplace.client.api.ProvisionerHealthApi;
@@ -179,6 +181,31 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new MarketplaceException(
                     String.format("Failed to retrieve project component '%s' in project '%s' and instance '%s'",
                             componentId, projectId, instanceName), e);
+        }
+    }
+
+    @Override
+    public List<ProjectTechnology> getProjectTechnologies(String projectKey) throws MarketplaceException {
+        String instanceName = getDefaultInstance();
+        log.debug("Marketplace service GET technologies for project {} in instance {}", projectKey, instanceName);
+        try {
+            MarketplaceApiClient marketplaceClient = getClientCredentialsAuthenticatedClient(instanceName);
+            ApiClient apiClient = marketplaceClient.getApiClient();
+            ProjectTechnologiesApi projectTechnologiesApi = new ProjectTechnologiesApi(apiClient);
+            apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
+            return projectTechnologiesApi.getProjectTechnologies(projectKey);
+            } catch (HttpClientErrorException.NotFound e) {
+                throw new MarketplaceNotFoundException(
+                    String.format("Project '%s' not found in instance '%s'",
+                        projectKey, instanceName), e);
+        } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
+            throw new MarketplaceException(
+                    String.format("Access denied when getting technologies for project '%s' in instance '%s'",
+                            projectKey, instanceName), e);
+        } catch (RestClientException e) {
+            throw new MarketplaceException(
+                    String.format("Failed to retrieve technologies for project '%s' in instance '%s'",
+                            projectKey, instanceName), e);
         }
     }
 
