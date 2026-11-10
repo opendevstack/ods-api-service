@@ -13,8 +13,10 @@ import org.opendevstack.apiservice.core.security.obo.OboTokenService;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.MarketplaceApiClientFactory;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProvisioningStatusUpdateRequest;
+import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectTechnology;
 import org.opendevstack.apiservice.externalservice.marketplace.config.MarketplaceInstanceConfig;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
+import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceNotFoundException;
 import org.opendevstack.apiservice.externalservice.marketplace.client.ApiClient;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.CatalogItem;
 import org.opendevstack.apiservice.externalservice.marketplace.client.model.ProjectComponentListResponse;
@@ -64,6 +66,7 @@ class MarketplaceServiceImplTest {
     // HTTP method changes unexpectedly.
     private static final String PATH_CATALOG_ITEM_BY_ID   = "/catalog-items/{id}";
     private static final String PATH_PROJECT_COMPONENT    = "/project/{projectKey}/component/{componentId}";
+    private static final String PATH_PROJECT_TECHNOLOGIES = "/project/{projectKey}/technologies";
     private static final String PATH_PROJECT_COMPONENTS   = "/project/components";
     private static final String PATH_PROVISION_ACTIONS    = "/provision-actions";
     private static final String PATH_DELETE_COMPONENT     = "/support/delete/{projectKey}/{componentId}";
@@ -164,6 +167,51 @@ class MarketplaceServiceImplTest {
 
         assertTrue(exception.getMessage().contains("not configured"));
         verify(clientFactory).getClient(instanceName);
+    }
+
+    @Test
+    void testGetProjectTechnologies_Success_ReturnsTechnologies() throws MarketplaceException {
+        String instanceName = "default";
+        String scope = "api://marketplace/.default";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setClientCredentialsScope(scope);
+        ProjectTechnology technology = new ProjectTechnology().slug("java").name("Java");
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(clientCredentialsTokenService.requestToken(scope)).thenReturn("marketplace-token");
+        whenInvokeAPI(PATH_PROJECT_TECHNOLOGIES, HttpMethod.GET)
+                .thenReturn(new ResponseEntity<>(List.of(technology), HttpStatus.OK));
+
+        List<ProjectTechnology> result = marketplaceService.getProjectTechnologies("PROJECT");
+
+        assertEquals(List.of(technology), result);
+        verify(clientCredentialsTokenService).requestToken(scope);
+        verify(marketplaceApiClient).setBearerToken("marketplace-token");
+    }
+
+    @Test
+    void testGetProjectTechnologies_NotFound_ThrowsMarketplaceNotFoundException() throws MarketplaceException {
+        String instanceName = "default";
+        String scope = "api://marketplace/.default";
+        MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
+        instanceConfig.setClientCredentialsScope(scope);
+        HttpClientErrorException notFoundException = HttpClientErrorException.create(
+                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], StandardCharsets.UTF_8);
+
+        when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
+        when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
+        when(marketplaceApiClient.getConfig()).thenReturn(instanceConfig);
+        when(marketplaceApiClient.getApiClient()).thenReturn(apiClient);
+        when(clientCredentialsTokenService.requestToken(scope)).thenReturn("marketplace-token");
+        whenInvokeAPI(PATH_PROJECT_TECHNOLOGIES, HttpMethod.GET).thenThrow(notFoundException);
+
+        MarketplaceNotFoundException exception = assertThrows(MarketplaceNotFoundException.class,
+                () -> marketplaceService.getProjectTechnologies("MISSING"));
+
+        assertEquals(notFoundException, exception.getCause());
     }
 
     // -------------------------------------------------------------------------
