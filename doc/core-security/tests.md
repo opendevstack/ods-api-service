@@ -12,7 +12,7 @@ Each scenario is defined by the combination of: **API visibility** × **Auth flo
 | API visibility | `PUBLIC`, `SECURED` |
 | Auth flow | `CLIENT_CREDENTIALS`, `OBO`, `NONE` (no token) |
 | Client type | Internal service, External / third-party app, UI SPA (on behalf of a user) |
-| Policy | No rules, `ALLOWED_CLIENTS`, `SCOPE_REQUIRED`, multiple rules |
+| Policy | No rules, `ALLOWED_CLIENTS`, `ALLOWED_HTTP_VERBS`, `SCOPE_REQUIRED`, multiple rules |
 | Token state | Valid, Expired, Malformed, Missing |
 
 ---
@@ -88,6 +88,17 @@ CLIENT_CREDENTIALS tokens carry app-level roles, not delegated scopes.
 | CC-M-02 | allowed | scope missing | PERMIT + DENY | `DENY` → `403` |
 | CC-M-03 | not allowed | required scope present | DENY + PERMIT | `DENY` → `403` |
 | CC-M-04 | not allowed | scope missing | both DENY | `DENY` → `403` |
+
+### 3.5 Policy — ALLOWED_HTTP_VERBS
+
+Config: `{ "allowedHttpVerbs": ["GET", "POST"] }`
+
+| # | Request method | Policy | Expected |
+|---|---|---|---|
+| CC-H-01 | `GET` | ALLOWED_HTTP_VERBS: [GET, POST] | `PERMIT` |
+| CC-H-02 | `POST` | ALLOWED_HTTP_VERBS: [GET, POST] | `PERMIT` |
+| CC-H-03 | `DELETE` | ALLOWED_HTTP_VERBS: [GET, POST] | `DENY` → `403` |
+| CC-H-04 | any | Missing or empty `allowedHttpVerbs` | `ABSTAIN` |
 
 ---
 
