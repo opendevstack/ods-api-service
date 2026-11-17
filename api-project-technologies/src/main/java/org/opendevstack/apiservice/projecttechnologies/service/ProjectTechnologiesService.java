@@ -4,6 +4,7 @@ import org.opendevstack.apiservice.externalservice.marketplace.exception.Marketp
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceNotFoundException;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.opendevstack.apiservice.projecttechnologies.model.ProjectTechnology;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -11,13 +12,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ProjectTechnologiesService {
 
     private final MarketplaceService marketplaceService;
-
-    public ProjectTechnologiesService(MarketplaceService marketplaceService) {
-        this.marketplaceService = marketplaceService;
-    }
 
     public List<ProjectTechnology> getProjectTechnologies(String projectKey) {
         try {
