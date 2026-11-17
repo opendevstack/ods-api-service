@@ -80,6 +80,7 @@
                                 <skipDefaultInterface>true</skipDefaultInterface>
                                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
                                 <useTags>true</useTags>
+                                <generateBuilders>true</generateBuilders>
                             </configOptions>
                         </configuration>
                     </execution>

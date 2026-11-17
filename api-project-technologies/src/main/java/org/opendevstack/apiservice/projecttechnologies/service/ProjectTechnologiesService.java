@@ -20,9 +20,10 @@ public class ProjectTechnologiesService {
     public List<ProjectTechnology> getProjectTechnologies(String projectKey) {
         try {
             return marketplaceService.getProjectTechnologies(projectKey).stream()
-                    .map(technology -> new ProjectTechnology()
+                    .map(technology -> ProjectTechnology.builder()
                             .slug(technology.getSlug())
-                            .name(technology.getName()))
+                            .name(technology.getName())
+                            .build())
                     .toList();
         } catch (MarketplaceNotFoundException exception) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
