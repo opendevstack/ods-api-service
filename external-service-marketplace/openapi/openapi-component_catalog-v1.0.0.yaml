@@ -147,6 +147,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RestErrorMessage'
+  /project/{projectKey}/technologies:
+    get:
+      tags:
+        - ProjectTechnologies
+      summary: Returns the set of technologies used by a project.
+      operationId: getProjectTechnologies
+      parameters:
+        - name: projectKey
+          in: path
+          description: project key.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A list of Technologies used by the project
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectTechnology'
+        "401":
+          description: Invalid client token on the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "403":
+          description: Insufficient permissions for the client to access the resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
+        "500":
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestErrorMessage'
   /catalog-descriptors:
     get:
       tags:
@@ -925,6 +965,14 @@ components:
         componentUrl:
           type: string
           example: 'https://bitbucket.com/projects/CATALOGS/repos/project-components/browse/projects'
+    ProjectTechnology:
+      properties:
+        slug:
+          type: string
+          example: 'my-item-slug'
+        name:
+          type: string
+          example: 'my-item-name'
     ProjectComponentParameter:
       properties:
         name:
