@@ -1,12 +1,12 @@
 package org.opendevstack.apiservice.projecttechnologies.service;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceException;
 import org.opendevstack.apiservice.externalservice.marketplace.exception.MarketplaceNotFoundException;
 import org.opendevstack.apiservice.externalservice.marketplace.service.MarketplaceService;
 import org.opendevstack.apiservice.projecttechnologies.model.ProjectTechnology;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -25,12 +25,8 @@ class ProjectTechnologiesServiceTest {
     @Mock
     private MarketplaceService marketplaceService;
 
+    @InjectMocks
     private ProjectTechnologiesService service;
-
-    @BeforeEach
-    void setUp() {
-        service = new ProjectTechnologiesService(marketplaceService);
-    }
 
     @Test
     void getProjectTechnologiesMapsMarketplaceItems() throws Exception {
