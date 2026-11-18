@@ -12,4 +12,5 @@ public final class PolicyTypes {
     public static final String FLAVOR_RESTRICTION = "FLAVOR_RESTRICTION";
     public static final String ALLOWED_CLIENTS = "ALLOWED_CLIENTS";
     public static final String SCOPE_REQUIRED = "SCOPE_REQUIRED";
+    public static final String ALLOWED_HTTP_VERBS = "ALLOWED_HTTP_VERBS";
 }
