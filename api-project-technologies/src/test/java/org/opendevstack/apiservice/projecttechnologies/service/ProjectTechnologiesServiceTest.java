@@ -52,8 +52,11 @@ class ProjectTechnologiesServiceTest {
         assertThatThrownBy(() -> service.getProjectTechnologies(projectKey))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasCause(cause)
-                .satisfies(exception -> assertThat(((ResponseStatusException) exception).getStatusCode())
-                        .isEqualTo(HttpStatus.NOT_FOUND));
+                .satisfies(exception -> {
+                    ResponseStatusException responseStatusException = (ResponseStatusException) exception;
+                    assertThat(responseStatusException.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(responseStatusException.getReason()).isEqualTo("Project not found");
+                });
     }
 
     @Test

@@ -198,8 +198,11 @@ class MarketplaceServiceImplTest {
         String scope = "api://marketplace/.default";
         MarketplaceInstanceConfig instanceConfig = new MarketplaceInstanceConfig();
         instanceConfig.setClientCredentialsScope(scope);
+        String marketplaceMessage = "The requested project does not exist";
         HttpClientErrorException notFoundException = HttpClientErrorException.create(
-                HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], StandardCharsets.UTF_8);
+            HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY,
+            ("{\"message\":\"" + marketplaceMessage + "\"}").getBytes(StandardCharsets.UTF_8),
+            StandardCharsets.UTF_8);
 
         when(clientFactory.getDefaultInstanceName()).thenReturn(instanceName);
         when(clientFactory.getClient(instanceName)).thenReturn(marketplaceApiClient);
@@ -211,6 +214,7 @@ class MarketplaceServiceImplTest {
         MarketplaceNotFoundException exception = assertThrows(MarketplaceNotFoundException.class,
                 () -> marketplaceService.getProjectTechnologies("MISSING"));
 
+        assertEquals(marketplaceMessage, exception.getMessage());
         assertEquals(notFoundException, exception.getCause());
     }
 
