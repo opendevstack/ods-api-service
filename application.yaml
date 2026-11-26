@@ -229,6 +229,19 @@ apis:
     ansible-workflow-name: ${API_PROJECTS_MINIEDP_PROVISION_WORKFLOW_NAME}
     # Supported project locations, typically provided as a comma-separated environment variable.
     locations: ${API_PROJECTS_LOCATIONS}
+    # Project components values
+    provisioned-components:
+      allowed-values:
+        - 'Jira'
+        - 'Confluence'
+        - 'Bitbucket'
+        - 'Openshift-cd-namespace'
+        - 'Openshift-dev-namespace'
+        - 'Openshift-test-namespace'
+        - 'Jenkins-and-Webhook-proxy'
+        - 'Release-manager'
+      mandatory-values:
+        - 'Openshift-cd-namespace'
 
 externalservices:
   openshift:

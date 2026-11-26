@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
 import org.opendevstack.apiservice.persistence.entity.ClientAppProjectFlavorEntity;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
@@ -17,6 +18,7 @@ import org.opendevstack.apiservice.serviceproject.service.GenerateProjectKeyServ
 import org.opendevstack.apiservice.serviceproject.service.ProjectExistenceService;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,6 +59,8 @@ class ProjectCreationCommandBuilderTest {
         request.setOwner(null);
         request.setLocation(null);
         request.setProjectManagers(List.of("alex", "taylor", "alex"));
+        request.setIncludedComponents(JsonNullable.of(Set.of("Jira", "Confluence")));
+        request.setExcludedComponents(JsonNullable.of(Set.of("Jira")));
 
         when(projectExistenceService.isProjectFound("KEY01")).thenReturn(false);
 
@@ -68,6 +72,8 @@ class ProjectCreationCommandBuilderTest {
         assertEquals("eu", result.getLocation());
         assertEquals("KEY01", result.getProjectKey());
         assertEquals(List.of("alex", "taylor"), result.getProjectManagers());
+        assertEquals(Set.of("Jira", "Confluence"), result.getIncludedComponents());
+        assertEquals(Set.of("Jira"), result.getExcludedComponents());
     }
 
     @Test

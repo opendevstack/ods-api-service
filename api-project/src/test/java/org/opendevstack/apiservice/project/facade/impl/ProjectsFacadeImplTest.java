@@ -9,6 +9,7 @@ import org.mockito.MockitoAnnotations;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationExecutionResult;
 import org.opendevstack.apiservice.externalservice.aap.service.AutomationPlatformService;
 import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
+import org.opendevstack.apiservice.project.config.ProjectComponentsValues;
 import org.opendevstack.apiservice.project.exception.ProjectCreationException;
 import org.opendevstack.apiservice.project.mapper.AutomationParametersMapper;
 import org.opendevstack.apiservice.project.mapper.ProjectCreationResponseMapper;
@@ -25,6 +26,7 @@ import org.opendevstack.apiservice.serviceproject.service.ProjectService;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +34,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -64,6 +68,9 @@ class ProjectsFacadeImplTest {
     @Mock
     private AutomationPlatformService automationPlatformService;
 
+    @Mock
+    private ProjectComponentsValues projectComponentsValues;
+
     private ProjectsFacadeImpl sut;
     private AutoCloseable mocks;
 
@@ -77,7 +84,8 @@ class ProjectsFacadeImplTest {
                 projectCreationResponseMapper,
                 projectCreationCommandBuilder,
                 clientAppService,
-                automationPlatformService);
+                automationPlatformService,
+                projectComponentsValues);
 
         Field workflowField = ProjectsFacadeImpl.class.getDeclaredField("createProjectWorkflow");
         workflowField.setAccessible(true);
@@ -94,7 +102,9 @@ class ProjectsFacadeImplTest {
         CreateProjectRequest request = new CreateProjectRequest();
         ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
-                "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID, null);
+                "DLSS01", "name", "desc", "DLSS",
+                "CI-001", "eu", "x2test", "owner",
+                CLIENT_ID, null, null, null);
         ProjectRequest serviceRequest = new ProjectRequest();
         ProjectResponse projectResponse = ProjectResponse.builder()
                 .projectId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
@@ -109,7 +119,8 @@ class ProjectsFacadeImplTest {
         when(projectCreationCommandBuilder.buildForCreation(request, clientApp)).thenReturn(command);
         when(projectMapper.toServiceRequest(command)).thenReturn(serviceRequest);
         when(projectService.saveProject(serviceRequest)).thenReturn(projectResponse);
-        when(automationParametersMapper.toWorkflowParameters(command, "11111111-1111-1111-1111-111111111111"))
+        when(automationParametersMapper.toWorkflowParameters(eq(command),
+                eq("11111111-1111-1111-1111-111111111111"), anySet(), anySet()))
                 .thenReturn(Map.of("project_key", "DLSS01"));
         when(automationPlatformService.executeWorkflow(anyString(), anyMap()))
                 .thenReturn(AutomationExecutionResult.success("job-1", "ok"));
@@ -122,7 +133,8 @@ class ProjectsFacadeImplTest {
         verify(projectCreationCommandBuilder).buildForCreation(request, clientApp);
         verify(projectMapper).toServiceRequest(command);
         verify(automationParametersMapper)
-                .toWorkflowParameters(command, "11111111-1111-1111-1111-111111111111");
+                .toWorkflowParameters(eq(command), eq("11111111-1111-1111-1111-111111111111"),
+                        anySet(), anySet());
         verify(projectCreationResponseMapper).toSuccessResponse(command, projectResponse);
     }
 
@@ -132,7 +144,9 @@ class ProjectsFacadeImplTest {
         request.setRegistrationOnly(true);
         ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
-                "P3RO01", "name", "desc", null, "CI-001", "eu", "x2test", "owner", CLIENT_ID, null);
+                "P3RO01", "name", "desc", null,
+                "CI-001", "eu", "x2test", "owner",
+                CLIENT_ID, null, null, null);
         ProjectRequest serviceRequest = new ProjectRequest();
         ProjectResponse projectResponse = ProjectResponse.builder()
                 .projectId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
@@ -156,7 +170,8 @@ class ProjectsFacadeImplTest {
         verify(projectCreationCommandBuilder).buildForRegistration(request, clientApp);
         verify(projectMapper).toServiceRequest(command);
         verify(automationParametersMapper, never())
-                .toWorkflowParameters(command, "11111111-1111-1111-1111-111111111111");
+                .toWorkflowParameters(eq(command), eq("11111111-1111-1111-1111-111111111111"),
+                        anySet(), anySet());
         verify(automationPlatformService, never()).executeWorkflow(anyString(), anyMap());
         verify(projectCreationResponseMapper).toSuccessResponse(command, projectResponse);
     }
@@ -166,7 +181,9 @@ class ProjectsFacadeImplTest {
         CreateProjectRequest request = new CreateProjectRequest();
         ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
-                "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID, null);
+                "DLSS01", "name", "desc", "DLSS",
+                "CI-001", "eu", "x2test", "owner",
+                CLIENT_ID, null, null, null);
 
         when(clientAppService.findByClientId(CLIENT_ID)).thenReturn(clientApp);
         when(projectCreationCommandBuilder.buildForCreation(request, clientApp)).thenReturn(command);
@@ -177,7 +194,8 @@ class ProjectsFacadeImplTest {
                         .projectKey("DLSS01")
                         .status(Status.PENDING)
                         .build());
-        when(automationParametersMapper.toWorkflowParameters(command, "11111111-1111-1111-1111-111111111111"))
+        when(automationParametersMapper.toWorkflowParameters(eq(command),
+                eq("11111111-1111-1111-1111-111111111111"), anySet(), anySet()))
                 .thenReturn(Map.of());
         when(automationPlatformService.executeWorkflow(anyString(), anyMap()))
                 .thenReturn(AutomationExecutionResult.failure("job-1", "error", "workflow failed"));
@@ -217,7 +235,8 @@ class ProjectsFacadeImplTest {
                 projectCreationResponseMapper,
                 projectCreationCommandBuilder,
                 clientAppService,
-                aap);
+                aap,
+                projectComponentsValues);
         Field workflowField = ProjectsFacadeImpl.class.getDeclaredField("createProjectWorkflow");
         workflowField.setAccessible(true);
         workflowField.set(facade, "create-project-workflow");
@@ -225,7 +244,9 @@ class ProjectsFacadeImplTest {
         CreateProjectRequest request = new CreateProjectRequest();
         ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
         ProjectCreationCommand command = new ProjectCreationCommand(
-                "DLSS01", "name", "desc", "DLSS", "CI-001", "eu", "x2test", "owner", CLIENT_ID, projectManagers);
+                "DLSS01", "name", "desc", "DLSS",
+                "CI-001", "eu", "x2test", "owner",
+                CLIENT_ID, projectManagers, null, null);
 
         when(clientAppService.findByClientId(CLIENT_ID)).thenReturn(clientApp);
         when(projectCreationCommandBuilder.buildForCreation(request, clientApp)).thenReturn(command);
@@ -289,5 +310,111 @@ class ProjectsFacadeImplTest {
         sut.updateProject("PROJ01", request);
 
         verify(projectService).updateProjectStatus("PROJ01", "Running");
+    }
+
+    @Test
+    void create_project_with_included_components_sends_correct_parameters() throws Exception {
+        Map<String, Object> extraVars = execute_creation_with_included_and_excluded_components(Set.of("Jira",
+                "Confluence", "Bitbucket"), null);
+
+        assertEquals(Set.of("Jira", "Confluence", "Bitbucket",
+                        "Openshift-cd-namespace"), // mandatory component is always included
+                extraVars.get("components_to_provision"));
+        assertEquals("DLSS01", extraVars.get("project_key"));
+        assertEquals("owner", extraVars.get("project_owner"));
+        assertEquals("11111111-1111-1111-1111-111111111111", extraVars.get("project_id"));
+        assertEquals(11, extraVars.size());
+    }
+
+    @Test
+    void create_project_with_included_and_excluded_components_sends_correct_parameters() throws Exception {
+        Map<String, Object> extraVars = execute_creation_with_included_and_excluded_components(
+                Set.of("Jira", "Confluence", "Bitbucket", "Openshift-cd-namespace",
+                        "Openshift-dev-namespace", "Openshift-test-namespace",
+                        "Jenkins-and-Webhook-proxy", "Release-manager"),
+                Set.of("Jira", "Confluence", "Bitbucket", "Openshift-cd-namespace"));
+
+        assertEquals(Set.of("Openshift-dev-namespace", "Openshift-test-namespace",
+                "Jenkins-and-Webhook-proxy", "Release-manager",
+                        "Openshift-cd-namespace"), // mandatory component is always included
+                extraVars.get("components_to_provision"));
+        assertEquals("DLSS01", extraVars.get("project_key"));
+        assertEquals("owner", extraVars.get("project_owner"));
+        assertEquals("11111111-1111-1111-1111-111111111111", extraVars.get("project_id"));
+        assertEquals(11, extraVars.size());
+    }
+
+    @Test
+    void create_project_with_excluded_components_sends_correct_parameters() throws Exception {
+        Map<String, Object> extraVars = execute_creation_with_included_and_excluded_components(
+                null,
+                Set.of("Jira"));
+
+        assertEquals(Set.of("Confluence", "Bitbucket", "Openshift-cd-namespace",
+                        "Openshift-dev-namespace", "Openshift-test-namespace",
+                        "Jenkins-and-Webhook-proxy", "Release-manager"),
+                extraVars.get("components_to_provision"));
+        assertEquals("DLSS01", extraVars.get("project_key"));
+        assertEquals("owner", extraVars.get("project_owner"));
+        assertEquals("11111111-1111-1111-1111-111111111111", extraVars.get("project_id"));
+        assertEquals(11, extraVars.size());
+    }
+
+    @Test
+    void create_project_with_no_components_sends_correct_parameters() throws Exception {
+        Map<String, Object> extraVars = execute_creation_with_included_and_excluded_components(
+                null,
+                null);
+
+        assertEquals(null, extraVars.get("components_to_provision"));
+        assertEquals("DLSS01", extraVars.get("project_key"));
+        assertEquals("owner", extraVars.get("project_owner"));
+        assertEquals("11111111-1111-1111-1111-111111111111", extraVars.get("project_id"));
+        assertEquals(10, extraVars.size());
+    }
+
+    private Map<String, Object> execute_creation_with_included_and_excluded_components(Set<String> includedComponents, Set<String> excludedComponents) throws Exception {
+        AutomationPlatformService aap = org.mockito.Mockito.mock(AutomationPlatformService.class);
+        ProjectsFacadeImpl facade = new ProjectsFacadeImpl(
+                projectService,
+                projectMapper,
+                new AutomationParametersMapper() {},
+                projectCreationResponseMapper,
+                projectCreationCommandBuilder,
+                clientAppService,
+                aap,
+                projectComponentsValues);
+        Field workflowField = ProjectsFacadeImpl.class.getDeclaredField("createProjectWorkflow");
+        workflowField.setAccessible(true);
+        workflowField.set(facade, "create-project-workflow");
+
+        CreateProjectRequest request = new CreateProjectRequest();
+        ClientAppEntity clientApp = ClientAppEntity.builder().clientId(CLIENT_ID).build();
+        ProjectCreationCommand command = new ProjectCreationCommand(
+                "DLSS01", "name", "desc", "DLSS",
+                "CI-001", "eu", "x2test", "owner",
+                CLIENT_ID, null, includedComponents, excludedComponents);
+
+        when(projectComponentsValues.allowedValues()).thenReturn(Set.of("Jira", "Confluence", "Bitbucket",
+                "Openshift-cd-namespace", "Openshift-dev-namespace", "Openshift-test-namespace",
+                "Jenkins-and-Webhook-proxy", "Release-manager"));
+        when(projectComponentsValues.mandatoryValues()).thenReturn(Set.of("Openshift-cd-namespace"));
+        when(clientAppService.findByClientId(CLIENT_ID)).thenReturn(clientApp);
+        when(projectCreationCommandBuilder.buildForCreation(request, clientApp)).thenReturn(command);
+        when(projectMapper.toServiceRequest(command)).thenReturn(new ProjectRequest());
+        when(projectService.saveProject(any(ProjectRequest.class)))
+                .thenReturn(ProjectResponse.builder()
+                        .projectId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+                        .projectKey("DLSS01")
+                        .status(Status.PENDING)
+                        .build());
+        when(aap.executeWorkflow(anyString(), anyMap()))
+                .thenReturn(AutomationExecutionResult.success("job-1", "ok"));
+
+        facade.createProject(request, CLIENT_ID);
+
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(aap).executeWorkflow(eq("create-project-workflow"), captor.capture());
+        return captor.getValue();
     }
 }

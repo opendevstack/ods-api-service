@@ -1,5 +1,6 @@
 package org.opendevstack.apiservice.project.validation;
 
+import org.opendevstack.apiservice.project.config.ProjectComponentsValues;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
 import org.opendevstack.apiservice.project.exception.ProjectUpdateValidationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
@@ -11,18 +12,42 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class ProjectRequestValidator {
     
     @Value("${apis.projects.locations}")
     private List<String> locations;
-    
+
+    private final ProjectComponentsValues projectComponentsValues;
+
+    public ProjectRequestValidator(ProjectComponentsValues projectComponentsValues) {
+        this.projectComponentsValues = projectComponentsValues;
+    }
+
     public void validateCreateRequest(CreateProjectRequest request) {
         validateFlavorOrConfigItem(request);
         validateOwnerIfX2AccountIsPresent(request);
         validateLocation(request);
         validateProjectManagers(request);
+        validateIncludeExcludeComponentsLists(request);
+    }
+
+    private void validateIncludeExcludeComponentsLists(CreateProjectRequest request) {
+        Set<String> includedComponents = request.getIncludedComponents().isPresent() ?
+                request.getIncludedComponents().get() : null;
+        Set<String> excludedComponents = request.getExcludedComponents().isPresent() ?
+                request.getExcludedComponents().get() : null;
+
+        if (includedComponents != null && !projectComponentsValues.allowedValues().containsAll(includedComponents)){
+            throw new ProjectValidationException(ErrorKey.INCLUDE_COMPONENTS_WRONG_VALUE,
+                projectComponentsValues.allowedValuesCommaSeparated());
+        }
+        if (excludedComponents != null && !projectComponentsValues.allowedValues().containsAll(excludedComponents)){
+            throw new ProjectValidationException(ErrorKey.EXCLUDE_COMPONENTS_WRONG_VALUE,
+                    projectComponentsValues.allowedValuesCommaSeparated());
+        }
     }
 
     public void validateUpdateRequest(UpdateProjectRequest request) {
