@@ -1,5 +1,8 @@
 package org.opendevstack.apiservice.externalservice.marketplace.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.core.security.client.credentials.ClientCredentialsTokenService;
 import org.opendevstack.apiservice.core.security.jwt.JwtUtils;
@@ -31,6 +34,7 @@ import java.util.Set;
 @Slf4j
 public class MarketplaceServiceImpl implements MarketplaceService {
     private static final String HEALTH_STATUS_UP = "UP";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final MarketplaceApiClientFactory clientFactory;
     private final OboTokenService oboTokenService;
@@ -195,9 +199,12 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             apiClient.setBasePath(marketplaceClient.getConfig().getProjectComponentsBaseUrl());
             return projectTechnologiesApi.getProjectTechnologies(projectKey);
             } catch (HttpClientErrorException.NotFound e) {
+                String message = extractMarketplaceErrorMessage(e);
+                if (message == null || message.isBlank()) {
+                    message = String.format("Project '%s' not found in instance '%s'", projectKey, instanceName);
+                }
                 throw new MarketplaceNotFoundException(
-                    String.format("Project '%s' not found in instance '%s'",
-                        projectKey, instanceName), e);
+                    message, e);
         } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden e) {
             throw new MarketplaceException(
                     String.format("Access denied when getting technologies for project '%s' in instance '%s'",
@@ -206,6 +213,16 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new MarketplaceException(
                     String.format("Failed to retrieve technologies for project '%s' in instance '%s'",
                             projectKey, instanceName), e);
+        }
+    }
+
+    private String extractMarketplaceErrorMessage(HttpClientErrorException exception) {
+        try {
+            JsonNode message = OBJECT_MAPPER.readTree(exception.getResponseBodyAsString()).path("message");
+            return message.isTextual() ? message.asText() : null;
+        } catch (JsonProcessingException e) {
+            log.debug("Marketplace returned a non-JSON 404 response body");
+            return null;
         }
     }
 

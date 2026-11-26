@@ -27,7 +27,7 @@ public class ProjectTechnologiesService {
                     .toList();
         } catch (MarketplaceNotFoundException exception) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Project was not found.", exception);
+                exception.getMessage(), exception);
         } catch (MarketplaceException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Failed to retrieve project technologies from Marketplace.", exception);
