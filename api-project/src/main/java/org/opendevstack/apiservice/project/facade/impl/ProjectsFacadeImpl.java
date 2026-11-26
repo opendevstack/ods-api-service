@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.opendevstack.apiservice.externalservice.aap.model.AutomationExecutionResult;
 import org.opendevstack.apiservice.externalservice.aap.service.AutomationPlatformService;
 import org.opendevstack.apiservice.persistence.entity.ClientAppEntity;
+import org.opendevstack.apiservice.project.config.ProjectComponentsValues;
 import org.opendevstack.apiservice.project.exception.ProjectCreationException;
 import org.opendevstack.apiservice.project.facade.ProjectsFacade;
 import org.opendevstack.apiservice.project.mapper.AutomationParametersMapper;
@@ -44,6 +45,8 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
     
     private final AutomationPlatformService automationPlatformService;
 
+    private final ProjectComponentsValues projectComponentsValues;
+
     public ProjectsFacadeImpl(
             ProjectService projectService,
             ProjectMapper projectMapper,
@@ -51,7 +54,8 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
             ProjectCreationResponseMapper projectCreationResponseMapper,
             ProjectCreationCommandBuilder projectCreationCommandBuilder,
             ClientAppService clientAppService,
-            AutomationPlatformService automationPlatformService) {
+            AutomationPlatformService automationPlatformService,
+            ProjectComponentsValues projectComponentsValues) {
         this.projectService = projectService;
         this.projectMapper = projectMapper;
         this.automationParametersMapper = automationParametersMapper;
@@ -59,6 +63,7 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
         this.projectCreationCommandBuilder = projectCreationCommandBuilder;
         this.clientAppService = clientAppService;
         this.automationPlatformService = automationPlatformService;
+        this.projectComponentsValues = projectComponentsValues;
     }
 
     @Override
@@ -113,7 +118,8 @@ public class ProjectsFacadeImpl implements ProjectsFacade {
     private void initializeProject(
             ProjectCreationCommand command, ProjectRequest projectRequest, ProjectResponse project) {
         String projectId = project.getProjectId().toString();
-        Map<String, Object> workflowParameters = automationParametersMapper.toWorkflowParameters(command, projectId);
+        Map<String, Object> workflowParameters = automationParametersMapper.toWorkflowParameters(command, projectId,
+                projectComponentsValues.allowedValues(), projectComponentsValues.mandatoryValues());
 
         AutomationExecutionResult automationExecutionResult = automationPlatformService
                 .executeWorkflow(createProjectWorkflow, workflowParameters);

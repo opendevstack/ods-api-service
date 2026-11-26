@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -31,4 +32,8 @@ public class ProjectCreationCommand {
     private UUID clientId;
 
     private List<String> projectManagers;
+
+    private Set<String> includedComponents;
+
+    private Set<String> excludedComponents;
 }

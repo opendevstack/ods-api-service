@@ -65,7 +65,14 @@ public class ProjectCreationCommandBuilder {
                 clientApp.getId(),
                 request.getProjectManagers() == null
                     ? null
-                    : request.getProjectManagers().stream().distinct().toList());
+                    : request.getProjectManagers().stream().distinct().toList(),
+                !request.getIncludedComponents().isPresent()
+                    ? null
+                    : request.getIncludedComponents().get(),
+                !request.getExcludedComponents().isPresent()
+                    ? null
+                    : request.getExcludedComponents().get()
+        );
     }
 
     private ClientAppProjectFlavorEntity resolveFlavor(CreateProjectRequest request, ClientAppEntity clientApp) {

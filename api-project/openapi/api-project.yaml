@@ -164,6 +164,38 @@ components:
           type: boolean
           description: Indicates whether the project should be only registrated or a proper initialization is required. (Default false)
           default: false
+        includedComponents:
+          uniqueItems: true
+          type: array
+          description: If present, only the components listed in this array will be provisioned for the project. If not present, all components will be provisioned.
+          nullable: true
+          items:
+            type: string
+          example:
+            - 'Jira'
+            - 'Confluence'
+            - 'Bitbucket'
+            - 'Openshift-cd-namespace'
+            - 'Openshift-dev-namespace'
+            - 'Openshift-test-namespace'
+            - 'Jenkins-and-Webhook-proxy'
+            - 'Release-manager'
+        excludedComponents:
+          uniqueItems: true
+          type: array
+          description: If present, the components listed in this array will be excluded from provisioning even if present in the includeComponents list.
+          nullable: true
+          items:
+            type: string
+          example:
+            - 'Jira'
+            - 'Confluence'
+            - 'Bitbucket'
+            - 'Openshift-cd-namespace'
+            - 'Openshift-dev-namespace'
+            - 'Openshift-test-namespace'
+            - 'Jenkins-and-Webhook-proxy'
+            - 'Release-manager'
       oneOf:
         - required: [projectFlavor]
         - required: [configurationItem]

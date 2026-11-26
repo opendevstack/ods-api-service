@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.openapitools.jackson.nullable.JsonNullable;
+import org.opendevstack.apiservice.project.config.ProjectComponentsValues;
 import org.opendevstack.apiservice.project.exception.ErrorKey;
 import org.opendevstack.apiservice.project.exception.ProjectUpdateValidationException;
 import org.opendevstack.apiservice.project.exception.ProjectValidationException;
@@ -13,6 +15,7 @@ import org.opendevstack.apiservice.project.model.UpdateProjectRequest;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,7 +27,11 @@ class ProjectRequestValidatorTest {
 
     @BeforeEach
     void setUp() throws NoSuchFieldException, IllegalAccessException {
-        sut = new ProjectRequestValidator();
+        ProjectComponentsValues projectComponentsValues = new ProjectComponentsValues(
+                Set.of("component1", "component2"),
+                Set.of("component1")
+        );
+        sut = new ProjectRequestValidator(projectComponentsValues);
 
         Field locationsField = ProjectRequestValidator.class.getDeclaredField("locations");
         locationsField.setAccessible(true);
@@ -214,4 +221,44 @@ class ProjectRequestValidatorTest {
 
         assertEquals(ErrorKey.INVALID_STATUS, exception.getErrorKey());
     }
+
+    @Test
+    void validateCreateRequest_success_when_correct_include_and_exclude_values() {
+        CreateProjectRequest request = new CreateProjectRequest();
+        request.setProjectName("Valid");
+        request.setProjectFlavor("STANDARD");
+        request.setIncludedComponents(JsonNullable.of(Set.of("component1", "component2")));
+        request.setExcludedComponents(JsonNullable.of(Set.of("component1", "component2")));
+
+        assertDoesNotThrow(() -> sut.validateCreateRequest(request));
+    }
+
+    @Test
+    void validateCreateRequest_throws_exception_with_error_key_INCLUDE_COMPONENTS_WRONG_VALUE_for_wrong_include_values() {
+        CreateProjectRequest request = new CreateProjectRequest();
+        request.setProjectName("Valid");
+        request.setProjectFlavor("STANDARD");
+        request.setIncludedComponents(JsonNullable.of(Set.of("wrong value")));
+
+        ProjectValidationException exception = assertThrows(
+                ProjectValidationException.class,
+                () -> sut.validateCreateRequest(request));
+
+        assertEquals(ErrorKey.INCLUDE_COMPONENTS_WRONG_VALUE, exception.getErrorKey());
+    }
+
+    @Test
+    void validateCreateRequest_throws_exception_with_error_key_EXCLUDE_COMPONENTS_WRONG_VALUE_for_wrong_exclude_values() {
+        CreateProjectRequest request = new CreateProjectRequest();
+        request.setProjectName("Valid");
+        request.setProjectFlavor("STANDARD");
+        request.setExcludedComponents(JsonNullable.of(Set.of("wrong value")));
+
+        ProjectValidationException exception = assertThrows(
+                ProjectValidationException.class,
+                () -> sut.validateCreateRequest(request));
+
+        assertEquals(ErrorKey.EXCLUDE_COMPONENTS_WRONG_VALUE, exception.getErrorKey());
+    }
+
 }

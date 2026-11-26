@@ -5,6 +5,7 @@ import org.opendevstack.apiservice.project.facade.impl.ProjectCreationCommand;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,9 +18,10 @@ class AutomationParametersMapperTest {
     @Test
     void to_workflow_parameters_passes_project_managers_and_existing_parameters() {
         List<String> projectManagers = List.of("alex", "taylor");
-        ProjectCreationCommand command = build_command(projectManagers);
+        ProjectCreationCommand command = build_command(projectManagers, null, null);
 
-        Map<String, Object> result = sut.toWorkflowParameters(command, "project-id");
+        Map<String, Object> result = sut.toWorkflowParameters(command, "project-id",
+                null, null);
 
         assertEquals(projectManagers, result.get("project_managers"));
         assertEquals("eu", result.get("geographic_region"));
@@ -37,8 +39,12 @@ class AutomationParametersMapperTest {
 
     @Test
     void to_workflow_parameters_omits_project_managers_when_missing_or_empty() {
-        Map<String, Object> missing = sut.toWorkflowParameters(build_command(null), "project-id");
-        Map<String, Object> empty = sut.toWorkflowParameters(build_command(List.of()), "project-id");
+        Map<String, Object> missing = sut.toWorkflowParameters(build_command(null,
+                null, null), "project-id",
+                null, null);
+        Map<String, Object> empty = sut.toWorkflowParameters(build_command(List.of(),
+                null, null), "project-id",
+                null, null);
 
         assertFalse(missing.containsKey("project_managers"));
         assertFalse(empty.containsKey("project_managers"));
@@ -46,7 +52,9 @@ class AutomationParametersMapperTest {
         assertEquals(10, empty.size());
     }
 
-    private ProjectCreationCommand build_command(List<String> projectManagers) {
+    private ProjectCreationCommand build_command(List<String> projectManagers,
+                                                 Set<String> includedComponents,
+                                                 Set<String> excludedComponents) {
         return new ProjectCreationCommand(
                 "DLSS01",
                 "project-name",
@@ -57,6 +65,8 @@ class AutomationParametersMapperTest {
                 "x2test",
                 "owner",
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                projectManagers);
+                projectManagers,
+                includedComponents,
+                excludedComponents);
     }
 }
